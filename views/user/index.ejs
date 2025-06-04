@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <style>
+        
+        .content-container {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #brand {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        #brand img {
+            max-width: 100%;
+            filter: blur(5px);
+        }
+
+        .sign-in {
+            border-radius: 20px;
+            padding: 20px;
+            background-color: rgb(169, 169, 161);
+            width: 80%;
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .sign-in img {
+            max-width: 180px;
+            height: auto;
+        }
+
+        .sign-in form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .sign-in input {
+            border-radius: 20px;
+            height: 40px;
+            border: none;
+            padding: 0 15px;
+        }
+
+        .sign-in button {
+            border-radius: 10px;
+            border: none;
+            background-color: #565F63;
+            color: white;
+            padding: 10px;
+            width: 150px;
+            height: 45px;
+            align-self: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .sign-in button:hover {
+            background-color: #3f464a;
+        }
+
+        @media (max-height: 600px) {
+            .sign-in {
+                padding: 10px;
+            }
+            .sign-in form {
+                gap: 10px;
+                padding: 10px;
+            }
+            .sign-in input {
+                height: 35px;
+            }
+            .sign-in button {
+                height: 35px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar.ejs') %>
+
+    <div class="content-container" id="content">
+        <div id="brand">
+            <img src="/images/casugol.png" alt="brand">
+        </div>
+
+                    <!-- Form for Sign In -->
+        <div class="sign-in">
+            <img src="/images/casugol.png" alt="sign in">
+            <form action="/sign-in" method="POST">
+                <input type="text" name="staffID" id="staffID" placeholder="Staff ID" required>
+                <input type="password" name="password" id="password" placeholder="Password" required>
+                <button type="submit">Sign In</button>
+            </form>
+
+            <%  if (error && error.length >0) {%>
+                <div class="alert alert-danger">
+                    <% error.forEach(function(err){%>
+                        <p><%=err%></p>
+                    <%});%>
+                </div>
+            <%}%>
+
+        </div>
+    </div>
+</body>
+</html>

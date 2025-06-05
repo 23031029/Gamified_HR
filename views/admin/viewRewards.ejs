@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>View Rewards - Admin</title>
+  <style>
+  .rewards-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+  }
+  .rewards-table th, .rewards-table td {
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+  }
+  .rewards-table th {
+    background-color: #f2f2f2;
+    font-weight: 600;
+  }
+  .rewards-table tr:last-child td {
+    border-bottom: none;
+  }
+  .rewards-table img {
+    max-width: 80px;
+    border-radius: 6px;
+  }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+
+  <div class="content-container" id="content">
+    <h2>Rewards:</h2>
+    <a href="/rewards/add" class="add-reward-button">Add New Reward</a>
+
+    <table class="rewards-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Name</th>
+          <th>Points</th>
+          <th>Stock</th>
+          <th>Description</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rewards.forEach(reward => { %>
+          <tr>
+            <td>
+              <img src="/images/<%= reward.image %>" alt="<%= reward.name %>">
+            </td>
+            <td><%= reward.name %></td>
+            <td><%= reward.points %></td>
+            <td><%= reward.stock %></td>
+            <td><%= reward.description %></td>
+            <td>
+              <a href="/rewards/edit/<%= reward.RewardID %>">Edit</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

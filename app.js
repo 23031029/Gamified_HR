@@ -10,6 +10,7 @@ const db = require('./db');
 
 //Controllers
 const serjiaControl= require('./controllers/serjiaController');
+const rewardsController = require('./controllers/rewardsController');
 
 //Middleware
 const {checkAuthentication, checkAdmin, checkUser} = require('./middleware/auth');
@@ -91,6 +92,19 @@ app.get('/admin/register', checkAdmin, serjiaControl.getRegister);
 app.post('/register', upload.single('profile'), validateReg, serjiaControl.register);
 app.get('/logout', serjiaControl.logout);
 
+//isabel routes
+//admin routes
+app.get('/rewards', rewardsController.viewRewards);
+app.get('/rewards/read/:id', rewardsController.readReward);
+app.get('/rewards/add', rewardsController.addRewardForm);
+app.post('/rewards/add', upload.single('image'), rewardsController.addReward);
+app.get('/rewards/edit/:id', rewardsController.editRewardForm);
+app.post('/rewards/edit/:id', upload.single('image'), rewardsController.editReward);
+//user routes
+app.get('/user/rewards', rewardsController.userRewards);
+app.get('/user/rewards/read/:id', rewardsController.readReward);
+app.get('/reward/:id', rewardsController.viewSingleReward);
+app.post('/claimReward/:id', rewardsController.claimReward);
 
 
 

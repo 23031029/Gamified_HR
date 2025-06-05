@@ -10,11 +10,12 @@ const db = require('./db');
 
 // Controllers
 const serjiaControl = require('./controllers/serjiaController');
-const nikiController = require('./controllers/nikiController'); // includes both user & admin logic
+const rewardsController = require('./controllers/rewardsController');
 
 // Middleware
 const { checkAuthentication, checkAdmin, checkUser } = require('./middleware/auth');
 const { validateReg, validateLogin } = require('./middleware/validation');
+
 
 // Multer config
 const storage = multer.diskStorage({
@@ -96,9 +97,24 @@ app.get('/user/profile',checkAuthentication, serjiaControl.getEditDetail);
 app.get('/user/change-password', serjiaControl.getChangePassword);
 app.post('/user/change-password', serjiaControl.postChangePassword);
 
+// Isabel's reward routes
+app.get('/rewards', rewardsController.viewRewards);
+app.get('/rewards/read/:id', rewardsController.readReward);
+app.get('/rewards/add', rewardsController.addRewardForm);
+app.post('/rewards/add', upload.single('image'), rewardsController.addReward);
+app.get('/rewards/edit/:id', rewardsController.editRewardForm);
+app.post('/rewards/edit/:id', upload.single('image'), rewardsController.editReward);
+// User reward routes
+app.get('/user/rewards', rewardsController.userRewards);
+app.get('/user/rewards/read/:id', rewardsController.readReward);
+app.get('/reward/:id', rewardsController.viewSingleReward);
+app.post('/claimReward/:id', rewardsController.claimReward);
+
+// Niki's user and admin leaderboard routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
+
 
 // Start server
 const PORT = process.env.PORT || 3000;

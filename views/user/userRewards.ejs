@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>View Rewards</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #EAEAE7 0%, #A3AEB1 100%);
+      min-height: 100vh;
+      color: #565F65;
+      line-height: 1.6;
+    }
+
+    .content-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    h2 {
+      font-size: 2.5em;
+      font-weight: 300;
+      color: #777067;
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    h2::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, #C6D537, #777067);
+      border-radius: 2px;
+    }
+
+    .flash-message {
+      margin: 20px 0;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 500;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .flash-message.error {
+      background: rgba(220, 53, 69, 0.1);
+      color: #721c24;
+      border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+
+    .flash-message.success {
+      background: rgba(198, 213, 55, 0.15);
+      color: #565F65;
+      border: 1px solid rgba(198, 213, 55, 0.3);
+    }
+
+    .reward-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 25px;
+      margin-top: 40px;
+    }
+
+    .reward-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+      gap: 20px;
+    }
+
+    .reward-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, #C6D537, #777067, #565F65);
+    }
+
+    .reward-card:hover {
+      transform: translateX(5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .reward-image {
+      flex-shrink: 0;
+      width: 120px;
+      height: 100px;
+    }
+
+    .reward-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .reward-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .reward-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .reward-card h3 {
+      margin: 0;
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #777067;
+    }
+
+    .reward-card p {
+      margin: 0;
+      color: #565F65;
+      font-weight: 500;
+      font-size: 0.9em;
+    }
+
+    .reward-card p strong {
+      color: #777067;
+    }
+
+    .reward-card a {
+      text-decoration: none;
+      color: #C6D537;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(198, 213, 55, 0.1);
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      font-size: 0.85em;
+    }
+
+    .reward-card a:hover {
+      background: rgba(198, 213, 55, 0.2);
+      transform: scale(1.05);
+    }
+
+    .reward-card form {
+      margin: 0;
+    }
+
+    .reward-card button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #C6D537, #A3AEB1);
+      color: white;
+      font-size: 0.85em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(198, 213, 55, 0.3);
+      white-space: nowrap;
+      min-width: 100px;
+    }
+
+    .reward-card button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(198, 213, 55, 0.4);
+      background: linear-gradient(135deg, #B8C730, #95A4A7);
+    }
+
+    .reward-card button:disabled {
+      background: linear-gradient(135deg, #A3AEB1, #777067);
+      cursor: not-allowed;
+      opacity: 0.6;
+      box-shadow: none;
+    }
+
+    .reward-card button:disabled:hover {
+      transform: none;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .content-container {
+        padding: 20px 15px;
+      }
+
+      h2 {
+        font-size: 2em;
+        margin-bottom: 30px;
+      }
+
+      .reward-list {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .reward-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+        padding: 20px;
+      }
+
+      .reward-image {
+        width: 100%;
+        max-width: 200px;
+        height: 120px;
+      }
+
+      .reward-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .reward-card button {
+        min-width: 120px;
+      }
+
+      .reward-card h3 {
+        font-size: 1.3em;
+      }
+
+      .reward-card p {
+        font-size: 1em;
+      }
+    }
+
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .reward-card {
+        gap: 15px;
+        padding: 18px;
+      }
+
+      .reward-image {
+        width: 100px;
+        height: 80px;
+      }
+
+      .reward-card h3 {
+        font-size: 1.1em;
+      }
+    }
+
+    /* Loading animation for images */
+    .reward-card img {
+      opacity: 0;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar.ejs') %>
+
+  <div class="content-container" id="content">
+    <h2>Rewards Collection</h2>
+
+    <!-- Flash Messages -->
+    <% if (messages && messages.error && messages.error.length > 0) { %>
+      <div class="flash-message error"><%= messages.error[0] %></div>
+    <% } %>
+    <% if (messages && messages.success && messages.success.length > 0) { %>
+      <div class="flash-message success"><%= messages.success[0] %></div>
+    <% } %>
+
+    <div class="reward-list">
+      <% rewards.forEach(reward => { %>
+        <div class="reward-card">
+          <div class="reward-image">
+            <img src="/images/<%= reward.image %>" alt="<%= reward.name %>" loading="lazy">
+          </div>
+          <div class="reward-content">
+            <h3><%= reward.name %></h3>
+            <p><strong>Points Required:</strong> <%= reward.points %></p>
+            <p><strong>Available:</strong> <%= reward.stock %> left</p>
+            <div class="reward-actions">
+              <a href="/rewards/read/<%= reward.RewardID %>">Learn More</a>
+              <form action="/claimReward/<%= reward.RewardID %>" method="POST" onsubmit="return confirm('Claim <%= reward.name %> for <%= reward.points %> points?');">
+                <button type="submit" <% if (reward.stock <= 0) { %>disabled<% } %>>
+                  <% if (reward.stock <= 0) { %>
+                    Out of Stock
+                  <% } else { %>
+                    Claim Reward
+                  <% } %>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</body>
+</html>

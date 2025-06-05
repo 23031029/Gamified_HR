@@ -373,7 +373,7 @@
 
     <!-- Header -->
     <header class="navbar-header">
-      <% if (staff) { %>
+      <% if (admin) { %>
         <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
           <i class="fas fa-bars"></i>
         </button>
@@ -381,32 +381,31 @@
       <img src="/images/logo.png" alt="Company Logo" class="logo">
     </header>
 
-    <!-- Sidebar (conditionally rendered) -->
-    <% if (staff) { %>
+    <% if (admin) { %>
       <nav class="sidebar collapsed" id="sidebar">
-        <div class="sidebar-header horizontal">
-          <img src="/images/<%= staff.profile_image %>" alt="<%= staff.name %>" class="profile-image">
-          <div class="profile-info">
-            <h3 class="staff-name"><%= staff.name %></h3>
-            <p class="staff-department"><%= staff.department_name %> Department</p>
-          </div>
+        <div class="sidebar-header">
+          <img src="/images/<%= admin.profile_image %>" alt="<%= admin.name %>" class="profile-image">
+          <div class="staff-name"><%= admin.name %></div>
+          <p class="staff-department"><%= admin.department_name %> Department</p>
         </div>
+
         <div class="nav-menu">
           <ul>
             <li class="nav-item">
-              <a href="/user/dashboard" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+              <a href="/admin/dashboard" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link"><i class="fas fa-gift"></i> Rewards</a>
+              <a href="/admin/programs" class="nav-link"><i class="fas fa-calendar-alt"></i> Programs</a>
             </li>
             <li class="nav-item">
-              <a href="/user/leaderboard" class="nav-link"><i class="fas fa-trophy"></i> Leaderboard</a>
+              <a href="/admin/leaderboard" class="nav-link"><i class="fas fa-trophy"></i> Leaderboard</a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link"><i class="fas fa-calendar-alt"></i> Program</a>
+              <a href="/admin/rewards" class="nav-link"><i class="fas fa-gift"></i> Rewards</a>
             </li>
           </ul>
         </div>
+
         <div class="logout-section">
           <a href="/logout" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>

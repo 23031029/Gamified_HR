@@ -8,50 +8,42 @@ const path = require('path');
 
 const db = require('./db');
 
-//Controllers
-const serjiaControl= require('./controllers/serjiaController');
+// Controllers
+const serjiaControl = require('./controllers/serjiaController');
+const nikiController = require('./controllers/nikiController'); // includes both user & admin logic
 
-//Middleware
-const {checkAuthentication, checkAdmin, checkUser} = require('./middleware/auth');
-const {validateReg, validateLogin} = require('./middleware/validation');
+// Middleware
+const { checkAuthentication, checkAdmin, checkUser } = require('./middleware/auth');
+const { validateReg, validateLogin } = require('./middleware/validation');
 
-// Set up multer for file uploads
+// Multer config
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'public/images'); // Directory to save uploaded files
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    }
+    destination: (req, file, cb) => cb(null, 'public/images'),
+    filename: (req, file, cb) => cb(null, file.originalname)
 });
-
 const upload = multer({ storage: storage });
 
-// Set up view engine
+// View engine and static
 app.set('view engine', 'ejs');
-//  enable static files
 app.use(express.static('public'));
-// enable form processing
-app.use(express.urlencoded({
-    extended: false
-}));
-// Set up static directory
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-//Code for Session Middleware  
+// Session setup
 app.use(session({
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
-    // Session expires after 1 week of inactivity
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 }
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 1 week
 }));
 
+// Load user/admin into res.locals
 app.use((req, res, next) => {
   console.log("Session staff:", req.session.staff);
 
   if (!req.session.staff) {
     res.locals.staff = null;
+    res.locals.admin = null;
     return next();
   }
 
@@ -70,33 +62,43 @@ app.use((req, res, next) => {
     console.log("DB Results:", results);
 
     if (results.length > 0) {
-      res.locals.staff = results[0];
+      const user = results[0];
+      if (user.role === 'admin') {
+        res.locals.admin = user;
+        res.locals.staff = null;
+      } else {
+        res.locals.staff = user;
+        res.locals.admin = null;
+      }
     } else {
       res.locals.staff = null;
+      res.locals.admin = null;
     }
 
     console.log("res.locals.staff:", res.locals.staff);
+    console.log("res.locals.admin:", res.locals.admin);
     next();
   });
 });
 
+// Flash
+app.use(flash());
 
-// Use connect-flash middleware
-app.use(flash()); // Use flash middleware after session middleware
-
-// Define routes here
+// Public routes
 app.get('/', serjiaControl.getSignIn);
 app.post('/sign-in', validateLogin, serjiaControl.login);
 app.get('/admin/register', checkAdmin, serjiaControl.getRegister);
 app.post('/register', upload.single('profile'), validateReg, serjiaControl.register);
 app.get('/logout', serjiaControl.logout);
 
+// User routes
+app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
+app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
 
+// Admin routes (also in nikiController)
+app.get('/admin/dashboard', checkAuthentication, checkAdmin, nikiController.getAdminDashboard);
+app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
 
-
-
-//Start express servers
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}/`));
-
-

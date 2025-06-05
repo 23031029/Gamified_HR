@@ -89,14 +89,15 @@ app.get('/', serjiaControl.getSignIn);
 app.post('/sign-in', validateLogin, serjiaControl.login);
 app.get('/admin/register', checkAdmin, serjiaControl.getRegister);
 app.post('/register', upload.single('profile'), validateReg, serjiaControl.register);
+app.get('/admin/dashboard', checkAdmin, checkAuthentication, serjiaControl.getAdmin);
 app.get('/logout', serjiaControl.logout);
+app.post('/status/:staffID', serjiaControl.updateStatus);
+app.get('/user/profile',checkAuthentication, serjiaControl.getEditDetail);
+app.get('/user/change-password', serjiaControl.getChangePassword);
+app.post('/user/change-password', serjiaControl.postChangePassword);
 
-// User routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
-
-// Admin routes (also in nikiController)
-app.get('/admin/dashboard', checkAuthentication, checkAdmin, nikiController.getAdminDashboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
 
 // Start server

@@ -417,12 +417,12 @@
         <li class="nav-item">
           <% if (staff.role == "admin") { %>
             <a href="/admin/rewards" class="nav-link<%= currentPath === '/admin/rewards' ? ' active' : '' %>">
-              <i class="fas fa-tachometer-alt"></i>
+              <i class="fas fa-gift"></i>
               Rewards
             </a>
           <% } else { %>
             <a href="/user/rewards" class="nav-link<%= currentPath === '/user/rewards' ? ' active' : '' %>">
-              <i class="fas fa-tachometer-alt"></i>
+              <i class="fas fa-gift"></i>
               Rewards
             </a>
           <% } %>
@@ -430,21 +430,28 @@
         <li class="nav-item">
            <% if (staff.role == "admin") { %>
             <a href="/admin/leaderboard" class="nav-link<%= currentPath === '/admin/leaderboard' ? ' active' : '' %>">
-              <i class="fas fa-tachometer-alt"></i>
+              <i class="fas fa-trophy"></i>
               Leaderboard
             </a>
           <% } else { %>
             <a href="/user/leaderboard" class="nav-link<%= currentPath === '/user/leaderboard' ? ' active' : '' %>">
-              <i class="fas fa-tachometer-alt"></i>
+              <i class="fas fa-trophy"></i>
               Leaderboard
             </a>
           <% } %>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <% if (staff.role == "admin") { %>
+          <a href="/admin/programs" class="nav-link<%= currentPath === '/admin/programs' ? ' active' : '' %>">
             <i class="fas fa-calendar-alt"></i>
             Program
           </a>
+          <% } else { %>
+            <a href="/user/programs" class="nav-link<%= currentPath === '/user/programs' ? ' active' : '' %>">
+              <i class="fas fa-calendar-alt"></i>
+              Program
+            </a>
+          <% } %>
         </li>
       </ul>
     </div>

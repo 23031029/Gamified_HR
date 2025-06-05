@@ -2,8 +2,8 @@ const db = require('../db');
 
 exports.getSignIn= (req, res)=>{
     res.render('user/index', {
-        message: req.flash('success'),
-        error: req.flash('error'),
+        message: req.flash('successLogin'),
+        error: req.flash('errorLogin'),
         currentPath: req.path
     });
 };
@@ -55,13 +55,13 @@ exports.login=(req,res)=>{
 
         if (results.length>0){
             req.session.staff= results[0];
-            req.flash('success', 'Login success');
+            req.flash('successLogin', 'Login success');
             if(req.session.staff.role=='user')
             res.redirect('/user/dashboard');
             else if(req.session.staff.role=='admin')
             res.redirect('/admin/dashboard');
         } else {
-            req.flash('error', 'Invalid email or password.');
+            req.flash('errorLogin', 'Invalid email or password.');
             res.redirect('/');
         }
     });
@@ -206,7 +206,16 @@ exports.getAdmin = (req, res) => {
         month;
     `
 
-    const person_details= "SELECT staff.*, department.name as department_name  FROM staff INNER join department on department.departmentID= staff.department";
+    const person_details= `SELECT 
+  staff.*, 
+  department.name AS department_name  
+FROM 
+  staff 
+INNER JOIN 
+  department ON department.departmentID = staff.department
+ORDER BY 
+  status ASC, staffID ASC;
+`;
 
     db.query(staffQuery, (err, staffResult) => {
         if (err) {
@@ -266,13 +275,13 @@ exports.getAdmin = (req, res) => {
                                 }
 
                                 if (result.length === 0) {
-                                    req.flash('error', 'No staff records found.');
+                                    req.flash('errorStaff', 'No staff records found.');
                                 }
 
 
                                     res.render('admin/dashboard', {
-                                    message: req.flash('success'),
-                                    error: req.flash('error'),
+                                    message: req.flash('successStaff'),
+                                    error: req.flash('errorStaff'),
                                     currentPath: req.path,
                                     staffCount,
                                     rewardCount,
@@ -367,8 +376,8 @@ exports.getEditDetail = (req, res) => {
 
 exports.getChangePassword = (req, res) => {
     res.render('user/changePassword', {
-        error: req.flash('error'),
-        success: req.flash('success'),
+        error: req.flash('errorChange'),
+        success: req.flash('successChange'),
         currentPath: req.path
     });
 };
@@ -378,17 +387,17 @@ exports.postChangePassword = (req, res) => {
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
     if (!staffID) {
-        req.flash('error', 'Session expired. Please log in again.');
+        req.flash('errorChange', 'Session expired. Please log in again.');
         return res.redirect('/user/change-password');
     }
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-        req.flash('error', 'All fields are required.');
+        req.flash('errorChange', 'All fields are required.');
         return res.redirect('/user/change-password');
     }
 
     if (newPassword !== confirmPassword) {
-        req.flash('error', 'New passwords do not match.');
+        req.flash('errorChange', 'New passwords do not match.');
         return res.redirect('/user/change-password');
     }
 
@@ -396,11 +405,11 @@ exports.postChangePassword = (req, res) => {
     const checkSql = "SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?)";
     db.query(checkSql, [staffID, currentPassword], (err, results) => {
         if (err) {
-            req.flash('error', 'Database error.');
+            req.flash('errorChange', 'Database error.');
             return res.redirect('/user/change-password');
         }
         if (results.length === 0) {
-            req.flash('error', 'Current password is incorrect.');
+            req.flash('errorChange', 'Current password is incorrect.');
             return res.redirect('/user/change-password');
         }
 
@@ -408,10 +417,10 @@ exports.postChangePassword = (req, res) => {
         const updateSql = "UPDATE staff SET password = SHA1(?) WHERE staffID = ?";
         db.query(updateSql, [newPassword, staffID], (err2) => {
             if (err2) {
-                req.flash('error', 'Failed to update password.');
+                req.flash('errorChange', 'Failed to update password.');
                 return res.redirect('/user/change-password');
             }
-            req.flash('success', 'Password updated successfully.');
+            req.flash('successChange', 'Password updated successfully.');
             res.redirect('/user/profile');
         });
     });

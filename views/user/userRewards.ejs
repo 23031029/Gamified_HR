@@ -289,18 +289,18 @@
     <h2>Rewards Collection</h2>
 
     <!-- Flash Messages -->
-    <% if (messages && messages.error && messages.error.length > 0) { %>
-      <div class="flash-message error"><%= messages.error[0] %></div>
+    <% if (messageR && messageR.error && messageR.error.length > 0) { %>
+      <div class="flash-message error"><%= messageR.error[0] %></div>
     <% } %>
-    <% if (messages && messages.success && messages.success.length > 0) { %>
-      <div class="flash-message success"><%= messages.success[0] %></div>
+    <% if (messageR && messageR.success && messageR.success.length > 0) { %>
+      <div class="flash-message success"><%= messageR.success[0] %></div>
     <% } %>
 
     <div class="reward-list">
       <% rewards.forEach(reward => { %>
         <div class="reward-card">
           <div class="reward-image">
-            <img src="images/<%= reward.image %>" alt="<%= reward.image %>" loading="lazy">
+            <img src="/images/<%= reward.image %>" alt="<%= reward.image %>" loading="lazy">
           </div>
           <div class="reward-content">
             <h3><%= reward.name %></h3>

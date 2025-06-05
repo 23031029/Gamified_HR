@@ -24,7 +24,7 @@ exports.userRewards = (req, res) => {
         }
         res.render('user/userRewards', {
             rewards: results,
-            messages: {
+            messageR: {
                 success: req.flash('success'),
                 error: req.flash('error')
             },
@@ -147,7 +147,7 @@ exports.viewSingleReward = (req, res) => {
 
         res.render('user/readRewards', {
             reward: results[0],
-            messages: {
+            messageR: {
                 success: req.flash('success'),
                 error: req.flash('error')
             },
@@ -159,10 +159,17 @@ exports.viewSingleReward = (req, res) => {
 // Claim a reward and decrease its stock
 exports.claimReward = (req, res) => {
     const RewardID = req.params.id;
+    const staffID = req.session.staff?.staffID;
 
-    // Use correct table and column names
-    const checkStockQuery = 'SELECT stock FROM Reward WHERE RewardID = ?';
+    if (!staffID) {
+        req.flash('error', 'Session expired. Please log in again.');
+        return res.redirect('/user/rewards');
+    }
+
+    const checkStockQuery = 'SELECT stock, points FROM Reward WHERE RewardID = ?';
     const updateStockQuery = 'UPDATE Reward SET stock = stock - 1 WHERE RewardID = ?';
+    const insertRedeemQuery = 'INSERT INTO Redeem (staffID, RewardID, Redeem_Date) VALUES (?, ?, CURDATE())';
+    const updatePointsQuery = 'UPDATE Staff SET total_point = total_point - ? WHERE staffID = ?';
 
     db.query(checkStockQuery, [RewardID], (err, results) => {
         if (err) {
@@ -177,15 +184,32 @@ exports.claimReward = (req, res) => {
         }
 
         const stock = results[0].stock;
+        const points = results[0].points;
         if (stock > 0) {
             db.query(updateStockQuery, [RewardID], (updateErr) => {
                 if (updateErr) {
                     console.error('Error updating stock:', updateErr);
                     req.flash('error', 'Failed to claim reward.');
-                } else {
-                    req.flash('success', 'Reward claimed successfully!');
+                    return res.redirect('/user/rewards');
                 }
-                return res.redirect('/user/rewards');
+                // Insert into Redeem table
+                db.query(insertRedeemQuery, [staffID, RewardID], (redeemErr) => {
+                    if (redeemErr) {
+                        console.error('Error inserting redeem record:', redeemErr);
+                        req.flash('error', 'Failed to record redemption.');
+                        return res.redirect('/user/rewards');
+                    }
+                    // Deduct points from staff
+                    db.query(updatePointsQuery, [points, staffID], (pointsErr) => {
+                        if (pointsErr) {
+                            console.error('Error updating points:', pointsErr);
+                            req.flash('error', 'Failed to deduct points.');
+                            return res.redirect('/user/rewards');
+                        }
+                        req.flash('success', 'Reward claimed successfully!');
+                        return res.redirect('/user/rewards');
+                    });
+                });
             });
         } else {
             req.flash('error', 'Reward is out of stock.');

@@ -58,7 +58,7 @@ CREATE TABLE Reward (
 );
 
 INSERT INTO Reward (RewardID, name, description, points, stock, image) VALUES
-('R001', 'Coffee Voucher', 'Redeemable at any Starbucks outlet', 100, 10, 'starbucks.png'),
+('R001', 'Coffee Voucher', 'Redeemable at any Starbucks outlet', 100, 10, 'starbucks.jpg'),
 ('R002', 'Free Macdonald Meal', '1 Mcspicy Meal with coke', 150, 5, 'mcd.png'),
 ('R003', 'Spa Voucher', 'Ful Body Massage for 2 hours', 500, 2, 'spa.png'),
 ('R004', 'Company Mug', 'Limited edition mug with company logo', 50, 20, 'casugolMug.png');

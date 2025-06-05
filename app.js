@@ -12,10 +12,11 @@ const db = require('./db');
 const serjiaControl = require('./controllers/serjiaController');
 const isabelControl = require('./controllers/isabelController');
 const nikiController= require('./controllers/nikiController');
+const alyshaControl= require('./controllers/alyshaController')
 
 // Middleware
 const { checkAuthentication, checkAdmin, checkUser } = require('./middleware/auth');
-const { validateReg, validateLogin } = require('./middleware/validation');
+const { validateReg, validateLogin, validatePasswordChange } = require('./middleware/validation');
 
 
 // Multer config
@@ -90,33 +91,55 @@ app.use(flash()); // Use flash middleware after session middleware
 // Public routes
 app.get('/', serjiaControl.getSignIn);
 app.post('/sign-in', validateLogin, serjiaControl.login);
-app.get('/admin/register', checkAdmin, serjiaControl.getRegister);
-app.post('/register', upload.single('profile'), validateReg, serjiaControl.register);
-app.get('/admin/dashboard', checkAdmin, checkAuthentication, serjiaControl.getAdmin);
-app.get('/logout', serjiaControl.logout);
-app.post('/status/:staffID', serjiaControl.updateStatus);
-app.get('/user/profile',checkAuthentication, serjiaControl.getEditDetail);
-app.get('/user/change-password', serjiaControl.getChangePassword);
-app.post('/user/change-password', serjiaControl.postChangePassword);
 
-// Isabel's reward routes
-app.get('/admin/rewards', isabelControl.viewRewards);
-app.get('/admin/rewards/read/:id', isabelControl.readReward);
-app.get('/admin/rewards/add', isabelControl.addRewardForm);
-app.post('/rewards/add', upload.single('image'), isabelControl.addReward);
-app.get('/admin/rewards/edit/:id', isabelControl.editRewardForm);
-app.post('/rewards/edit/:id', upload.single('image'), isabelControl.editReward);
-// User reward routes
-app.get('/user/rewards', isabelControl.userRewards);
-app.get('/rewards/read/:id', isabelControl.readReward);
-app.get('/reward/:id', isabelControl.viewSingleReward);
-app.post('/claimReward/:id', isabelControl.claimReward);
+// Registration (admin only)
+app.get('/admin/register', checkAuthentication, checkAdmin, serjiaControl.getRegister);
+app.post('/register', checkAuthentication, checkAdmin, upload.single('profile'), validateReg, serjiaControl.register);
+
+// Admin dashboard
+app.get('/admin/dashboard', checkAuthentication, checkAdmin, serjiaControl.getAdmin);
+
+// Logout (any logged-in user)
+app.get('/logout', checkAuthentication, serjiaControl.logout);
+
+// Update staff status (admin only)
+app.post('/status/:staffID', checkAuthentication, checkAdmin, serjiaControl.updateStatus);
+
+// User profile and password (user only)
+app.get('/user/profile', checkAuthentication, serjiaControl.getEditDetail);
+app.get('/user/change-password', checkAuthentication, serjiaControl.getChangePassword);
+app.post('/user/change-password', checkAuthentication, validatePasswordChange, serjiaControl.postChangePassword);
+
+// Isabel's reward routes (admin only)
+app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);
+app.get('/admin/rewards/read/:id', checkAuthentication, checkAdmin, isabelControl.readReward);
+app.get('/admin/rewards/add', checkAuthentication, checkAdmin, isabelControl.addRewardForm);
+app.post('/rewards/add', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.addReward);
+app.get('/rewards/edit/:id', checkAuthentication, checkAdmin, isabelControl.editRewardForm);
+app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.editReward);
+
+// User reward routes (user only)
+app.get('/user/rewards', checkAuthentication, checkUser, isabelControl.userRewards);
+app.get('/rewards/read/:id', checkAuthentication, checkUser, isabelControl.readReward);
+app.get('/reward/:id', checkAuthentication, checkUser, isabelControl.viewSingleReward);
+app.post('/claimReward/:id', checkAuthentication, checkUser, isabelControl.claimReward);
 
 // Niki's user and admin leaderboard routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
 
+// Alysha's program routes
+app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
+app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
+
+app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
+
+app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);
+app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_code'), alyshaControl.postAddProgram);
+
+app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
+app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
 
 // Start server
 const PORT = process.env.PORT || 3000;

@@ -45,7 +45,37 @@ const validateLogin= (req,res,next)=>{
     next();
 };
 
+const validatePasswordChange = (req, res, next) => {
+    const { newPassword, confirmPassword } = req.body;
+    let errors = [];
+
+    if (!newPassword || !confirmPassword) {
+        errors.push('All password fields are required.');
+    }
+    if (newPassword !== confirmPassword) {
+        errors.push('New passwords do not match.');
+    }
+    if (newPassword) {
+        if (newPassword.length < 6) {
+            errors.push('Password should be at least 6 characters long.');
+        }
+        if (!/\d/.test(newPassword)) {
+            errors.push('Password must contain at least one number.');
+        }
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
+            errors.push('Password must contain at least one special character (e.g., !@#$%^&*).');
+        }
+    }
+
+    if (errors.length > 0) {
+        req.flash('errorChange', errors.join(' '));
+        return res.redirect('/user/change-password');
+    }
+    next();
+};
+
 module.exports = {
     validateReg,
-    validateLogin
+    validateLogin,
+    validatePasswordChange
 };

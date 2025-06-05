@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Leaderboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f6f6f6;
+      margin: 0;
+      padding-top: 100px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .title {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #333;
+    }
+
+    .filter {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .filter a {
+      display: inline-block;
+      margin: 0 10px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      background-color: #e0e0e0;
+      color: #333;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    .filter a.active {
+      background-color: #A3AEB1;
+      color: white;
+    }
+
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    .leaderboard-table thead {
+      background-color: #565F63;
+      color: #fff;
+    }
+
+    .leaderboard-table th, .leaderboard-table td {
+      padding: 16px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .leaderboard-table tr:hover {
+      background-color: #f0f0f0;
+    }
+
+    .profile-img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ccc;
+    }
+
+    .name {
+      font-weight: 600;
+    }
+
+    .points {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #60A5FA;
+    }
+
+    .gold-row {
+      background-color: #ffd70022;
+      font-weight: bold;
+    }
+
+    .silver-row {
+      background-color: #c0c0c022;
+      font-weight: bold;
+    }
+
+    .bronze-row {
+      background-color: #cd7f3222;
+      font-weight: bold;
+    }
+
+    .gold-row td {
+      font-size: 1.3rem;
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    .animate {
+      animation: popIn 0.6s ease-in-out;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .action-links a,
+    .action-links form {
+      display: inline;
+      margin-right: 8px;
+    }
+
+    .add-entry-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #60A5FA;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <%- include('../../views/partials/adminnavbar.ejs') %>
+  <div class="container">
+    <div class="title">🏆 User Leaderboard</div>
+
+    <div class="filter">
+      <a href="/admin/leaderboard?filter=all" class="<%= filter === 'all' ? 'active' : '' %>">All</a>
+      <a href="/admin/leaderboard?filter=department" class="<%= filter === 'department' ? 'active' : '' %>">My Department</a>
+    </div>
+
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Profile</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Total Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% leaderboard.forEach((user, index) => { %>
+          <tr class="<%= index === 0 ? 'gold-row animate' : index === 1 ? 'silver-row animate' : index === 2 ? 'bronze-row animate' : '' %>">
+            <td class="rank">
+              <%= index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1 %>
+            </td>
+            <td><img src="/images/<%= user.profile_image %>" class="profile-img"></td>
+            <td class="name"><%= user.name %></td>
+            <td><%= user.department_name %></td>
+            <td class="points"><%= user.total_point %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div class="title">📜 Leaderboard History</div>
+
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Half</th>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Reward</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% history.forEach(entry => { %>
+          <tr>
+            <td><%= entry.year %></td>
+            <td><%= entry.half %></td>
+            <td><%= ['🥇','🥈','🥉'][entry.rank_position - 1] %></td>
+            <td><%= entry.name %></td>
+            <td><%= entry.department_name %></td>
+            <td><%= entry.reward %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

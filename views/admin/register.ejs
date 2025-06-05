@@ -111,6 +111,16 @@
     <div class="register">
       <h1>Register Staff</h1>
 
+       <% if (regErrors && regErrors.length > 0) { %>
+        <div class="alert" style="color: red;">
+          <ul>
+            <% regErrors.forEach(function(err) { %>
+              <li><%= err %></li>
+            <% }); %>
+          </ul>
+        </div>
+      <% } %>
+
       <form action="/register" method="POST" enctype="multipart/form-data" id="registrationForm">
         <div class="form-group">
           <label for="profile">Staff Profile</label>
@@ -118,18 +128,49 @@
         </div>
 
         <div class="form-group">
-          <label for="staffID">Staff ID</label>
-          <input type="text" class="form-control" name="staffID" value="<%= regData.staffID || '' %>"/>
+        <label for="staffID">Staff ID</label>
+        <input type="text" class="form-control" name="staffID" id="staffID"
+              value="<%= regData.staffID || nextStaffID %>" readonly />
+      </div>
+
+
+        <div class="form-group">
+          <label for="first">First Name</label>
+          <input type="text" class="form-control" name="first" value="<%= regData.first || '' %>"/>
         </div>
 
         <div class="form-group">
-          <label for="name">Full Name</label>
-          <input type="text" class="form-control" name="name" value="<%= regData.name || '' %>"/>
+          <label for="last">Last Name</label>
+          <input type="text" class="form-control" name="last" value="<%= regData.last || '' %>"/>
+        </div>
+
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select class="form-control" name="gender" id="gender" required>
+            <option hidden value="">Select gender</option>
+            <option value="M" <%= regData.gender === 'M' ? 'selected' : '' %>>Male</option>
+            <option value="F" <%= regData.gender === 'F' ? 'selected' : '' %>>Female</option>
+          </select>
         </div>
 
         <div class="form-group">
           <label for="email">Email</label>
           <input type="email" class="form-control" name="email" value="<%= regData.email || '' %>"/>
+        </div>
+
+        <div class="form-group">
+          <label for="address">Home Address</label>
+          <textarea class="form-control" name="address" id="address" rows="2"><%= regData.address || '' %></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input type="tel" class="form-control" name="phone" id="phone" value="<%= regData.phone || '' %>"/>
+        </div>
+
+        <div class="form-group">
+          <label for="dob">Date of Birth</label>
+          <input type="date" class="form-control" name="dob" id="dob" value="<%= regData.dob || '' %>"/>
         </div>
 
         <div class="form-group">
@@ -148,16 +189,6 @@
           <label for="password">Password</label>
           <input type="password" class="form-control" name="password" id="password" required>
         </div>
-
-        <% if (regErrors && regErrors.length > 0) { %>
-        <div class="alert" style="color: red;">
-          <ul>
-            <% regErrors.forEach(function(err) { %>
-              <li><%= err %></li>
-            <% }); %>
-          </ul>
-        </div>
-      <% } %>
 
         <div class="form-group">
           <label for="role">Role</label>

@@ -3,32 +3,47 @@ const db = require('../db');
 exports.getSignIn= (req, res)=>{
     res.render('user/index', {
         message: req.flash('success'),
-        error: req.flash('error')
+        error: req.flash('error'),
+        currentPath: req.path
     });
 };
 
 exports.getRegister = (req, res) => {
-    const getDepartments = `SELECT * FROM department`;
+  const getDepartments = `SELECT * FROM department`;
+  const getLastID = `SELECT staffID FROM staff ORDER BY staffID DESC LIMIT 1`;
 
-    db.query(getDepartments, (err, departments) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).send('Database error');
-        }
+  db.query(getDepartments, (err, departments) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).send('Database error');
+    }
 
-        const regErrors = req.flash('regErrors');
-        const regData = req.flash('regData')[0] || {};
+    db.query(getLastID, (err, result) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).send('Database error');
+      }
 
-        res.render('admin/register', {
-            department: departments,
-            regData,
-            regErrors
-        });
+      let nextStaffID = 'S001';
+      if (result.length > 0) {
+        const lastID = result[0].staffID;
+        const num = parseInt(lastID.substring(1)) + 1;
+        nextStaffID = 'S' + String(num).padStart(3, '0');
+      }
+
+      const regErrors = req.flash('regErrors');
+      const regData = req.flash('regData')[0] || {};
+
+      res.render('admin/register', {
+        department: departments,
+        regData,
+        regErrors,
+        currentPath: req.path,
+        nextStaffID // pass to view
+      });
     });
+  });
 };
-
-
-
 
 exports.login=(req,res)=>{
     const {staffID, password}= req.body;
@@ -53,36 +68,31 @@ exports.login=(req,res)=>{
 };
 
 exports.register = (req, res) => {
-    const { staffID, name, email, password, role, department } = req.body;
+    const { first, last, email, password, role, department, address, phone, dob, gender } = req.body;
     let profile = 'default.jpg';
-    
     if (req.file) {
         profile = req.file.filename;
     }
 
-    const sql = `INSERT INTO staff 
-    (staffID, name, email, password, role, department, date_join, status, total_point, profile_image) 
-    VALUES (?, ?, ?, SHA1(?), ?, ?, CURDATE(), 'Active', 0, ?)`;
+    const getLatestStaffID = `SELECT staffID FROM staff ORDER BY staffID DESC LIMIT 1`;
 
-    const checkStaffID = `SELECT * FROM staff WHERE staffID = ?`;
-    const checkEmail = `SELECT * FROM staff WHERE email = ?`;
-
-    // Check if Staff ID already exists
-    db.query(checkStaffID, [staffID], (err, result) => {
+    db.query(getLatestStaffID, (err, result) => {
         if (err) {
             console.error(err);
-            req.flash('error', 'Error checking Staff ID');
+            req.flash('error', 'Error generating Staff ID');
             req.flash('formData', req.body);
             return res.redirect('/admin/register');
         }
-        
+
+        let newStaffID = 'S001';
         if (result.length > 0) {
-            req.flash('error', 'Staff ID already exists');
-            req.flash('formData', req.body);
-            return res.redirect('/admin/register');
+            const lastID = result[0].staffID;
+            const num = parseInt(lastID.substring(1)) + 1;
+            newStaffID = 'S' + String(num).padStart(3, '0');
         }
-        
-        // Check if email already exists
+
+        const checkEmail = `SELECT * FROM staff WHERE email = ?`;
+
         db.query(checkEmail, [email], (err, emailResult) => {
             if (err) {
                 console.error(err);
@@ -90,28 +100,37 @@ exports.register = (req, res) => {
                 req.flash('formData', req.body);
                 return res.redirect('/admin/register');
             }
-            
+
             if (emailResult.length > 0) {
                 req.flash('error', 'Email address is already registered');
                 req.flash('formData', req.body);
                 return res.redirect('/admin/register');
             }
-            
-            // Both Staff ID and email are available, proceed with registration
-            db.query(sql, [staffID, name, email, password, role, department, profile], (err, result) => {
-                if (err) {
-                    console.error(err);
-                    req.flash('error', 'Error registering user');
-                    req.flash('formData', req.body);
-                    return res.redirect('/admin/register');
+
+            // Updated insert statement to include address, phone, dob
+            const insertSql = `INSERT INTO staff 
+                (staffID, first_name, last_name, email, password, role, department, home_address, phone_number, dob, date_join, status, total_point, profile_image, gender) 
+                VALUES (?, ?, ?, ?, SHA1(?), ?, ?, ?, ?, ?, CURDATE(), 'Active', 0, ?, ?)`;
+
+            db.query(
+                insertSql,
+                [newStaffID, first, last, email, password, role, department, address, phone, dob, profile, gender],
+                (err, result) => {
+                    if (err) {
+                        console.error(err);
+                        req.flash('error', 'Error registering user');
+                        req.flash('formData', req.body);
+                        return res.redirect('/admin/register');
+                    }
+
+                    req.flash('success', 'User registered successfully');
+                    res.redirect('/admin/dashboard');
                 }
-                
-                req.flash('success', 'User registered successfully');
-                res.redirect('/admin/dashboard');
-            });
+            );
         });
     });
 };
+
 
 exports.logout= (req, res)=>{
     req.session.destroy((err)=>{
@@ -121,3 +140,279 @@ exports.logout= (req, res)=>{
           res.redirect('/'); 
     })
 }
+
+exports.getAdmin = (req, res) => {
+    const staffQuery = `SELECT COUNT(*) AS staffCount FROM staff WHERE status= "Active"`;
+    const rewardQuery = "SELECT COUNT(*) AS rewardCount FROM reward";
+    const programQuery = "SELECT COUNT(*) as programCount  FROM program WHERE current_date() < end_date";
+
+    const popular_program = `
+                SELECT 
+            program.title, 
+            ROUND(AVG(pf.rating), 2) AS average_rating
+        FROM 
+            program_feedback AS pf
+        INNER JOIN 
+            program ON program.programID = pf.ProgramID
+        GROUP BY 
+            program.title;
+
+    `;
+
+    const popular_reward = `
+        SELECT 
+            reward.name AS name,
+            COUNT(redeem.RewardID) AS times_redeemed
+        FROM 
+            redeem
+        INNER JOIN 
+            reward ON redeem.RewardID = reward.RewardID
+        GROUP BY 
+            reward.RewardID, reward.name
+        ORDER BY 
+            times_redeemed DESC;
+    `;
+
+    const department_active = `
+        SELECT 
+            d.name AS department_name,
+            COUNT(sp.participantID) AS total_participations
+        FROM 
+            staff_program sp
+        JOIN 
+            Staff s ON sp.staffID = s.staffID
+        JOIN 
+            Department d ON s.department = d.departmentID
+        WHERE 
+            MONTH(sp.completed_date) = MONTH(CURDATE()) 
+            AND YEAR(sp.completed_date) = YEAR(CURDATE())
+        GROUP BY 
+            d.departmentID, d.name
+        ORDER BY 
+            total_participations DESC;
+    `;
+
+    const monthly_participant= `
+    SELECT 
+    DATE_FORMAT(completed_date, '%Y-%m') AS month,
+    COUNT(*) AS completed_count
+    FROM 
+        staff_program
+    WHERE 
+        completed_date IS NOT NULL
+    GROUP BY 
+        month
+    ORDER BY 
+        month;
+    `
+
+    const person_details= "SELECT staff.*, department.name as department_name  FROM staff INNER join department on department.departmentID= staff.department";
+
+    db.query(staffQuery, (err, staffResult) => {
+        if (err) {
+            console.error(err);
+            req.flash('error', 'Error fetching staff count');
+            return res.redirect('/admin');
+        }
+
+        db.query(rewardQuery, (err, rewardResult) => {
+            if (err) {
+                console.error(err);
+                req.flash('error', 'Error fetching reward count');
+                return res.redirect('/admin');
+            }
+
+            db.query(programQuery, (err, programResult) => {
+                if (err) {
+                    console.error(err);
+                    req.flash('error', 'Error fetching program count');
+                    return res.redirect('/admin');
+                }
+
+                const staffCount = staffResult[0].staffCount;
+                const programCount = programResult[0].programCount;
+                const rewardCount = rewardResult[0].rewardCount;
+               
+
+                db.query(popular_program, (err1, result1) => {
+                    if (err1) throw err1;
+
+                    const programLabels = result1.map(row => row.title);
+                    const programData = result1.map(row => row.average_rating);
+
+                    db.query(popular_reward, (err2, result2) => {
+                        if (err2) throw err2;
+
+                        const rewardLabels = result2.map(row => row.name);
+                        const rewardData = result2.map(row => row.times_redeemed);
+
+                        db.query(department_active, (err3, result3) => {
+                            if (err3) throw err3;
+
+                            const activeLabel = result3.map(row => row.department_name);
+                            const activeData = result3.map(row => row.total_participations);
+
+                            db.query(monthly_participant, (err4, result4) => {
+                                if (err4) throw err4;
+
+                                const monthLabels = result4.map(row => row.month);
+                                const monthData = result4.map(row => row.completed_count);
+
+                                db.query(person_details, (err,result)=>{
+
+                                    if (err) {
+                                    console.error('Database error:', err);
+                                    return res.status(500).send('Database error');
+                                }
+
+                                if (result.length === 0) {
+                                    req.flash('error', 'No staff records found.');
+                                }
+
+
+                                    res.render('admin/dashboard', {
+                                    message: req.flash('success'),
+                                    error: req.flash('error'),
+                                    currentPath: req.path,
+                                    staffCount,
+                                    rewardCount,
+                                    programCount,
+                                    programLabels,
+                                    programData,
+                                    rewardLabels,
+                                    rewardData,
+                                    activeLabel,
+                                    activeData,
+                                    monthLabels,
+                                    monthData,
+                                    person: result
+                                })
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+};
+
+
+exports.updateStatus = (req, res) => {
+    const { staffID } = req.params;
+    const { status } = req.body;
+
+    const update_Status = "UPDATE staff SET status = ? WHERE staffID = ?";
+
+    db.query(update_Status, [status, staffID], (err, result) => {
+        if (err) {
+            console.error('Error updating status:', err);
+            req.flash('error', 'Failed to update status');
+        } else if (result.affectedRows === 0) {
+            req.flash('error', 'No staff found with the given ID');
+        } else {
+            req.flash('success', 'Status updated successfully');
+        }
+        res.redirect('/admin/dashboard');
+    });
+};
+
+exports.getEditDetail = (req, res) => {
+    const staffID = req.session.staff?.staffID;
+
+    if (!staffID) {
+        return res.redirect('/');
+    }
+
+    const staffQuery = `
+        SELECT staff.*, department.name AS department_name 
+        FROM staff
+        INNER JOIN department ON department.departmentID = staff.department
+        WHERE staff.staffID = ?
+    `;
+
+    const ongoingProgramsQuery = `
+        SELECT p.Title as title, sp.Status as status
+        FROM staff_program sp
+        INNER JOIN program p ON sp.programID = p.ProgramID
+        WHERE sp.staffID = ? AND sp.Status = 'Ongoing'
+    `;
+
+    db.query(staffQuery, [staffID], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).send("Internal Server Error");
+        }
+
+        if (results.length === 0) {
+            return res.status(404).send("Staff not found");
+        }
+
+        const staffData = results[0];
+
+        db.query(ongoingProgramsQuery, [staffID], (err2, ongoingResults) => {
+            if (err2) {
+                console.error('Database error:', err2);
+                return res.status(500).send("Internal Server Error");
+            }
+
+            res.render('user/editDetail', {
+                staff: staffData,
+                ongoingPrograms: ongoingResults,
+                currentPath: req.path
+            });
+        });
+    });
+};
+
+exports.getChangePassword = (req, res) => {
+    res.render('user/changePassword', {
+        error: req.flash('error'),
+        success: req.flash('success'),
+        currentPath: req.path
+    });
+};
+
+exports.postChangePassword = (req, res) => {
+    const staffID = req.session.staff?.staffID;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!staffID) {
+        req.flash('error', 'Session expired. Please log in again.');
+        return res.redirect('/user/change-password');
+    }
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        req.flash('error', 'All fields are required.');
+        return res.redirect('/user/change-password');
+    }
+
+    if (newPassword !== confirmPassword) {
+        req.flash('error', 'New passwords do not match.');
+        return res.redirect('/user/change-password');
+    }
+
+    // Check current password
+    const checkSql = "SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?)";
+    db.query(checkSql, [staffID, currentPassword], (err, results) => {
+        if (err) {
+            req.flash('error', 'Database error.');
+            return res.redirect('/user/change-password');
+        }
+        if (results.length === 0) {
+            req.flash('error', 'Current password is incorrect.');
+            return res.redirect('/user/change-password');
+        }
+
+        // Update password
+        const updateSql = "UPDATE staff SET password = SHA1(?) WHERE staffID = ?";
+        db.query(updateSql, [newPassword, staffID], (err2) => {
+            if (err2) {
+                req.flash('error', 'Failed to update password.');
+                return res.redirect('/user/change-password');
+            }
+            req.flash('success', 'Password updated successfully.');
+            res.redirect('/user/profile');
+        });
+    });
+};

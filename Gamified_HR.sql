@@ -58,9 +58,9 @@ CREATE TABLE Reward (
 );
 
 INSERT INTO Reward (RewardID, name, description, points, stock, image) VALUES
-('R001', 'Coffee Voucher', 'Redeemable at any Starbucks outlet', 100, 10, NULL),
-('R002', 'Movie Ticket', '1 Standard ticket for Golden Village', 150, 5, NULL),
-('R003', 'Extra Day Off', '1 extra vacation day', 500, 2, NULL),
+('R001', 'Coffee Voucher', 'Redeemable at any Starbucks outlet', 100, 10, 'starbucks.png'),
+('R002', 'Free Macdonald Meal', '1 Mcspicy Meal with coke', 150, 5, 'mcd.png'),
+('R003', 'Spa Voucher', 'Ful Body Massage for 2 hours', 500, 2, 'spa.png'),
 ('R004', 'Company Mug', 'Limited edition mug with company logo', 50, 20, 'casugolMug.png');
 
 -- Table: Redeem
@@ -157,3 +157,17 @@ INSERT INTO Program_Feedback (FeedbackID, staffID, ProgramID, Rating, Comments, 
 (6, 'S003', 'P004', 4.7, 'Great instructor and well structured.', '2024-08-29'),
 (7, 'S004', 'P005', 4.0, 'Useful content for cybersecurity basics.', '2024-08-18'),
 (8, 'S001', 'P005', 4.5, 'Enjoyed the lessons, learned a lot.', '2024-08-22');
+
+CREATE TABLE leaderboard_history (
+    Leaderboard_ID INT AUTO_INCREMENT PRIMARY KEY,
+    year INT NOT NULL,
+    half ENUM('H1', 'H2') NOT NULL, 
+    rank_position INT NOT NULL, 
+    staffID VARCHAR(10) NOT NULL,
+    reward TEXT NOT NULL,
+    FOREIGN KEY (staffID) REFERENCES staff(staffID)
+);
+INSERT INTO leaderboard_history (year, half, rank_position, staffID, reward) VALUES
+(2024, 'H2', 1, 'S002', '2 Nights Stay at Hard Rock Hotel Singapore'),
+(2024, 'H2', 2, 'S003', '2 Tickets to Universal Studios Singapore'),
+(2024, 'H2', 3, 'S004', '4 Tickets to Singapore Mandai Zoo');

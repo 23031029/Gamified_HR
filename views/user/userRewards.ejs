@@ -283,7 +283,7 @@
   </style>
 </head>
 <body>
-  <%- include('partials/navbar.ejs') %>
+  <%- include('../partials/navbar.ejs') %>
 
   <div class="content-container" id="content">
     <h2>Rewards Collection</h2>
@@ -300,7 +300,7 @@
       <% rewards.forEach(reward => { %>
         <div class="reward-card">
           <div class="reward-image">
-            <img src="/images/<%= reward.image %>" alt="<%= reward.name %>" loading="lazy">
+            <img src="images/<%= reward.image %>" alt="<%= reward.image %>" loading="lazy">
           </div>
           <div class="reward-content">
             <h3><%= reward.name %></h3>

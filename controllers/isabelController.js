@@ -8,7 +8,7 @@ exports.viewRewards = (req, res) => {
             return res.status(500).send('Error retrieving rewards');
         }
         if (results.length > 0) {
-            res.render('viewRewards', { rewards: results });
+            res.render('admin/viewRewards', { rewards: results, currentPath: req.path});
         } else {
             res.status(404).send('No rewards found');
         }
@@ -22,12 +22,13 @@ exports.userRewards = (req, res) => {
         if (error) {
             return res.status(500).send('Error retrieving rewards');
         }
-        res.render('userRewards', {
+        res.render('user/userRewards', {
             rewards: results,
             messages: {
                 success: req.flash('success'),
                 error: req.flash('error')
-            }
+            },
+            currentPath: req.path
         });
     });
 };
@@ -40,7 +41,7 @@ exports.readReward = (req, res) => {
             return res.status(500).send('Error retrieving reward');
         }
         if (results.length > 0) {
-            res.render('readRewards', { reward: results[0] });
+            res.render('user/readRewards', { reward: results[0], currentPath: req.path });
         } else {
             req.flash('error', 'Reward not found');
             res.redirect('/user/rewards');
@@ -51,7 +52,7 @@ exports.readReward = (req, res) => {
 
 // Show add reward form
 exports.addRewardForm = (req, res) => {
-    res.render('addRewards');
+    res.render('admin/addRewards', {currentPath: req.path});
 };
 
 // Handle reward addition
@@ -85,7 +86,7 @@ exports.addReward = (req, res) => {
                 console.error("Database Error:", error);
                 return res.status(500).send('Error adding reward');
             }
-            res.redirect('/rewards');
+            res.redirect('/admin/rewards');
         });
     });
 };
@@ -101,7 +102,7 @@ exports.editRewardForm = (req, res) => {
             return res.status(500).send('Error retrieving reward');
         }
         if (results.length > 0) {
-            res.render('editRewards', { reward: results[0] });
+            res.render('admin/editRewards', { reward: results[0] , currentPath: req.path});
         } else {
             res.status(404).send('Reward not found');
         }
@@ -129,7 +130,7 @@ exports.editReward = (req, res) => {
         if (error) {
             return res.status(500).send('Error updating reward');
         }
-        res.redirect('/rewards');
+        res.redirect('/admin/rewards');
     });
 };
 
@@ -144,12 +145,13 @@ exports.viewSingleReward = (req, res) => {
             return res.redirect('/user/rewards');
         }
 
-        res.render('readRewards', {
+        res.render('user/readRewards', {
             reward: results[0],
             messages: {
                 success: req.flash('success'),
                 error: req.flash('error')
-            }
+            },
+            currentPath: req.path
         });
     });
 };

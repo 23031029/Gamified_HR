@@ -20,32 +20,41 @@ const { validateReg, validateLogin } = require('./middleware/validation');
 
 // Multer config
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'public/images'),
-    filename: (req, file, cb) => cb(null, file.originalname)
+    destination: (req, file, cb) => {
+        cb(null, 'public/images'); // Directory to save uploaded files
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
 });
+
 const upload = multer({ storage: storage });
 
-// View engine and static
+// Set up view engine
 app.set('view engine', 'ejs');
+//  enable static files
 app.use(express.static('public'));
-app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
+// enable form processing
+app.use(express.urlencoded({
+    extended: false
+}));
+// Set up static directory
+app.use(express.static(path.join(__dirname, 'FYP_Project-main/public')));
 
-// Session setup
+//Code for Session Middleware  
 app.use(session({
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 1 week
+    // Session expires after 1 week of inactivity
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 }
 }));
 
-// Load user/admin into res.locals
 app.use((req, res, next) => {
   console.log("Session staff:", req.session.staff);
 
   if (!req.session.staff) {
     res.locals.staff = null;
-    res.locals.admin = null;
     return next();
   }
 
@@ -64,27 +73,19 @@ app.use((req, res, next) => {
     console.log("DB Results:", results);
 
     if (results.length > 0) {
-      const user = results[0];
-      if (user.role === 'admin') {
-        res.locals.admin = user;
-        res.locals.staff = null;
-      } else {
-        res.locals.staff = user;
-        res.locals.admin = null;
-      }
+      res.locals.staff = results[0];
     } else {
       res.locals.staff = null;
-      res.locals.admin = null;
     }
 
     console.log("res.locals.staff:", res.locals.staff);
-    console.log("res.locals.admin:", res.locals.admin);
     next();
   });
 });
 
-// Flash
-app.use(flash());
+
+// Use connect-flash middleware
+app.use(flash()); // Use flash middleware after session middleware
 
 // Public routes
 app.get('/', serjiaControl.getSignIn);
@@ -99,15 +100,15 @@ app.get('/user/change-password', serjiaControl.getChangePassword);
 app.post('/user/change-password', serjiaControl.postChangePassword);
 
 // Isabel's reward routes
-app.get('/rewards', isabelControl.viewRewards);
-app.get('/rewards/read/:id', isabelControl.readReward);
-app.get('/rewards/add', isabelControl.addRewardForm);
+app.get('/admin/rewards', isabelControl.viewRewards);
+app.get('/admin/rewards/read/:id', isabelControl.readReward);
+app.get('/admin/rewards/add', isabelControl.addRewardForm);
 app.post('/rewards/add', upload.single('image'), isabelControl.addReward);
-app.get('/rewards/edit/:id', isabelControl.editRewardForm);
+app.get('/admin/rewards/edit/:id', isabelControl.editRewardForm);
 app.post('/rewards/edit/:id', upload.single('image'), isabelControl.editReward);
 // User reward routes
 app.get('/user/rewards', isabelControl.userRewards);
-app.get('/user/rewards/read/:id', isabelControl.readReward);
+app.get('/rewards/read/:id', isabelControl.readReward);
 app.get('/reward/:id', isabelControl.viewSingleReward);
 app.post('/claimReward/:id', isabelControl.claimReward);
 

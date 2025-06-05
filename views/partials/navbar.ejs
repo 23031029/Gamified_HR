@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-            * {
+      * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
@@ -17,6 +17,7 @@
         background: linear-gradient(135deg, #EAEAE7 0%, #F5F5F2 100%);
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         min-height: 100vh;
+        margin-top: 110px;
       }
 
       .navbar-header {
@@ -328,6 +329,13 @@
         }
       }
 
+      .nav-link.active, .nav-link.active:hover {
+      background: #565F63;
+      color: #A3AEB1;
+      box-shadow: 0 4px 15px rgba(86, 95, 99, 0.3);
+      transform: translateX(5px);
+    }
+
       /* Overlay for mobile */
       .overlay {
         position: fixed;
@@ -371,7 +379,6 @@
   </head>
   <body>
 
-    <!-- Header -->
     <header class="navbar-header">
       <% if (staff) { %>
         <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
@@ -381,61 +388,133 @@
       <img src="/images/logo.png" alt="Company Logo" class="logo">
     </header>
 
-    <!-- Sidebar (conditionally rendered) -->
     <% if (staff) { %>
-      <nav class="sidebar collapsed" id="sidebar">
-        <div class="sidebar-header horizontal">
-          <img src="/images/<%= staff.profile_image %>" alt="<%= staff.name %>" class="profile-image">
-          <div class="profile-info">
-            <h3 class="staff-name"><%= staff.name %></h3>
-            <p class="staff-department"><%= staff.department_name %> Department</p>
-          </div>
-        </div>
-        <div class="nav-menu">
-          <ul>
-            <li class="nav-item">
-              <a href="/user/dashboard" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-            </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link"><i class="fas fa-gift"></i> Rewards</a>
-            </li>
-            <li class="nav-item">
-              <a href="/user/leaderboard" class="nav-link"><i class="fas fa-trophy"></i> Leaderboard</a>
-            </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link"><i class="fas fa-calendar-alt"></i> Program</a>
-            </li>
-          </ul>
-        </div>
-        <div class="logout-section">
-          <a href="/logout" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        </div>
-      </nav>
-    <% } %>
+  <nav class="sidebar" id="sidebar">
+    <a href="/user/profile" class="sidebar-header horizontal" style="text-decoration:none; color:inherit; cursor:pointer;">
+      <img src="/images/<%= staff.profile_image %>" alt="<%= staff.name %>" class="profile-image">
+      <div class="profile-info">
+        <h3 class="staff-name"><%= staff.first_name %> <%= staff.last_name %></h3>
+        <p class="staff-department"><%= staff.department_name %> Department</p>
+      </div>
+    </a>
 
-    <!-- Overlay for mobile -->
+    <div class="nav-menu">
+      <ul>
+        <li class="nav-item">
+          <% if (staff.role == "admin") { %>
+            <a href="/admin/dashboard" class="nav-link<%= currentPath === '/admin/dashboard' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Dashboard
+            </a>
+          <% } else { %>
+            <a href="/user/dashboard" class="nav-link<%= currentPath === '/user/dashboard' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Dashboard
+            </a>
+          <% } %>
+        </li>
+
+        <li class="nav-item">
+          <% if (staff.role == "admin") { %>
+            <a href="/admin/rewards" class="nav-link<%= currentPath === '/admin/rewards' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Rewards
+            </a>
+          <% } else { %>
+            <a href="/user/rewards" class="nav-link<%= currentPath === '/user/rewards' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Rewards
+            </a>
+          <% } %>
+        </li>
+        <li class="nav-item">
+           <% if (staff.role == "admin") { %>
+            <a href="/admin/leaderboard" class="nav-link<%= currentPath === '/admin/leaderboard' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Leaderboard
+            </a>
+          <% } else { %>
+            <a href="/user/leaderboard" class="nav-link<%= currentPath === '/user/leaderboard' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Leaderboard
+            </a>
+          <% } %>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="fas fa-calendar-alt"></i>
+            Program
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="logout-section">
+      <a href="/logout" class="logout-link">
+        <i class="fas fa-sign-out-alt"></i>
+        Logout
+      </a>
+    </div>
+  </nav>
+<% } %>
+
+
+    <!-- Mobile Overlay -->
     <div class="overlay" id="overlay"></div>
-    <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <script src="https://cdn.jsdelivr.net//images/logo.png/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      const menuToggle = document.getElementById("menuToggle");
-      const sidebar = document.getElementById("sidebar");
-      const overlay = document.getElementById("overlay");
-      const mainContent = document.getElementById("mainContent");
+      // Initialize navigation functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const overlay = document.getElementById('overlay');
 
-      if (menuToggle && sidebar && overlay) {
-        menuToggle.addEventListener("click", () => {
-          sidebar.classList.toggle("collapsed");
-          overlay.classList.toggle("active");
-          mainContent.classList.toggle("expanded");
+        // Toggle sidebar function
+        function toggleSidebar() {
+          sidebar.classList.toggle('collapsed');
+          mainContent.classList.toggle('expanded');
+          
+          // Handle mobile overlay
+          if (window.innerWidth <= 768) {
+            overlay.classList.toggle('active');
+          }
+        }
+
+        // Menu toggle click event
+        if (menuToggle) {
+          menuToggle.addEventListener('click', toggleSidebar);
+        }
+
+        // Close sidebar when clicking overlay (mobile)
+        overlay.addEventListener('click', function() {
+          if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+            overlay.classList.remove('active');
+          }
         });
 
-        overlay.addEventListener("click", () => {
-          sidebar.classList.add("collapsed");
-          overlay.classList.remove("active");
-          mainContent.classList.remove("expanded");
+        // Handle window resize
+        window.addEventListener('resize', function() {
+          if (window.innerWidth > 768) {
+            overlay.classList.remove('active');
+          }
         });
-      }
+
+        // Add smooth scrolling to nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.addEventListener('click', function(e) {
+            // Add active state animation
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              this.style.transform = '';
+            }, 150);
+          });
+        });
+      });
     </script>
   </body>
 </html>

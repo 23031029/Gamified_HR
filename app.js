@@ -10,7 +10,8 @@ const db = require('./db');
 
 // Controllers
 const serjiaControl = require('./controllers/serjiaController');
-const rewardsController = require('./controllers/rewardsController');
+const isabelControl = require('./controllers/isabelController');
+const nikiController= require('./controllers/nikiController');
 
 // Middleware
 const { checkAuthentication, checkAdmin, checkUser } = require('./middleware/auth');
@@ -98,17 +99,17 @@ app.get('/user/change-password', serjiaControl.getChangePassword);
 app.post('/user/change-password', serjiaControl.postChangePassword);
 
 // Isabel's reward routes
-app.get('/rewards', rewardsController.viewRewards);
-app.get('/rewards/read/:id', rewardsController.readReward);
-app.get('/rewards/add', rewardsController.addRewardForm);
-app.post('/rewards/add', upload.single('image'), rewardsController.addReward);
-app.get('/rewards/edit/:id', rewardsController.editRewardForm);
-app.post('/rewards/edit/:id', upload.single('image'), rewardsController.editReward);
+app.get('/rewards', isabelControl.viewRewards);
+app.get('/rewards/read/:id', isabelControl.readReward);
+app.get('/rewards/add', isabelControl.addRewardForm);
+app.post('/rewards/add', upload.single('image'), isabelControl.addReward);
+app.get('/rewards/edit/:id', isabelControl.editRewardForm);
+app.post('/rewards/edit/:id', upload.single('image'), isabelControl.editReward);
 // User reward routes
-app.get('/user/rewards', rewardsController.userRewards);
-app.get('/user/rewards/read/:id', rewardsController.readReward);
-app.get('/reward/:id', rewardsController.viewSingleReward);
-app.post('/claimReward/:id', rewardsController.claimReward);
+app.get('/user/rewards', isabelControl.userRewards);
+app.get('/user/rewards/read/:id', isabelControl.readReward);
+app.get('/reward/:id', isabelControl.viewSingleReward);
+app.post('/claimReward/:id', isabelControl.claimReward);
 
 // Niki's user and admin leaderboard routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);

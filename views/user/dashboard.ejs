@@ -27,40 +27,10 @@
       margin-bottom: 30px;
     }
 
-    .profile-card {
+    .points-row, .leaderboard-preview, .upcoming-programs, .reward-suggestions {
       display: flex;
-      align-items: center;
-      gap: 30px;
-    }
-
-    .profile-card img {
-      width: 130px;
-      height: 130px;
-      object-fit: cover;
-      border-radius: 50%;
-      border: 3px solid #A3AEB1;
-    }
-
-    .profile-info h2 {
-      margin: 0;
-      font-size: 24px;
-    }
-
-    .profile-info p {
-      margin: 5px 0;
-      color: #666;
-    }
-
-    .label {
-      font-weight: bold;
-      color: #565F63;
-    }
-
-    .points-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
       flex-wrap: wrap;
+      gap: 20px;
     }
 
     .points-box {
@@ -86,7 +56,6 @@
     .spent { background: #F87171; }
     .balance { background: #60A5FA; }
 
-    /* Streak style like 3.jpg */
     .streak-box {
       background-color: #bfbfbf;
       padding: 20px;
@@ -95,31 +64,12 @@
       color: #000;
     }
 
-    .streak-header {
-      display: flex;
-      justify-content: space-between;
-      padding: 0 10px;
-      margin-bottom: 20px;
-    }
-
-    .streak-header h3 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .streak-header p {
-      margin: 5px 0 0;
-      font-size: 22px;
-      font-weight: bold;
-    }
-
     .streak-track {
       display: flex;
       justify-content: space-between;
       align-items: center;
       position: relative;
       margin-top: 10px;
-      padding: 0 10px;
     }
 
     .streak-track::before {
@@ -162,6 +112,29 @@
       font-size: 12px;
       text-align: center;
     }
+
+    .section-header {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .list-item {
+      flex: 1;
+      min-width: 200px;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .list-item h4 {
+      margin: 0 0 5px;
+    }
+
+    .list-item small {
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -187,7 +160,7 @@
       </div>
     </div>
 
-    <!-- Streak Tracker -->
+    <!-- Milestone Tracker -->
     <% const currentPoints = points.balance; %>
     <% const streaks = [
       { threshold: 50, reward: 5 },
@@ -198,18 +171,8 @@
       { threshold: 3000, reward: 30 }
     ]; %>
 
-    <div class="streak-box">
-      <div class="streak-header">
-        <div>
-          <h3>Available Points:</h3>
-          <p><%= currentPoints %></p>
-        </div>
-        <div>
-          <h3>Today's Points:</h3>
-          <p>10</p>
-        </div>
-      </div>
-
+    <div class="card streak-box">
+      <div class="section-header">Milestone Tracker</div>
       <div class="streak-track">
         <% streaks.forEach(streak => { %>
           <div class="streak-item">
@@ -224,6 +187,40 @@
         <% }); %>
       </div>
     </div>
+
+    <!-- Upcoming Programs -->
+    <% if (programs && programs.length) { %>
+      <div class="card">
+        <div class="section-header">Your Ongoing Programs</div>
+        <div class="upcoming-programs">
+          <% programs.forEach(program => { %>
+            <div class="list-item">
+              <h4><%= program.Title %></h4>
+              <small><%= program.Type %> | <%= program.Start_Date %> to <%= program.End_Date %></small><br/>
+              <small>Status: <strong><%= program.Status %></strong></small>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Reward Suggestions -->
+    <% if (rewards && rewards.length) { 
+      const nearby = rewards.filter(r => r.points <= currentPoints + 100 && r.points > currentPoints);
+      if (nearby.length) { %>
+      <div class="card">
+        <div class="section-header">You're close to these rewards!</div>
+        <div class="reward-suggestions">
+          <% nearby.forEach(r => { %>
+            <div class="list-item">
+              <h4><%= r.name %></h4>
+              <small><%= r.points %> pts | <%= r.description %></small>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } } %>
+
   </div>
 </body>
 </html>

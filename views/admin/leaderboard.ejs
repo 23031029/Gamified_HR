@@ -177,7 +177,7 @@
       </thead>
       <tbody>
         <% leaderboard.forEach((user, index) => {
-             const isCurrentUser = user.staffID === staffID;
+            const isCurrentUser = user.staffID === staffID;
         %>
           <tr class="<%= index === 0 ? 'gold-row animate' : index === 1 ? 'silver-row animate' : index === 2 ? 'bronze-row animate' : '' %>">
             <td class="rank">

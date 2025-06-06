@@ -15,7 +15,7 @@ exports.getUserDashboard = (req, res) => {
   `;
 
   const ongoingProgramsQuery = `
-    SELECT sp.*, p.Start_Date, p.End_Date, p.Title, p.Type
+    SELECT sp.*, p.Start_Date, p.End_Date, p.Title, p.Type, sp.Status
     FROM staff_program sp 
     JOIN Program p ON sp.programID = p.ProgramID 
     WHERE sp.staffID = ? AND sp.Status != 'Completed'
@@ -29,7 +29,12 @@ exports.getUserDashboard = (req, res) => {
     ORDER BY re.Redeem_Date DESC
   `;
 
-  const totalEarnedQuery = `SELECT SUM(points_earned) AS total_earned FROM staff_program WHERE staffID = ?`;
+  const totalEarnedQuery = `
+    SELECT SUM(points_earned) AS total_earned 
+    FROM staff_program 
+    WHERE staffID = ?
+  `;
+
   const totalSpentQuery = `
     SELECT SUM(r.points) AS total_spent 
     FROM Redeem re 
@@ -119,7 +124,7 @@ exports.getUserLeaderboard = (req, res) => {
         leaderboard: leaderboardResults,
         filter,
         history: historyResults,
-        staffID, // ✅ Pass staffID to EJS
+        staffID,
         currentPath: req.path
       });
     });
@@ -141,7 +146,7 @@ exports.getAdminLeaderboard = (req, res) => {
            d.name AS department_name
     FROM Staff s
     JOIN Department d ON s.department = d.departmentID
-    WHERE s.role = 'user'
+    WHERE s.status = 'Active'
   `;
 
   const params = [];
@@ -173,7 +178,7 @@ exports.getAdminLeaderboard = (req, res) => {
         leaderboard: leaderboardResults,
         filter,
         history: historyResults,
-        staffID: req.session.staff.staffID, // ✅ Add this
+        staffID: req.session.staff.staffID,
         currentPath: req.path
       });
     });
@@ -276,5 +281,85 @@ exports.deleteLeaderboardEntry = (req, res) => {
   db.query("DELETE FROM leaderboard_history WHERE Leaderboard_ID = ?", [id], (err) => {
     if (err) return res.status(500).send("Error deleting entry");
     res.redirect('/admin/leaderboard');
+  });
+};
+
+// =========================
+// HELPER FUNCTIONS
+// =========================
+
+exports.getAllPrograms = (req, res) => {
+  const sql = `
+    SELECT p.*, 
+           CONCAT(s.first_name, ' ', s.last_name) AS created_by_name,
+           d.name AS creator_department
+    FROM Program p
+    JOIN Staff s ON p.Created_By = s.staffID
+    JOIN Department d ON s.department = d.departmentID
+    ORDER BY p.Start_Date DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).send("Error fetching programs");
+    res.render('programs/list', {
+      programs: results,
+      currentPath: req.path
+    });
+  });
+};
+
+exports.getProgramFeedback = (req, res) => {
+  const programID = req.params.programID;
+
+  const sql = `
+    SELECT pf.*, 
+           CONCAT(s.first_name, ' ', s.last_name) AS staff_name,
+           p.Title AS program_title
+    FROM Program_Feedback pf
+    JOIN Staff s ON pf.staffID = s.staffID
+    JOIN Program p ON pf.ProgramID = p.ProgramID
+    WHERE pf.ProgramID = ?
+    ORDER BY pf.Submitted_Date DESC
+  `;
+
+  db.query(sql, [programID], (err, results) => {
+    if (err) return res.status(500).send("Error fetching feedback");
+    res.json({ success: true, feedback: results });
+  });
+};
+
+exports.getStaffParticipation = (req, res) => {
+  const staffID = req.params.staffID || req.session.staff.staffID;
+
+  const sql = `
+    SELECT sp.*, p.Title, p.Type, p.Start_Date, p.End_Date
+    FROM staff_program sp
+    JOIN Program p ON sp.programID = p.ProgramID
+    WHERE sp.staffID = ?
+    ORDER BY sp.completed_date DESC
+  `;
+
+  db.query(sql, [staffID], (err, results) => {
+    if (err) return res.status(500).send("Error fetching participation history");
+    res.json({ success: true, participation: results });
+  });
+};
+
+exports.getRedemptionHistory = (req, res) => {
+  const staffID = req.params.staffID || req.session.staff.staffID;
+
+  const sql = `
+    SELECT r.*, 
+           re.Redeem_Date,
+           re.RedemptionID
+    FROM Redeem re
+    JOIN Reward r ON re.RewardID = r.RewardID
+    WHERE re.staffID = ?
+    ORDER BY re.Redeem_Date DESC
+  `;
+
+  db.query(sql, [staffID], (err, results) => {
+    if (err) return res.status(500).send("Error fetching redemption history");
+    res.json({ success: true, redemptions: results });
   });
 };

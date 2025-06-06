@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CASUGOL - Programs</title>
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #B8D42F, #76B900);
+      color: white;
+      padding: 20px 0;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .programs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
+
+    .program-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .program-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .program-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #B8D42F, #76B900);
+    }
+
+    .program-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .program-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+.program-type {
+  background: #c8facc; /* pastel green */
+  color: #2e4a2b;       /* dark green for contrast */
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+    .program-description {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .program-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .detail-item {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .detail-label {
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .detail-value {
+      font-weight: bold;
+      color: #333;
+    }
+
+.points-reward {
+  background: linear-gradient(135deg, #fff9c4, #ffeaa7); /* pastel yellow gradient */
+  color: #333; /* dark text for contrast */
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+
+    .program-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      text-align: center;
+      flex: 1;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #B8D42F, #76B900);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(184, 212, 47, 0.4);
+    }
+
+    .no-programs {
+      text-align: center;
+      color: #666;
+      font-size: 1.2rem;
+      margin-top: 50px;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+
+    .status-active { background: #d4edda; color: #155724; }
+    .status-upcoming { background: #fff3cd; color: #856404; }
+    .status-ended { background: #f8d7da; color: #721c24; }
+
+    @media (max-width: 768px) {
+      .programs-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .flatpickr-day.available {
+      background-color: #6cbf3c !important;
+      color: white !important;
+      border-radius: 50%;
+    }
+
+.btn-secondary {
+  background-color:  #c9a8e8 !important; /* pastel purple gradient */
+  color: #000000;             /* black text */
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #d9c2f0, #c9a8e8, #b89dd9); /* slightly deeper purple on hover */
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(201, 168, 232, 0.4); /* soft purple hover shadow */
+}
+
+  </style>
+</head>
+<body>
+  <%- include('../partials/navbar.ejs') %>
+
+  <div class="header">
+    <h1>CASUGOL</h1>
+  </div>
+
+  <div class="container">
+    <% if (programs && programs.length > 0) { %>
+      <div class="programs-grid">
+        <% programs.forEach(program => { %>
+          <% 
+            const today = new Date();
+            const startDate = new Date(program.Start_Date);
+            const endDate = new Date(program.End_Date);
+            let status = '';
+            let statusText = '';
+            if (today < startDate) {
+              status = 'upcoming';
+              statusText = 'Upcoming';
+            } else if (today > endDate) {
+              status = 'ended';
+              statusText = 'Ended';
+            } else {
+              status = 'active';
+              statusText = 'Active';
+            }
+            const formatDate = (date) => {
+              return new Date(date).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              });
+            };
+          %>
+          <div class="program-card">
+            <div class="status-badge status-<%= status %>"><%= statusText %></div>
+            <div class="program-header">
+              <div>
+                <div class="program-title"><%= program.Title %></div>
+                <div class="program-type"><%= program.Type %></div>
+              </div>
+            </div>
+            <div class="program-description"><%= program.Description %></div>
+            <div class="points-reward">🏆 <%= program.points_reward %> Points Reward</div>
+            <div class="program-details">
+              <div class="detail-item">
+                <div class="detail-label">Start Date</div>
+                <div class="detail-value"><%= formatDate(program.Start_Date) %></div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">End Date</div>
+                <div class="detail-value"><%= formatDate(program.End_Date) %></div>
+              </div>
+            </div>
+            <div class="program-actions">
+              <% if (status === 'active' || status === 'upcoming') { %>
+                <form class="register-form"
+                    data-program="<%= program.ProgramID %>"
+                    data-start="<%= program.Start_Date %>"
+                    data-end="<%= program.End_Date %>"
+                    data-start-time="<%= program.start_time %>"
+                    data-end-time="<%= program.end_time %>">
+                <button type="button" class="btn btn-primary"><%= status === 'active' ? 'Join Now' : 'Register' %></button>
+              </form>
+
+              <% } else { %>
+                <button class="btn btn-secondary" disabled>Program Ended</button>
+              <% } %>
+              <a href="/programs/<%= program.ProgramID %>" class="btn btn-secondary">View Details</a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="no-programs"><p>No programs available at the moment.</p></div>
+    <% } %>
+  </div>
+
+  <!-- Booking Modal -->
+  <div id="slotModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:#fff; padding:30px; border-radius:10px; width:90%; max-width:400px;">
+      <h2>Select Your Slot</h2>
+      <form id="slotForm">
+        <input type="hidden" name="programID" id="modalProgramID" />
+        <label for="slotDate">Choose a date:</label><br />
+        <input type="text" id="slotDate" name="slotDate" required style="margin-top:10px;" /><br /><br />
+        <label for="slotTime">Choose a time:</label><br />
+        <select id="slotTime" name="slotTime" required style="margin-top:10px; width:100%; padding:8px;">
+          <% programs.forEach(program => { %>
+          <% 
+            const formatTime = (timeStr) => {
+              const [hours, minutes] = timeStr.split(':');
+              const date = new Date();
+              date.setHours(hours, minutes);
+              return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
+
+            const startTime = formatTime(program.start_time);
+            const endTime = formatTime(program.end_time);
+          %>
+          <option value="<%= startTime %> - <%= endTime %>"><%= startTime %> - <%= endTime %></option>
+        <% }) %>
+
+        </select><br /><br />
+        <button type="submit" class="btn btn-primary" style="width:100%;">Confirm Booking</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()" style="margin-top:10px; width:100%;">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+ <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const registerForms = document.querySelectorAll('.register-form');
+
+  registerForms.forEach(form => {
+    form.querySelector('button').addEventListener('click', () => {
+      const programID = form.dataset.program;
+      const start = new Date(form.dataset.start);
+      const end = new Date(form.dataset.end);
+      const startTime = form.dataset.startTime;
+      const endTime = form.dataset.endTime;
+
+      document.getElementById('modalProgramID').value = programID;
+
+      // Show only selected program's date range
+      flatpickr("#slotDate", {
+        dateFormat: "Y-m-d",
+        minDate: start,
+        maxDate: end,
+        defaultDate: start,
+        onDayCreate: function (dObj, dStr, fp, dayElem) {
+          if (!dayElem.classList.contains("flatpickr-disabled")) {
+            dayElem.classList.add("available");
+          }
+        }
+      });
+
+      // Populate time slot dropdown with the program's time range
+      const slotTimeSelect = document.getElementById('slotTime');
+      slotTimeSelect.innerHTML = '<option value="" hidden>-- Select Time --</option>';
+
+      // Helper: Generate 30-min time slots between start and end
+      const generateTimeSlots = (start, end) => {
+        const slots = [];
+        const [startH, startM] = start.split(':').map(Number);
+        const [endH, endM] = end.split(':').map(Number);
+
+        const startDate = new Date();
+        startDate.setHours(startH, startM, 0, 0);
+
+        const endDate = new Date();
+        endDate.setHours(endH, endM, 0, 0);
+
+        while (startDate < endDate) {
+          const slotStart = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          startDate.setMinutes(startDate.getMinutes() + 60);
+          const slotEnd = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          if (startDate <= endDate) {
+            slots.push(`${slotStart} - ${slotEnd}`);
+          }
+        }
+        return slots;
+      };
+
+      const timeSlots = generateTimeSlots(startTime, endTime);
+      timeSlots.forEach(slot => {
+        const option = document.createElement('option');
+        option.value = slot;
+        option.textContent = slot;
+        slotTimeSelect.appendChild(option);
+      });
+
+      // Open modal
+      document.getElementById('slotModal').style.display = 'flex';
+    });
+  });
+
+  // Form submission handler
+  document.getElementById('slotForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const programID = document.getElementById('modalProgramID').value;
+    const slotDate = document.getElementById('slotDate').value;
+    const slotTime = document.getElementById('slotTime').value;
+
+    fetch('/join-program', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `programID=${programID}&slotDate=${slotDate}&slotTime=${slotTime}`
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert("Slot booked successfully!");
+        closeModal();
+        location.reload();
+      } else {
+        alert(data.message || "Booking failed.");
+      }
+    })
+    .catch(() => alert("Error booking slot."));
+  });
+});
+
+function closeModal() {
+  document.getElementById('slotModal').style.display = 'none';
+}
+</script>
+
+</body>
+</html>

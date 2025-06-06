@@ -10,40 +10,52 @@ const db = require('./db');
 
 // Controllers
 const serjiaControl = require('./controllers/serjiaController');
-const nikiController = require('./controllers/nikiController'); // includes both user & admin logic
+const isabelControl = require('./controllers/isabelController');
+const nikiController= require('./controllers/nikiController');
+const alyshaControl= require('./controllers/alyshaController')
 
 // Middleware
 const { checkAuthentication, checkAdmin, checkUser } = require('./middleware/auth');
-const { validateReg, validateLogin } = require('./middleware/validation');
+const { validateReg, validateLogin, validatePasswordChange } = require('./middleware/validation');
+
 
 // Multer config
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'public/images'),
-    filename: (req, file, cb) => cb(null, file.originalname)
+    destination: (req, file, cb) => {
+        cb(null, 'public/images'); // Directory to save uploaded files
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
 });
+
 const upload = multer({ storage: storage });
 
-// View engine and static
+// Set up view engine
 app.set('view engine', 'ejs');
+//  enable static files
 app.use(express.static('public'));
-app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
+// enable form processing
+app.use(express.urlencoded({
+    extended: false
+}));
+// Set up static directory
+app.use(express.static(path.join(__dirname, 'FYP_Project-main/public')));
 
-// Session setup
+//Code for Session Middleware  
 app.use(session({
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 1 week
+    // Session expires after 1 week of inactivity
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 }
 }));
 
-// Load user/admin into res.locals
 app.use((req, res, next) => {
   console.log("Session staff:", req.session.staff);
 
   if (!req.session.staff) {
     res.locals.staff = null;
-    res.locals.admin = null;
     return next();
   }
 
@@ -62,42 +74,78 @@ app.use((req, res, next) => {
     console.log("DB Results:", results);
 
     if (results.length > 0) {
-      const user = results[0];
-      if (user.role === 'admin') {
-        res.locals.admin = user;
-        res.locals.staff = null;
-      } else {
-        res.locals.staff = user;
-        res.locals.admin = null;
-      }
+      res.locals.staff = results[0];
     } else {
       res.locals.staff = null;
-      res.locals.admin = null;
     }
 
     console.log("res.locals.staff:", res.locals.staff);
-    console.log("res.locals.admin:", res.locals.admin);
     next();
   });
 });
 
-// Flash
-app.use(flash());
+
+// Use connect-flash middleware
+app.use(flash()); // Use flash middleware after session middleware
 
 // Public routes
 app.get('/', serjiaControl.getSignIn);
 app.post('/sign-in', validateLogin, serjiaControl.login);
-app.get('/admin/register', checkAdmin, serjiaControl.getRegister);
-app.post('/register', upload.single('profile'), validateReg, serjiaControl.register);
-app.get('/logout', serjiaControl.logout);
 
-// User routes
+// Registration (admin only)
+app.get('/admin/register', checkAuthentication, checkAdmin, serjiaControl.getRegister);
+app.post('/register', checkAuthentication, checkAdmin, upload.single('profile'), validateReg, serjiaControl.register);
+
+// Admin dashboard
+app.get('/admin/dashboard', checkAuthentication, checkAdmin, serjiaControl.getAdmin);
+
+// Logout (any logged-in user)
+app.get('/logout', checkAuthentication, serjiaControl.logout);
+
+// Update staff status (admin only)
+app.post('/status/:staffID', checkAuthentication, checkAdmin, serjiaControl.updateStatus);
+
+// User profile and password (user only)
+app.get('/user/profile', checkAuthentication, serjiaControl.getEditDetail);
+app.get('/user/change-password', checkAuthentication, serjiaControl.getChangePassword);
+app.post('/user/change-password', checkAuthentication, validatePasswordChange, serjiaControl.postChangePassword);
+
+// Isabel's reward routes (admin only)
+app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);
+app.get('/admin/rewards/read/:id', checkAuthentication, checkAdmin, isabelControl.readReward);
+app.get('/admin/rewards/add', checkAuthentication, checkAdmin, isabelControl.addRewardForm);
+app.post('/rewards/add', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.addReward);
+app.get('/rewards/edit/:id', checkAuthentication, checkAdmin, isabelControl.editRewardForm);
+app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.editReward);
+
+// User reward routes (user only)
+app.get('/user/rewards', checkAuthentication, checkUser, isabelControl.userRewards);
+app.get('/rewards/read/:id', checkAuthentication, checkUser, isabelControl.readReward);
+app.get('/reward/:id', checkAuthentication, checkUser, isabelControl.viewSingleReward);
+app.post('/claimReward/:id', checkAuthentication, checkUser, isabelControl.claimReward);
+
+// Niki's user and admin leaderboard routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
-
-// Admin routes (also in nikiController)
-app.get('/admin/dashboard', checkAuthentication, checkAdmin, nikiController.getAdminDashboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
+app.get('/admin/leaderboard/add', checkAuthentication, checkAdmin, nikiController.getAddLeaderboardEntry);
+app.post('/admin/leaderboard/add', checkAuthentication, checkAdmin, nikiController.postAddLeaderboardEntry);
+app.get('/admin/leaderboard/edit/:id', checkAuthentication, checkAdmin, nikiController.getEditLeaderboardEntry);
+app.post('/admin/leaderboard/edit/:id', checkAuthentication, checkAdmin, nikiController.postEditLeaderboardEntry);
+app.post('/admin/leaderboard/delete/:id', checkAuthentication, checkAdmin, nikiController.deleteLeaderboardEntry);
+
+
+// Alysha's program routes
+app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
+app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
+
+app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
+
+app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);
+app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_code'), alyshaControl.postAddProgram);
+
+app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
+app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
 
 // Start server
 const PORT = process.env.PORT || 3000;

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Edit Reward</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+    }
+
+    .content-container {
+      display: flex;
+      justify-content: center;
+      padding: 50px 20px;
+    }
+
+    .edit-form {
+      background-color: #eaeae7;
+      color: #565F63;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    }
+
+    .edit-form h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      font-size: 18px;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 40px;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+      background-color: white;
+    }
+
+    .form-control[type="file"] {
+      padding: 6px;
+    }
+
+    .form-control:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .edit-form button {
+      width: 300px;
+      height: 50px;
+      border: none;
+      border-radius: 10px;
+      background-color: #565F63;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .edit-form button:hover {
+      background-color: #A3AEB1;
+      color: #565F63;
+    }
+
+    .back-button {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 16px;
+      color: #565F63;
+      text-decoration: underline;
+    }
+
+    .current-image {
+      max-width: 100px;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    small {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <%- include('../partials/navbar.ejs') %>
+
+  <div class="content-container" id="content">
+    <div class="edit-form">
+      <h1>Edit Reward</h1>
+
+      <form action="/rewards/edit/<%= reward.RewardID %>" method="POST" enctype="multipart/form-data">
+
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" class="form-control" value="<%= reward.name %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <input type="text" id="description" name="description" class="form-control" value="<%= reward.description %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="points">Points</label>
+          <input type="number" id="points" name="points" class="form-control" value="<%= reward.points %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="stock">Stock</label>
+          <input type="number" id="stock" name="stock" class="form-control" value="<%= reward.stock %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="image">Image</label>
+          <% if (reward.image) { %>
+            <img src="/images/<%= reward.image %>" alt="Current Image" class="current-image">
+            <small>Leave blank to keep current image.</small>
+          <% } %>
+          <input type="file" id="image" name="image" class="form-control">
+        </div>
+
+        <div class="button-container">
+          <button type="submit">Update</button>
+        </div>
+      </form>
+
+      <a href="/admin/rewards" class="back-button">Back to Rewards</a>
+    </div>
+  </div>
+</body>
+</html>

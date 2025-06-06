@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add New Program</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 50%, #d4d4d4 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-container {
+      background: rgba(188, 204, 153, 0.95);
+      backdrop-filter: blur(10px);
+      max-width: 600px;
+      width: 100%;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .form-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #FF6B9D, #F06292, #E91E63);
+    }
+
+    h2 {
+      text-align: center;
+      color: #FFFFFF;
+      margin-bottom: 30px;
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: 500;
+      color: black;
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    input[type="time"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.3);
+      transform: translateY(-2px);
+    }
+
+    input[type="text"]:disabled {
+      background: rgba(255, 255, 255, 0.6);
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      border: 2px dashed rgba(255, 107, 157, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    input[type="file"]:hover {
+      border-color: #FF6B9D;
+      background: rgba(255, 255, 255, 1);
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #FF6B9D, #F06292, #E91E63);
+      color: black;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 8px 20px rgba(255, 107, 157, 0.3);
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(255, 107, 157, 0.4);
+      background: linear-gradient(135deg, #E91E63, #F06292, #FF6B9D);
+    }
+
+    .btn-submit:active {
+      transform: translateY(-1px);
+    }
+
+    .program-id-container {
+      background: rgba(255, 107, 157, 0.2);
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+
+    .program-id-container label {
+      color: black;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .program-id-container input {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFFFFF;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    /* Custom select styling */
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 12px center;
+      background-repeat: no-repeat;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .form-container {
+        padding: 30px 20px;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<%- include('../partials/navbar.ejs') %>
+<br>
+
+  <div class="form-container">
+    <h2>Add New Program</h2>
+    <form action="/programs/add" method="POST" enctype="multipart/form-data">
+      
+      <div class="program-id-container">
+        <label>Program ID:</label>
+        <input type="text" class="form-control" value="<%= nextId %>" disabled />
+      </div>
+
+      <div class="form-group">
+        <label for="title">Program Title</label>
+        <input type="text" name="title" required placeholder="Enter program title">
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea name="description" rows="4" required placeholder="Describe your program..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="type">Type</label>
+        <select name="type" required>
+          <option value="" disabled selected>Select program type</option>
+          <option value="Health&Wellness">Health & Wellness</option>
+          <option value="Training">Training</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="start_date">Start Date</label>
+        <input type="date" name="start_date" required>
+      </div>
+
+      <div class="form-group">
+        <label for="end_date">End Date</label>
+        <input type="date" name="end_date" required>
+      </div>
+
+      <div class="form-group">
+        <label for="start_time">Start Time</label>
+        <input type="time" name="start_time" required>
+      </div>
+
+      <div class="form-group">
+        <label for="end_time">End Time</label>
+        <input type="time" name="end_time" required>
+      </div>
+
+      <div class="form-group">
+        <label for="points_reward">Points Reward</label>
+        <input type="number" name="points_reward" required min="0" placeholder="Enter points">
+      </div>
+
+      <div class="form-group">
+        <label for="avaliable_slots">Available Slots</label>
+        <input type="number" name="avaliable_slots" required min="1" placeholder="Enter number of slots">
+      </div>
+
+      <div class="form-group">
+        <label for="qr_code">QR Code (optional)</label>
+        <input type="file" name="qr_code" accept="image/*">
+      </div>
+
+      <input hidden name="staffID" value="<%=staff.staffID%>">
+
+      <button type="submit" class="btn-submit">Create Program</button>
+    </form>
+  </div>
+
+</body>
+</html>

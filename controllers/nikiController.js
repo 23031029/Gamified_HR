@@ -7,14 +7,15 @@ exports.getUserDashboard = (req, res) => {
   const staffID = req.session.staff.staffID;
 
   const userInfoQuery = `
-    SELECT s.*, d.name AS department_name 
+    SELECT s.*, d.name AS department_name,
+           CONCAT(s.first_name, ' ', s.last_name) AS name
     FROM Staff s 
     JOIN Department d ON s.department = d.departmentID 
     WHERE s.staffID = ?
   `;
 
   const ongoingProgramsQuery = `
-    SELECT sp.*, p.Start_Date, p.End_Date 
+    SELECT sp.*, p.Start_Date, p.End_Date, p.Title, p.Type
     FROM staff_program sp 
     JOIN Program p ON sp.programID = p.ProgramID 
     WHERE sp.staffID = ? AND sp.Status != 'Completed'
@@ -25,6 +26,7 @@ exports.getUserDashboard = (req, res) => {
     FROM Redeem re 
     JOIN Reward r ON re.RewardID = r.RewardID 
     WHERE re.staffID = ?
+    ORDER BY re.Redeem_Date DESC
   `;
 
   const totalEarnedQuery = `SELECT SUM(points_earned) AS total_earned FROM staff_program WHERE staffID = ?`;
@@ -37,7 +39,6 @@ exports.getUserDashboard = (req, res) => {
 
   db.query(userInfoQuery, [staffID], (err, userResults) => {
     if (err) return res.status(500).send("Error fetching user info");
-
     const user = userResults[0];
 
     db.query(ongoingProgramsQuery, [staffID], (err, programResults) => {
@@ -57,10 +58,11 @@ exports.getUserDashboard = (req, res) => {
               programs: programResults,
               rewards: rewardResults,
               points: {
-                earned: earnedResult[0].total_earned || 0,
-                spent: spentResult[0].total_spent || 0,
+                earned: earnedResult[0]?.total_earned || 0,
+                spent: spentResult[0]?.total_spent || 0,
                 balance: user.total_point || 0
-              }
+              },
+              currentPath: req.path
             });
           });
         });
@@ -75,9 +77,14 @@ exports.getUserDashboard = (req, res) => {
 exports.getUserLeaderboard = (req, res) => {
   const filter = req.query.filter || 'all';
   const currentDept = req.session.staff.department;
+  const staffID = req.session.staff.staffID;
 
   let sql = `
-    SELECT s.staffID, s.name, s.total_point, s.profile_image, d.name AS department_name
+    SELECT s.staffID, 
+           CONCAT(s.first_name, ' ', s.last_name) AS name,
+           s.total_point, 
+           s.profile_image, 
+           d.name AS department_name
     FROM Staff s
     JOIN Department d ON s.department = d.departmentID
     WHERE s.role = 'user'
@@ -96,10 +103,12 @@ exports.getUserLeaderboard = (req, res) => {
     if (err) return res.status(500).send("Error fetching leaderboard");
 
     const historySQL = `
-      SELECT lh.*, s.name, d.name AS department_name
+      SELECT lh.*, 
+             CONCAT(s.first_name, ' ', s.last_name) AS name,
+             d.name AS department_name
       FROM leaderboard_history lh
-      JOIN staff s ON lh.staffID = s.staffID
-      JOIN department d ON s.department = d.departmentID
+      JOIN Staff s ON lh.staffID = s.staffID
+      JOIN Department d ON s.department = d.departmentID
       ORDER BY lh.year DESC, lh.half DESC, lh.rank_position ASC
     `;
 
@@ -109,7 +118,9 @@ exports.getUserLeaderboard = (req, res) => {
       res.render('user/leaderboard', {
         leaderboard: leaderboardResults,
         filter,
-        history: historyResults
+        history: historyResults,
+        staffID, // ✅ Pass staffID to EJS
+        currentPath: req.path
       });
     });
   });
@@ -123,7 +134,11 @@ exports.getAdminLeaderboard = (req, res) => {
   const currentDept = req.session.staff.department;
 
   let sql = `
-    SELECT s.staffID, s.name, s.total_point, s.profile_image, d.name AS department_name
+    SELECT s.staffID, 
+           CONCAT(s.first_name, ' ', s.last_name) AS name,
+           s.total_point, 
+           s.profile_image, 
+           d.name AS department_name
     FROM Staff s
     JOIN Department d ON s.department = d.departmentID
     WHERE s.role = 'user'
@@ -142,10 +157,12 @@ exports.getAdminLeaderboard = (req, res) => {
     if (err) return res.status(500).send("Error fetching leaderboard");
 
     const historySQL = `
-      SELECT lh.*, s.name, d.name AS department_name
+      SELECT lh.*, 
+             CONCAT(s.first_name, ' ', s.last_name) AS name,
+             d.name AS department_name
       FROM leaderboard_history lh
-      JOIN staff s ON lh.staffID = s.staffID
-      JOIN department d ON s.department = d.departmentID
+      JOIN Staff s ON lh.staffID = s.staffID
+      JOIN Department d ON s.department = d.departmentID
       ORDER BY lh.year DESC, lh.half DESC, lh.rank_position ASC
     `;
 
@@ -155,126 +172,109 @@ exports.getAdminLeaderboard = (req, res) => {
       res.render('admin/leaderboard', {
         leaderboard: leaderboardResults,
         filter,
-        history: historyResults
+        history: historyResults,
+        staffID: req.session.staff.staffID, // ✅ Add this
+        currentPath: req.path
       });
     });
   });
 };
 
 // =========================
-// ADMIN DASHBOARD
+// ADD / EDIT / DELETE LEADERBOARD HISTORY
 // =========================
-exports.getAdminDashboard = (req, res) => {
-  const adminID = req.session.staff.staffID;
 
-  const profileQuery = `
-    SELECT s.*, d.name AS department_name
-    FROM Staff s
-    JOIN Department d ON s.department = d.departmentID
-    WHERE s.staffID = ?
+exports.getAddLeaderboardEntry = (req, res) => {
+  db.query("SELECT staffID, CONCAT(first_name, ' ', last_name) AS name FROM Staff WHERE role = 'user' AND status = 'Active'", (err, staff) => {
+    if (err) return res.status(500).send("Error fetching staff");
+    res.render('admin/leaderboard_add', { staff });
+  });
+};
+
+exports.postAddLeaderboardEntry = (req, res) => {
+  const { year, half, rank_position, staffID, reward } = req.body;
+  const currentYear = new Date().getFullYear();
+
+  if (parseInt(year) < currentYear) {
+    return res.status(400).send("Only current or future years are allowed.");
+  }
+
+  const checkSQL = `
+    SELECT * FROM leaderboard_history 
+    WHERE year = ? AND half = ? AND rank_position = ?
   `;
 
-  const statsQuery = {
-    users: `SELECT COUNT(*) AS total_users FROM Staff WHERE role = 'user'`,
-    programs: `SELECT COUNT(*) AS total_programs FROM Program`,
-    redemptions: `SELECT COUNT(*) AS total_redemptions FROM Redeem`
-  };
+  db.query(checkSQL, [year, half, rank_position], (err, existing) => {
+    if (err) return res.status(500).send("Error checking for duplicate");
+    if (existing.length > 0) {
+      return res.status(400).send("Rank already assigned for that period.");
+    }
 
-  const recentProgramsQuery = `
-    SELECT Title, Type, End_Date
-    FROM Program
-    WHERE Created_By = ?
-    ORDER BY End_Date DESC
-    LIMIT 3
-  `;
+    const insertSQL = `
+      INSERT INTO leaderboard_history (year, half, rank_position, staffID, reward)
+      VALUES (?, ?, ?, ?, ?)
+    `;
 
-  const recentRedemptionsQuery = `
-    SELECT s.name, r.name AS reward_name, re.Redeem_Date
-    FROM Redeem re
-    JOIN Reward r ON re.RewardID = r.RewardID
-    JOIN Staff s ON re.staffID = s.staffID
-    ORDER BY re.Redeem_Date DESC
-    LIMIT 5
-  `;
-
-  const ongoingProgramsQuery = `
-    SELECT sp.*, p.Start_Date, p.End_Date 
-    FROM staff_program sp 
-    JOIN Program p ON sp.programID = p.ProgramID 
-    WHERE sp.staffID = ? AND sp.Status != 'Completed'
-  `;
-
-  const redeemedRewardsQuery = `
-    SELECT r.name, r.description, re.Redeem_Date, r.points 
-    FROM Redeem re 
-    JOIN Reward r ON re.RewardID = r.RewardID 
-    WHERE re.staffID = ?
-  `;
-
-  const totalEarnedQuery = `SELECT SUM(points_earned) AS total_earned FROM staff_program WHERE staffID = ?`;
-  const totalSpentQuery = `
-    SELECT SUM(r.points) AS total_spent 
-    FROM Redeem re 
-    JOIN Reward r ON re.RewardID = r.RewardID 
-    WHERE re.staffID = ?
-  `;
-
-  db.query(profileQuery, [adminID], (err, profileResult) => {
-    if (err) return res.status(500).send("Error loading admin profile");
-    const admin = profileResult[0];
-
-    db.query(statsQuery.users, (err, userResult) => {
-      if (err) return res.status(500).send("Error fetching user count");
-      db.query(statsQuery.programs, (err, programResult) => {
-        if (err) return res.status(500).send("Error fetching program count");
-        db.query(statsQuery.redemptions, (err, redemptionResult) => {
-          if (err) return res.status(500).send("Error fetching redemption count");
-
-          const stats = {
-            total_users: userResult[0].total_users,
-            total_programs: programResult[0].total_programs,
-            total_redemptions: redemptionResult[0].total_redemptions
-          };
-
-          db.query(recentProgramsQuery, [adminID], (err, recentPrograms) => {
-            if (err) return res.status(500).send("Error fetching recent programs");
-
-            db.query(recentRedemptionsQuery, (err, recentRedemptions) => {
-              if (err) return res.status(500).send("Error fetching recent redemptions");
-
-              db.query(ongoingProgramsQuery, [adminID], (err, programs) => {
-                if (err) return res.status(500).send("Error fetching ongoing programs");
-
-                db.query(redeemedRewardsQuery, [adminID], (err, rewards) => {
-                  if (err) return res.status(500).send("Error fetching redeemed rewards");
-
-                  db.query(totalEarnedQuery, [adminID], (err, earnedResult) => {
-                    if (err) return res.status(500).send("Error fetching points earned");
-
-                    db.query(totalSpentQuery, [adminID], (err, spentResult) => {
-                      if (err) return res.status(500).send("Error fetching points spent");
-
-                      res.render('admin/dashboard', {
-                        admin,
-                        stats,
-                        recentPrograms,
-                        recentRedemptions,
-                        programs,
-                        rewards,
-                        points: {
-                          earned: earnedResult[0].total_earned || 0,
-                          spent: spentResult[0].total_spent || 0,
-                          balance: admin.total_point || 0
-                        }
-                      });
-                    });
-                  });
-                });
-              });
-            });
-          });
-        });
-      });
+    db.query(insertSQL, [year, half, rank_position, staffID, reward], (err) => {
+      if (err) return res.status(500).send("Error inserting entry");
+      res.redirect('/admin/leaderboard');
     });
+  });
+};
+
+exports.getEditLeaderboardEntry = (req, res) => {
+  const id = req.params.id;
+
+  const entrySQL = `SELECT * FROM leaderboard_history WHERE Leaderboard_ID = ?`;
+  const staffSQL = `SELECT staffID, CONCAT(first_name, ' ', last_name) AS name FROM Staff WHERE role = 'user' AND status = 'Active'`;
+
+  db.query(entrySQL, [id], (err, entryResult) => {
+    if (err || entryResult.length === 0) return res.status(404).send("Entry not found");
+
+    db.query(staffSQL, (err, staff) => {
+      if (err) return res.status(500).send("Error fetching staff");
+      res.render('admin/leaderboard_edit', { entry: entryResult[0], staff });
+    });
+  });
+};
+
+exports.postEditLeaderboardEntry = (req, res) => {
+  const id = req.params.id;
+  const { year, half, rank_position, staffID, reward } = req.body;
+  const currentYear = new Date().getFullYear();
+
+  if (parseInt(year) < currentYear) {
+    return res.status(400).send("Only current or future years are allowed.");
+  }
+
+  const checkSQL = `
+    SELECT * FROM leaderboard_history 
+    WHERE year = ? AND half = ? AND rank_position = ? AND Leaderboard_ID != ?
+  `;
+
+  db.query(checkSQL, [year, half, rank_position, id], (err, existing) => {
+    if (err) return res.status(500).send("Error checking for duplicates");
+    if (existing.length > 0) {
+      return res.status(400).send("That rank is already assigned for this period.");
+    }
+
+    const updateSQL = `
+      UPDATE leaderboard_history 
+      SET year = ?, half = ?, rank_position = ?, staffID = ?, reward = ?
+      WHERE Leaderboard_ID = ?
+    `;
+
+    db.query(updateSQL, [year, half, rank_position, staffID, reward, id], (err) => {
+      if (err) return res.status(500).send("Error updating entry");
+      res.redirect('/admin/leaderboard');
+    });
+  });
+};
+
+exports.deleteLeaderboardEntry = (req, res) => {
+  const id = req.params.id;
+  db.query("DELETE FROM leaderboard_history WHERE Leaderboard_ID = ?", [id], (err) => {
+    if (err) return res.status(500).send("Error deleting entry");
+    res.redirect('/admin/leaderboard');
   });
 };

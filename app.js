@@ -88,27 +88,19 @@ app.use((req, res, next) => {
 // Use connect-flash middleware
 app.use(flash()); // Use flash middleware after session middleware
 
-// Public routes
+//Ser Jia
 app.get('/', serjiaControl.getSignIn);
 app.post('/sign-in', validateLogin, serjiaControl.login);
-
-// Registration (admin only)
 app.get('/admin/register', checkAuthentication, checkAdmin, serjiaControl.getRegister);
 app.post('/register', checkAuthentication, checkAdmin, upload.single('profile'), validateReg, serjiaControl.register);
-
-// Admin dashboard
 app.get('/admin/dashboard', checkAuthentication, checkAdmin, serjiaControl.getAdmin);
-
-// Logout (any logged-in user)
 app.get('/logout', checkAuthentication, serjiaControl.logout);
-
-// Update staff status (admin only)
 app.post('/status/:staffID', checkAuthentication, checkAdmin, serjiaControl.updateStatus);
-
-// User profile and password (user only)
 app.get('/user/profile', checkAuthentication, serjiaControl.getEditDetail);
 app.get('/user/change-password', checkAuthentication, serjiaControl.getChangePassword);
 app.post('/user/change-password', checkAuthentication, validatePasswordChange, serjiaControl.postChangePassword);
+app.post('/editStaff/:staffID', checkAdmin, upload.single('profile_image'), serjiaControl.editStaff);
+app.post('/user/edit-particulars', serjiaControl.editParticulars)
 
 // Isabel's reward routes (admin only)
 app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);

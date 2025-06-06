@@ -128,6 +128,24 @@ app.post('/claimReward/:id', checkAuthentication, checkUser, isabelControl.claim
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
+app.get('/admin/leaderboard/add', checkAuthentication, checkAdmin, nikiController.getAddLeaderboardEntry);
+app.post('/admin/leaderboard/add', checkAuthentication, checkAdmin, nikiController.postAddLeaderboardEntry);
+app.get('/admin/leaderboard/edit/:id', checkAuthentication, checkAdmin, nikiController.getEditLeaderboardEntry);
+app.post('/admin/leaderboard/edit/:id', checkAuthentication, checkAdmin, nikiController.postEditLeaderboardEntry);
+app.post('/admin/leaderboard/delete/:id', checkAuthentication, checkAdmin, nikiController.deleteLeaderboardEntry);
+
+
+// Alysha's program routes
+app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
+app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
+
+app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
+
+app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);
+app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_code'), alyshaControl.postAddProgram);
+
+app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
+app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
 
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);

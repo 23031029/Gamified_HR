@@ -151,13 +151,17 @@
         </tr>
       </thead>
       <tbody>
-        <% leaderboard.forEach((user, index) => { %>
+        <% leaderboard.forEach((user, index) => {
+             const isCurrentUser = user.staffID === staffID;
+        %>
           <tr class="<%= index === 0 ? 'gold-row animate' : index === 1 ? 'silver-row animate' : index === 2 ? 'bronze-row animate' : '' %>">
             <td class="rank">
               <%= index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1 %>
             </td>
             <td><img src="/images/<%= user.profile_image %>" alt="Profile" class="profile-img"></td>
-            <td class="name"><%= user.name %></td>
+            <td class="name" style="<%= isCurrentUser ? 'font-weight: bold; color: #007BFF;' : '' %>">
+              <%= user.name %> <%= isCurrentUser ? '(You)' : '' %>
+            </td>
             <td><%= user.department_name %></td>
             <td class="points"><%= user.total_point %></td>
           </tr>

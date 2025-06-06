@@ -125,20 +125,33 @@
       }
     }
 
-    .action-links a,
-    .action-links form {
+    .action-buttons form {
       display: inline;
-      margin-right: 8px;
+    }
+
+    .action-buttons button, .action-buttons a {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #007BFF;
+      font-size: 1rem;
+      margin-right: 5px;
     }
 
     .add-entry-btn {
       display: inline-block;
       padding: 10px 20px;
-      background-color: #60A5FA;
-      color: white;
-      border-radius: 6px;
+      background-color: #565F63;
+      color: #fff;
+      font-weight: bold;
+      border-radius: 8px;
       text-decoration: none;
-      margin-bottom: 15px;
+      margin: 20px 0;
+      transition: background-color 0.3s ease;
+    }
+
+    .add-entry-btn:hover {
+      background-color: #3e4549;
     }
   </style>
 </head>
@@ -163,13 +176,17 @@
         </tr>
       </thead>
       <tbody>
-        <% leaderboard.forEach((user, index) => { %>
+        <% leaderboard.forEach((user, index) => {
+             const isCurrentUser = user.staffID === staffID;
+        %>
           <tr class="<%= index === 0 ? 'gold-row animate' : index === 1 ? 'silver-row animate' : index === 2 ? 'bronze-row animate' : '' %>">
             <td class="rank">
               <%= index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1 %>
             </td>
             <td><img src="/images/<%= user.profile_image %>" class="profile-img"></td>
-            <td class="name"><%= user.name %></td>
+            <td class="name" style="<%= isCurrentUser ? 'font-weight: bold; color: #007BFF;' : '' %>">
+              <%= user.name %> <%= isCurrentUser ? '(You)' : '' %>
+            </td>
             <td><%= user.department_name %></td>
             <td class="points"><%= user.total_point %></td>
           </tr>
@@ -178,6 +195,8 @@
     </table>
 
     <div class="title">📜 Leaderboard History</div>
+
+    <a href="/admin/leaderboard/add" class="add-entry-btn">+ Add Leaderboard Entry</a>
 
     <table class="leaderboard-table">
       <thead>
@@ -188,6 +207,7 @@
           <th>Name</th>
           <th>Department</th>
           <th>Reward</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -199,6 +219,12 @@
             <td><%= entry.name %></td>
             <td><%= entry.department_name %></td>
             <td><%= entry.reward %></td>
+            <td class="action-buttons">
+              <a href="/admin/leaderboard/edit/<%= entry.Leaderboard_ID %>">✏️</a>
+              <form action="/admin/leaderboard/delete/<%= entry.Leaderboard_ID %>" method="POST" onsubmit="return confirm('Are you sure you want to delete this entry?');">
+                <button type="submit">🗑️</button>
+              </form>
+            </td>
           </tr>
         <% }) %>
       </tbody>

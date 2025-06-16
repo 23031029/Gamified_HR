@@ -204,7 +204,7 @@
                                 <input type="hidden" name="field" value="email">
                                 <div class="input-group">
                                     <input type="email" class="form-control" name="value" value="<%= staff.email %>" required>
-                                    <button class="btn btn-success" type="submit"><i class="fas fa-check"></i></button>
+                                    <button class="btn btn-success" type="submit"><i class="fas fa-check" onclick="return confirm('Confirm edit?')"></i></button>
                                     <button class="btn btn-secondary" type="button" onclick="cancelEdit('email')"><i class="fas fa-times"></i></button>
                                 </div>
                             </form>
@@ -222,7 +222,7 @@
                                 <input type="hidden" name="field" value="phone_number">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="value" value="<%= staff.phone_number || staff.phone %>" required>
-                                    <button class="btn btn-success" type="submit"><i class="fas fa-check"></i></button>
+                                    <button class="btn btn-success" type="submit" onclick="return confirm('Confirm edit?')"><i class="fas fa-check"></i></button>
                                     <button class="btn btn-secondary" type="button" onclick="cancelEdit('phone')"><i class="fas fa-times"></i></button>
                                 </div>
                             </form>
@@ -240,7 +240,7 @@
                                 <input type="hidden" name="field" value="home_address">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="value" value="<%= staff.home_address || staff.address %>" required>
-                                    <button class="btn btn-success" type="submit"><i class="fas fa-check"></i></button>
+                                    <button class="btn btn-success" type="submit" onclick="return confirm('Confirm edit?')"><i class="fas fa-check"></i></button>
                                     <button class="btn btn-secondary" type="button" onclick="cancelEdit('address')"><i class="fas fa-times"></i></button>
                                 </div>
                             </form>

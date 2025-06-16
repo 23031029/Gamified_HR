@@ -467,13 +467,27 @@ exports.editStaff = (req, res) => {
 };
 
 exports.editParticulars = (req, res) => {
-    const staffID = req.session.staff.staffID;
+    const staffID = req.session.staff?.staffID;
     const { field, value } = req.body;
-    const allowed = { email: 1, phone_number: 1, home_address: 1 };
-    if (!allowed[field]) return res.redirect('/user/edit-detail');
+    const allowedFields = ['email', 'phone_number', 'home_address'];
+
+    if (!staffID || !allowedFields.includes(field)) {
+        req.flash('error', 'Invalid request.');
+        return res.redirect('/user/profile');
+    }
+
     const sql = `UPDATE staff SET ${field} = ? WHERE staffID = ?`;
-    db.query(sql, [value, staffID], (err) => {
-        if (!err) req.session.staff[field] = value;
+    db.query(sql, [value, staffID], (err, result) => {
+        if (err) {
+            req.flash('error', 'Failed to update details.');
+            return res.redirect('/user/profile');
+        }
+        // Update session value
+        req.session.staff[field] = value;
+        req.flash('success', 'Details updated successfully.');
         res.redirect('/user/profile');
     });
 };
+
+
+

@@ -15,7 +15,7 @@ exports.getUserDashboard = (req, res) => {
   `;
 
   const ongoingProgramsQuery = `
-    SELECT sp.*, p.Start_Date, p.End_Date, p.Title, p.Type
+    SELECT sp.*, p.Start_Date, p.End_Date, p.Title, p.Type, sp.Status
     FROM staff_program sp 
     JOIN Program p ON sp.programID = p.ProgramID 
     WHERE sp.staffID = ? AND sp.Status != 'Completed'
@@ -29,7 +29,12 @@ exports.getUserDashboard = (req, res) => {
     ORDER BY re.Redeem_Date DESC
   `;
 
-  const totalEarnedQuery = `SELECT SUM(points_earned) AS total_earned FROM staff_program WHERE staffID = ?`;
+  const totalEarnedQuery = `
+    SELECT SUM(points_earned) AS total_earned 
+    FROM staff_program 
+    WHERE staffID = ?
+  `;
+
   const totalSpentQuery = `
     SELECT SUM(r.points) AS total_spent 
     FROM Redeem re 
@@ -141,7 +146,7 @@ exports.getAdminLeaderboard = (req, res) => {
            d.name AS department_name
     FROM Staff s
     JOIN Department d ON s.department = d.departmentID
-    WHERE s.role = 'user'
+    WHERE s.status = 'Active'
   `;
 
   const params = [];

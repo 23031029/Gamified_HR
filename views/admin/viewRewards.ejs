@@ -1,137 +1,527 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>View Rewards - Admin</title>
-  <style>
-    * {
-      box-sizing: border-box;
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Modern NavBar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: linear-gradient(135deg, #EAEAE7 0%, #F5F5F2 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+        margin-top: 110px;
+      }
+
+      .navbar-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 90px;
+        background: linear-gradient(135deg, #C6D537 0%, #D4E147 100%);
+        box-shadow: 0 2px 20px rgba(198, 213, 55, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+      }
+
+      .menu-toggle {
+        position: absolute;
+        left: 20px;
+        background: none;
+        border: none;
+        color: #565F63;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 12px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+      }
+
+      .menu-toggle:hover {
+        background: rgba(86, 95, 99, 0.1);
+        transform: scale(1.05);
+      }
+
+      .menu-toggle:active {
+        transform: scale(0.95);
+      }
+
+      .logo {
+        height: 50px;
+        width: auto;
+        transition: transform 0.3s ease;
+      }
+
+      .logo:hover {
+        transform: scale(1.05);
+      }
+
+      /* Sidebar */
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 80px;
+        width: 280px;
+        height: calc(100vh - 70px);
+        background: linear-gradient(180deg, #A3AEB1 0%, #8A9599 100%);
+        transform: translateX(0);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .sidebar.collapsed {
+        transform: translateX(-280px);
+      }
+
+      .sidebar-header {
+        padding: 30px 20px 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-header h2 {
+        color: #565F63;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .nav-menu {
+        flex: 1;
+        padding: 20px 0;
+      }
+
+      .sidebar-header {
+        padding: 25px 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .sidebar-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .profile-section {
+        position: relative;
+        z-index: 2;
+      }
+
+      .profile-image {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        object-fit: cover;
+        margin-bottom: 12px;
+      }
+
+      .profile-image:hover {
+        transform: scale(1.05);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .staff-name {
+        color: #2c3e50;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        line-height: 1.2;
+      }
+
+      .staff-department {
+        color: #565F63;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin: 0;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Alternative horizontal layout */
+      .sidebar-header.horizontal {
+        display: flex;
+        align-items: center;
+        text-align: left;
+        padding: 20px;
+      }
+
+      .horizontal .profile-image {
+        width: 50px;
+        height: 50px;
+        margin-right: 15px;
+        margin-bottom: 0;
+        flex-shrink: 0;
+      }
+
+      .horizontal .profile-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .horizontal .staff-name {
+        font-size: 1.1rem;
+        margin-bottom: 2px;
+      }
+
+      .horizontal .staff-department {
+        font-size: 0.8rem;
+      }
+
+      .nav-menu ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .nav-item {
+        margin: 8px 20px;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        color: #565F63;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .nav-link::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+      }
+
+      .nav-link:hover::before {
+        left: 100%;
+      }
+
+      .nav-link:hover {
+        background: #565F63;
+        color: #A3AEB1;
+        transform: translateX(5px);
+        box-shadow: 0 4px 15px rgba(86, 95, 99, 0.3);
+      }
+
+      .nav-link i {
+        margin-right: 12px;
+        font-size: 1.1rem;
+        width: 20px;
+        text-align: center;
+      }
+
+      .logout-section {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .logout-link {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        color: #565F63;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        border: 1px solid rgba(86, 95, 99, 0.3);
+      }
+
+      .logout-link:hover {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+      }
+
+      .logout-link i {
+        margin-right: 12px;
+        font-size: 1.1rem;
+      }
+
+      /* Main Content */
+      .main-content {
+        margin-left: 280px;
+        margin-top: 70px;
+        padding: 40px;
+        transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        min-height: calc(100vh - 70px);
+      }
+
+      .main-content.expanded {
+        margin-left: 0;
+      }
+
+      .content-container {
+        transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        min-height: calc(100vh - 70px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 100%;
+          transform: translateX(-100%);
+        }
+
+        .sidebar.collapsed {
+          transform: translateX(-100%);
+        }
+
+        .sidebar:not(.collapsed) {
+          transform: translateX(0);
+        }
+
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+        }
+
+        .main-content.expanded {
+          margin-left: 0;
+        }
+      }
+
+      .nav-link.active, .nav-link.active:hover {
+      background: #565F63;
+      color: #A3AEB1;
+      box-shadow: 0 4px 15px rgba(86, 95, 99, 0.3);
+      transform: translateX(5px);
     }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f6f6f6;
-    }
+      /* Overlay for mobile */
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
 
-    .content-container {
-      padding: 50px 20px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+      .overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
 
-    h2 {
-      text-align: center;
-      color: #565F63;
-      margin-bottom: 30px;
-    }
+      /* Animations */
+      @keyframes slideIn {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
 
-    .add-reward-button {
-      display: inline-block;
-      margin-bottom: 20px;
-      padding: 10px 20px;
-      background-color: #565F63;
-      color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: background-color 0.3s ease;
-    }
+      .nav-item {
+        animation: slideIn 0.5s ease forwards;
+      }
 
-    .add-reward-button:hover {
-      background-color: #A3AEB1;
-      color: #565F63;
-    }
+      .nav-item:nth-child(1) { animation-delay: 0.1s; }
+      .nav-item:nth-child(2) { animation-delay: 0.2s; }
+      .nav-item:nth-child(3) { animation-delay: 0.3s; }
+      .nav-item:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+  </head>
+  <body>
 
-    .rewards-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    }
+    <header class="navbar-header">
+      <% if (staff) { %>
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
+          <i class="fas fa-bars"></i>
+        </button>
+      <% } %>
+      <img src="/images/logo.png" alt="Company Logo" class="logo">
+    </header>
 
-    .rewards-table th,
-    .rewards-table td {
-      padding: 16px;
-      text-align: center;
-      border-bottom: 1px solid #eee;
-      font-size: 16px;
-    }
+    <% if (staff) { %>
+  <nav class="sidebar" id="sidebar">
+    <a href="/user/profile" class="sidebar-header horizontal" style="text-decoration:none; color:inherit; cursor:pointer;">
+      <img src="/images/<%= staff.profile_image %>" alt="<%= staff.name %>" class="profile-image">
+      <div class="profile-info">
+        <h3 class="staff-name"><%= staff.first_name %> <%= staff.last_name %></h3>
+        <p class="staff-department"><%= staff.department_name %> Department</p>
+      </div>
+    </a>
 
-    .rewards-table th {
-      background-color: #E5E8EA;
-      font-weight: bold;
-      color: #333;
-    }
+    <div class="nav-menu">
+      <ul>
+        <li class="nav-item">
+          <% if (staff.role == "admin") { %>
+            <a href="/admin/dashboard" class="nav-link<%= currentPath === '/admin/dashboard' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Dashboard
+            </a>
+          <% } else { %>
+            <a href="/user/dashboard" class="nav-link<%= currentPath === '/user/dashboard' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Dashboard
+            </a>
+          <% } %>
+        </li>
 
-    .rewards-table tr:hover {
-      background-color: #f9f9f9;
-    }
+        <li class="nav-item">
+          <% if (staff.role == "admin") { %>
+            <a href="/admin/rewards" class="nav-link<%= currentPath === '/admin/rewards' ? ' active' : '' %>">
+              <i class="fas fa-gift"></i>
+              Rewards
+            </a>
+          <% } else { %>
+            <a href="/user/rewards" class="nav-link<%= currentPath === '/user/rewards' ? ' active' : '' %>">
+              <i class="fas fa-gift"></i>
+              Rewards
+            </a>
+          <% } %>
+        </li>
+        <li class="nav-item">
+           <% if (staff.role == "admin") { %>
+            <a href="/admin/leaderboard" class="nav-link<%= currentPath === '/admin/leaderboard' ? ' active' : '' %>">
+              <i class="fas fa-trophy"></i>
+              Leaderboard
+            </a>
+          <% } else { %>
+            <a href="/user/leaderboard" class="nav-link<%= currentPath === '/user/leaderboard' ? ' active' : '' %>">
+              <i class="fas fa-trophy"></i>
+              Leaderboard
+            </a>
+          <% } %>
+        </li>
+        <li class="nav-item">
+          <% if (staff.role == "admin") { %>
+          <a href="/admin/programs" class="nav-link<%= currentPath === '/admin/programs' ? ' active' : '' %>">
+            <i class="fas fa-calendar-alt"></i>
+            Program
+          </a>
+          <% } else { %>
+            <a href="/user/programs" class="nav-link<%= currentPath === '/user/programs' ? ' active' : '' %>">
+              <i class="fas fa-calendar-alt"></i>
+              Program
+            </a>
+          <% } %>
+        </li>
+      </ul>
+    </div>
 
-    .rewards-table tr:last-child td {
-      border-bottom: none;
-    }
+    <div class="logout-section">
+      <a href="/logout" class="logout-link">
+        <i class="fas fa-sign-out-alt"></i>
+        Logout
+      </a>
+    </div>
+  </nav>
+<% } %>
 
-    .rewards-table img {
-      max-width: 80px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
 
-    .action-link {
-      color: #007bff;
-      text-decoration: none;
-      font-weight: 500;
-      padding: 6px 12px;
-      border: 1px solid #007bff;
-      border-radius: 6px;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
+    <!-- Mobile Overlay -->
+    <div class="overlay" id="overlay"></div>
 
-    .action-link:hover {
-      background-color: #007bff;
-      color: white;
-    }
-  </style>
-</head>
-<body>
-  <%- include('../partials/navbar.ejs') %>
 
-  <div class="content-container" id="content">
-    <h2>Rewards</h2>
-    <a href="/admin/rewards/add" class="add-reward-button">+ Add New Reward</a>
+    <script src="https://cdn.jsdelivr.net//images/logo.png/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Initialize navigation functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const overlay = document.getElementById('overlay');
 
-    <table class="rewards-table">
-      <thead>
-        <tr>
-          <th>Image</th>
-          <th>Name</th>
-          <th>Points</th>
-          <th>Stock</th>
-          <th>Description</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% rewards.forEach(reward => { %>
-          <tr>
-            <td>
-              <img src="/images/<%= reward.image %>" alt="<%= reward.name %>">
-            </td>
-            <td><%= reward.name %></td>
-            <td><%= reward.points %></td>
-            <td><%= reward.stock %></td>
-            <td><%= reward.description %></td>
-            <td>
-              <a href="/rewards/edit/<%= reward.RewardID %>" class="action-link">Edit</a>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</body>
+        // Toggle sidebar function
+        function toggleSidebar() {
+          sidebar.classList.toggle('collapsed');
+          mainContent.classList.toggle('expanded');
+          
+          // Handle mobile overlay
+          if (window.innerWidth <= 768) {
+            overlay.classList.toggle('active');
+          }
+        }
+
+        // Menu toggle click event
+        if (menuToggle) {
+          menuToggle.addEventListener('click', toggleSidebar);
+        }
+
+        // Close sidebar when clicking overlay (mobile)
+        overlay.addEventListener('click', function() {
+          if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+            overlay.classList.remove('active');
+          }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+          if (window.innerWidth > 768) {
+            overlay.classList.remove('active');
+          }
+        });
+
+        // Add smooth scrolling to nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.addEventListener('click', function(e) {
+            // Add active state animation
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              this.style.transform = '';
+            }, 150);
+          });
+        });
+      });
+    </script>
+  </body>
 </html>

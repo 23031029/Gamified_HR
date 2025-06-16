@@ -294,3 +294,50 @@ exports.postEditProgram = (req, res) => {
         res.redirect('/admin/programs');
     });
 };
+
+exports.joinProgram = (req, res) => {
+    const { programID, slotDate, slotTime } = req.body;
+    const userID = req.session.staff.staffID;
+
+    if (!programID || !slotDate || !slotTime || !userID) {
+        return res.json({ success: false, message: "Missing required data." });
+    }
+
+    const checkQuery = `SELECT * FROM program_booking WHERE staffID = ? AND ProgramID = ?`;
+    db.query(checkQuery, [userID, programID], (checkErr, results) => {
+        if (checkErr) return res.json({ success: false, message: "Database error." });
+
+        if (results.length > 0) {
+            return res.json({ success: false, message: "Already booked this program." });
+        }
+
+        const insertQuery = `
+            INSERT INTO program_booking (ProgramID, staffID, slot_date, slot_time)
+            VALUES (?, ?, ?, ?)
+        `;
+
+        db.query(insertQuery, [programID, userID, slotDate, slotTime], (insertErr) => {
+            if (insertErr) return res.json({ success: false, message: "Failed to book slot." });
+
+            // Award points
+            const getPointsQuery = `SELECT points_reward FROM Program WHERE ProgramID = ?`;
+            db.query(getPointsQuery, [programID], (err, result) => {
+                if (err || result.length === 0) return res.json({ success: true, message: "Booked, but failed to add points." });
+
+                const pointsToAdd = result[0].points_reward;
+                const updatePoints = `
+                    INSERT INTO points (staffID, earned, spent, balance)
+                    VALUES (?, ?, 0, ?)
+                    ON DUPLICATE KEY UPDATE 
+                    earned = earned + ?, balance = balance + ?
+                `;
+
+                db.query(updatePoints, [userID, pointsToAdd, pointsToAdd, pointsToAdd, pointsToAdd], (err2) => {
+                    if (err2) return res.json({ success: true, message: "Slot booked. Error updating points." });
+
+                    return res.json({ success: true, message: "Slot booked and points awarded!" });
+                });
+            });
+        });
+    });
+};

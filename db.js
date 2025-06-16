@@ -3,7 +3,7 @@ const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: 'C207',
-    database: 'Gamified_HR',
+    database: 'Gamified_HR'
 })
 
     //Connecting to database

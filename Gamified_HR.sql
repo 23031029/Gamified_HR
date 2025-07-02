@@ -58,7 +58,7 @@ CREATE TABLE Reward (
 );
  
 INSERT INTO Reward (RewardID, name, description, points, stock, image) VALUES
-('R001', 'Coffee Voucher', 'Redeemable at any Starbucks outlet', 100, 10, 'starbucks.png'),
+('R001', 'Coffee Voucher', 'Redeemable at any Starbucks outlet', 100, 10, 'starbucks.jpg'),
 ('R002', 'Free Macdonald Meal', '1 Mcspicy Meal with coke', 150, 5, 'mcd.png'),
 ('R003', 'Spa Voucher', 'Ful Body Massage for 2 hours', 500, 2, 'spa.png'),
 ('R004', 'Company Mug', 'Limited edition mug with company logo', 50, 20, 'casugolMug.png');
@@ -112,7 +112,7 @@ CREATE TABLE staff_program (
     participantID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     staffID VARCHAR(10) NOT NULL,
     programID VARCHAR(10) NOT NULL,
-    Start_Date DATE NOT NULL,
+	Start_Date DATE NOT NULL,
     End_Date DATE NOT NULL,
     Start_Time TIME NOT NULL,
     End_Time TIME NOT NULL,
@@ -172,19 +172,19 @@ INSERT INTO Program_Feedback (FeedbackID, staffID, ProgramID, Rating, Comments, 
     FOREIGN KEY (ProgramID) REFERENCES Program(ProgramID),
     FOREIGN KEY (staffID) REFERENCES Staff(staffID)
 );
- 
+
 INSERT INTO Program_Booking (ProgramID, staffID, slot_date, slot_time) VALUES
 ('P005', 'S005', '2025-06-09', '02:00 PM - 03:00 PM'),
 ('P004', 'S008', '2025-06-10', '07:00 AM - 08:00 AM'),
 ('P003', 'S007', '2025-06-07', '09:00 AM - 10:00 AM'),
 ('P002', 'S006', '2024-08-02', '10:00 AM - 11:00 AM'),
 ('P004', 'S001', '2025-06-11', '07:00 AM - 08:00 AM');
- 
+
 CREATE TABLE leaderboard_history (
     Leaderboard_ID INT AUTO_INCREMENT PRIMARY KEY,
     year INT NOT NULL,
-    half ENUM('H1', 'H2') NOT NULL,
-    rank_position INT NOT NULL,
+    half ENUM('H1', 'H2') NOT NULL, 
+    rank_position INT NOT NULL, 
     staffID VARCHAR(10) NOT NULL,
     reward TEXT NOT NULL,
     FOREIGN KEY (staffID) REFERENCES staff(staffID)

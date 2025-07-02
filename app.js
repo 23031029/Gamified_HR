@@ -154,5 +154,5 @@ app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.po
 app.post('/join-program', checkAuthentication, checkUser, alyshaControl.joinProgram);
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3010;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}/`));

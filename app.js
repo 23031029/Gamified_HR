@@ -139,20 +139,6 @@ app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_cod
 app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
 app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
 
-// Alysha's program routes
-app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
-app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
-
-app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
-
-app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);
-app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_code'), alyshaControl.postAddProgram);
-
-app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
-app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
-
-app.post('/join-program', checkAuthentication, checkUser, alyshaControl.joinProgram);
-
 // Start server
-const PORT = process.env.PORT || 3010;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}/`));

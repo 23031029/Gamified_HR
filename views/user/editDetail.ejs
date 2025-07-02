@@ -195,33 +195,59 @@
                 <table class="table info-table">
                     <tr>
                         <th><i class="fas fa-envelope"></i> Email</th>
-                        <td><%= staff.email %></td>
-                    </tr>
-                    <tr>
-                        <th><i class="fas fa-venus-mars"></i> Gender</th>
                         <td>
-                            <% if (staff.gender === 'M') { %>Male<% } else if (staff.gender === 'F') { %>Female<% } else { %>Other<% } %>
+                            <div id="emailView" class="d-flex align-items-center justify-content-between">
+                                <span><%= staff.email %></span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="startEdit('email')"><i class="fas fa-pencil-alt"></i></button>
+                            </div>
+                            <form id="emailEdit" class="d-none" action="/user/edit-particulars" method="POST">
+                                <input type="hidden" name="field" value="email">
+                                <div class="input-group">
+                                    <input type="email" class="form-control" name="value" value="<%= staff.email %>" required>
+                                    <button class="btn btn-success" type="submit"><i class="fas fa-check" onclick="return confirm('Confirm edit?')"></i></button>
+                                    <button class="btn btn-secondary" type="button" onclick="cancelEdit('email')"><i class="fas fa-times"></i></button>
+                                </div>
+                            </form>
                         </td>
                     </tr>
-                    <tr>
-                        <th><i class="fas fa-birthday-cake"></i> Date of Birth</th>
-                        <td><%= staff.dob ? staff.dob.toISOString ? staff.dob.toISOString().slice(0,10) : staff.dob : '' %></td>
-                    </tr>
+
                     <tr>
                         <th><i class="fas fa-phone"></i> Phone</th>
-                        <td><%= staff.phone_number || staff.phone %></td>
+                        <td>
+                            <div id="phoneView" class="d-flex align-items-center justify-content-between">
+                                <span><%= staff.phone_number || staff.phone %></span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="startEdit('phone')"><i class="fas fa-pencil-alt"></i></button>
+                            </div>
+                            <form id="phoneEdit" class="d-none" action="/user/edit-particulars" method="POST">
+                                <input type="hidden" name="field" value="phone_number">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="value" value="<%= staff.phone_number || staff.phone %>" required>
+                                    <button class="btn btn-success" type="submit" onclick="return confirm('Confirm edit?')"><i class="fas fa-check"></i></button>
+                                    <button class="btn btn-secondary" type="button" onclick="cancelEdit('phone')"><i class="fas fa-times"></i></button>
+                                </div>
+                            </form>
+                        </td>
                     </tr>
+
                     <tr>
                         <th><i class="fas fa-home"></i> Address</th>
-                        <td><%= staff.home_address || staff.address %></td>
+                        <td>
+                            <div id="addressView" class="d-flex align-items-center justify-content-between">
+                                <span><%= staff.home_address || staff.address %></span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="startEdit('address')"><i class="fas fa-pencil-alt"></i></button>
+                            </div>
+                            <form id="addressEdit" class="d-none" action="/user/edit-particulars" method="POST">
+                                <input type="hidden" name="field" value="home_address">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="value" value="<%= staff.home_address || staff.address %>" required>
+                                    <button class="btn btn-success" type="submit" onclick="return confirm('Confirm edit?')"><i class="fas fa-check"></i></button>
+                                    <button class="btn btn-secondary" type="button" onclick="cancelEdit('address')"><i class="fas fa-times"></i></button>
+                                </div>
+                            </form>
+                        </td>
                     </tr>
+
                 </table>
-                <!-- Change Password Button -->
-                <div class="d-flex justify-content-end mt-3">
-                    <a href="/user/change-password" class="btn btn-warning">
-                        <i class="fas fa-key"></i> Change Password
-                    </a>
-                </div>
             </div>
         </div>
     </div>
@@ -281,5 +307,26 @@
         </div>
     </div>
 </div>
+
+<script>
+function startEdit(field) {
+    // Hide all others if any
+    ['email', 'phone', 'address'].forEach(f => {
+        document.getElementById(f + 'View').classList.remove('d-none');
+        document.getElementById(f + 'Edit').classList.add('d-none');
+    });
+
+    // Show current field's edit form
+    document.getElementById(field + 'View').classList.add('d-none');
+    document.getElementById(field + 'Edit').classList.remove('d-none');
+}
+
+function cancelEdit(field) {
+    document.getElementById(field + 'View').classList.remove('d-none');
+    document.getElementById(field + 'Edit').classList.add('d-none');
+}
+</script>
+
+
 </body>
 </html>

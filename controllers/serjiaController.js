@@ -425,3 +425,69 @@ exports.postChangePassword = (req, res) => {
         });
     });
 };
+
+exports.editStaff = (req, res) => {
+    const staffID = req.params.staffID;
+    const {
+        first_name,
+        last_name,
+        role,
+        department_name,
+        old_profile_image
+    } = req.body;
+
+    const getDeptID = `SELECT departmentID FROM department WHERE name = ?`;
+
+    let profile_image = old_profile_image;
+    if (req.file && req.file.filename) {
+        profile_image = req.file.filename;
+    }
+    
+    db.query(getDeptID, [department_name], (err, deptResult) => {
+        if (err || deptResult.length === 0) {
+            req.flash('errorStaff', 'Invalid department');
+            return res.redirect('/admin/dashboard');
+        }
+        const departmentID = deptResult[0].departmentID;
+
+        const updateSql = `
+            UPDATE staff
+            SET first_name = ?, last_name = ?, role = ?, department = ?, profile_image = ?
+            WHERE staffID = ?
+        `;
+        db.query(updateSql, [first_name, last_name, role, departmentID, profile_image, staffID], (err2) => {
+            if (err2) {
+                req.flash('errorStaff', 'Failed to update staff details');
+            } else {
+                req.flash('successStaff', 'Staff details updated successfully');
+            }
+            res.redirect('/admin/dashboard');
+        });
+    });
+};
+
+exports.editParticulars = (req, res) => {
+    const staffID = req.session.staff?.staffID;
+    const { field, value } = req.body;
+    const allowedFields = ['email', 'phone_number', 'home_address'];
+
+    if (!staffID || !allowedFields.includes(field)) {
+        req.flash('error', 'Invalid request.');
+        return res.redirect('/user/profile');
+    }
+
+    const sql = `UPDATE staff SET ${field} = ? WHERE staffID = ?`;
+    db.query(sql, [value, staffID], (err, result) => {
+        if (err) {
+            req.flash('error', 'Failed to update details.');
+            return res.redirect('/user/profile');
+        }
+        // Update session value
+        req.session.staff[field] = value;
+        req.flash('success', 'Details updated successfully.');
+        res.redirect('/user/profile');
+    });
+};
+
+
+

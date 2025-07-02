@@ -10,7 +10,7 @@
     .header { background: linear-gradient(135deg, #B8D42F, #76B900); color: white; padding: 20px 0; text-align: center; }
     .container { max-width: 900px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.08);}
     .programs-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    .programs-table th, .programs-table td { padding: 12px 10px; border-bottom: 1px solid #eee; text-align: left; }
+    .programs-table th, .programs-table td { padding: 12px 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
     .programs-table th { background: #f8f9fa; }
     .btn { padding: 8px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1rem; text-decoration: none; }
     .btn-edit { background: #76B900; color: white; }
@@ -47,28 +47,44 @@
           <tr>
             <th>Title</th>
             <th>Type</th>
-            <th>Start Date</th>
-            <th>End Date</th>
+            <th>Date</th>
             <th>Start Time</th>
             <th>End Time</th>
+            <th>Duration (min)</th>
             <th>Points</th>
-            <th>Available Slots</th>
+            <th>Slots</th>
             <th>Created By</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <% programs.forEach(function(program) { %>
+          <% programs.forEach(program => { %>
             <tr>
               <td><%= program.Title %></td>
               <td><%= program.Type %></td>
-              <td><%= new Date(program.Start_Date).toLocaleDateString() %></td>
-              <td><%= new Date(program.End_Date).toLocaleDateString() %></td>
-              <td><%= program.Start_Time ? program.Start_Time.substring(0,5) : '' %></td>
-              <td><%= program.End_Time ? program.End_Time.substring(0,5) : '' %></td>
+              <td>
+                <% program.timeslots.forEach(slot => { %>
+                  <div><%= slot.date %></div>
+                <% }) %>
+              </td>
+              <td>
+                <% program.timeslots.forEach(slot => { %>
+                  <div><%= slot.startTime %></div>
+                <% }) %>
+              </td>
+              <td>
+                <% program.timeslots.forEach(slot => { %>
+                  <div><%= slot.endTime %></div>
+                <% }) %>
+              </td>
+              <td><%= program.Duration %></td>
               <td><%= program.points_reward %></td>
-              <td><%= program.avaliable_slots %></td>
-              <td><%=program.name%> (<%=program.Created_By%>)</td>
+              <td>
+                <% program.timeslots.forEach(slot => { %>
+                  <div><%= slot.slots %></div>
+                <% }) %>
+              </td>
+              <td><%= program.name %> (<%= program.Created_By %>)</td>
               <td>
                 <a href="/programs/edit/<%= program.ProgramID %>" class="btn btn-edit">Edit</a>
                 <form action="/programs/delete/<%= program.ProgramID %>" method="POST" style="display:inline;">

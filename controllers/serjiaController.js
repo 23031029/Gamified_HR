@@ -107,7 +107,7 @@ exports.register = (req, res) => {
                 return res.redirect('/admin/register');
             }
 
-            // Updated insert statement to include address, phone, dob
+            // Updated insert statement to match new database schema
             const insertSql = `INSERT INTO staff 
                 (staffID, first_name, last_name, email, password, role, department, home_address, phone_number, dob, date_join, status, total_point, profile_image, gender) 
                 VALUES (?, ?, ?, ?, SHA1(?), ?, ?, ?, ?, ?, CURDATE(), 'Active', 0, ?, ?)`;
@@ -144,19 +144,18 @@ exports.logout= (req, res)=>{
 exports.getAdmin = (req, res) => {
     const staffQuery = `SELECT COUNT(*) AS staffCount FROM staff WHERE status= "Active"`;
     const rewardQuery = "SELECT COUNT(*) AS rewardCount FROM reward";
-    const programQuery = "SELECT COUNT(*) as programCount  FROM program WHERE current_date() < end_date";
+    const programQuery = "SELECT COUNT(*) as programCount FROM program";
 
     const popular_program = `
-                SELECT 
-            program.title, 
-            ROUND(AVG(pf.rating), 2) AS average_rating
+        SELECT 
+            program.Title as title, 
+            ROUND(AVG(pf.Rating), 2) AS average_rating
         FROM 
             program_feedback AS pf
         INNER JOIN 
-            program ON program.programID = pf.ProgramID
+            program ON program.ProgramID = pf.ProgramID
         GROUP BY 
-            program.title;
-
+            program.Title
     `;
 
     const popular_reward = `
@@ -170,7 +169,7 @@ exports.getAdmin = (req, res) => {
         GROUP BY 
             reward.RewardID, reward.name
         ORDER BY 
-            times_redeemed DESC;
+            times_redeemed DESC
     `;
 
     const department_active = `
@@ -184,38 +183,42 @@ exports.getAdmin = (req, res) => {
         JOIN 
             Department d ON s.department = d.departmentID
         WHERE 
-            MONTH(sp.completed_date) = MONTH(CURDATE()) 
-            AND YEAR(sp.completed_date) = YEAR(CURDATE())
+            sp.Status = 'Completed'
+            AND MONTH(CURDATE()) = MONTH(CURDATE()) 
+            AND YEAR(CURDATE()) = YEAR(CURDATE())
         GROUP BY 
             d.departmentID, d.name
         ORDER BY 
-            total_participations DESC;
+            total_participations DESC
     `;
 
-    const monthly_participant= `
+   const monthly_participant = `
     SELECT 
-    DATE_FORMAT(completed_date, '%Y-%m') AS month,
-    COUNT(*) AS completed_count
+        DATE_FORMAT(t.Date, '%Y-%m') AS month,
+        COUNT(sp.participantID) AS participant_count
     FROM 
-        staff_program
+        staff_program sp
+    JOIN 
+        Timeslot t ON sp.timeslotID = t.timeslotID
     WHERE 
-        completed_date IS NOT NULL
+        sp.Status = 'Completed'
     GROUP BY 
-        month
+        DATE_FORMAT(t.Date, '%Y-%m')
     ORDER BY 
         month;
-    `
+            `;
 
-    const person_details= `SELECT 
-  staff.*, 
-  department.name AS department_name  
-FROM 
-  staff 
-INNER JOIN 
-  department ON department.departmentID = staff.department
-ORDER BY 
-  status ASC, staffID ASC;
-`;
+    const person_details = `
+        SELECT 
+            staff.*, 
+            department.name AS department_name  
+        FROM 
+            staff 
+        INNER JOIN 
+            department ON department.departmentID = staff.department
+        ORDER BY 
+            status ASC, staffID ASC
+    `;
 
     db.query(staffQuery, (err, staffResult) => {
         if (err) {
@@ -265,7 +268,7 @@ ORDER BY
                                 if (err4) throw err4;
 
                                 const monthLabels = result4.map(row => row.month);
-                                const monthData = result4.map(row => row.completed_count);
+                                const monthData = result4.map(row => row.participant_count);
 
                                 db.query(person_details, (err,result)=>{
 
@@ -341,9 +344,15 @@ exports.getEditDetail = (req, res) => {
     `;
 
     const ongoingProgramsQuery = `
-        SELECT p.Title as title, sp.Status as status
+        SELECT 
+            p.Title as title, 
+            sp.Status as status,
+            t.Date as program_date,
+            t.Start_Time as start_time,
+            t.Duration as duration
         FROM staff_program sp
         INNER JOIN program p ON sp.programID = p.ProgramID
+        INNER JOIN timeslot t ON sp.timeslotID = t.timeslotID
         WHERE sp.staffID = ? AND sp.Status = 'Ongoing'
     `;
 
@@ -482,12 +491,8 @@ exports.editParticulars = (req, res) => {
             req.flash('error', 'Failed to update details.');
             return res.redirect('/user/profile');
         }
-        // Update session value
         req.session.staff[field] = value;
         req.flash('success', 'Details updated successfully.');
         res.redirect('/user/profile');
     });
 };
-
-
-

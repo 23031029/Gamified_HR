@@ -269,6 +269,18 @@
                 <div class="detail-label">End Date</div>
                 <div class="detail-value"><%= formatDate(program.End_Date) %></div>
               </div>
+              <div class="detail-item">
+                <div class="detail-label">Start Time</div>
+                <div class="detail-value"><%= program.start_time ? program.start_time.substring(0,5) : '' %></div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">End Time</div>
+                <div class="detail-value"><%= program.end_time ? program.end_time.substring(0,5) : '' %></div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Available Slots</div>
+                <div class="detail-value"><%= program.avaliable_slots %></div>
+              </div>
             </div>
             <div class="program-actions">
               <% if (status === 'active' || status === 'upcoming') { %>

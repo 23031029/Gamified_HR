@@ -4,75 +4,203 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Edit Program</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-    .btn-primary { background: #76B900; color: white; }
-    .btn-secondary { background: #ccc; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #76B900;
+      color: white;
+    }
+    .btn-secondary {
+      background: #ccc;
+    }
+    .timeslot-group {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      background: #fafafa;
+      position: relative;
+    }
+    .locked {
+      opacity: 0.6;
+    }
+    .remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
-
   <div class="container">
     <h2>Edit Program</h2>
-
-
 
     <% if (program) { %>
       <form action="/programs/edit/<%= program.ProgramID %>" method="POST">
         <div class="form-group">
-          <label for="title">Program Title *</label>
-          <input type="text" id="title" name="title" value="<%= program.Title %>" required />
+          <label>Program Title *</label>
+          <input type="text" name="title" value="<%= program.Title %>" required />
         </div>
 
         <div class="form-group">
-          <label for="type">Program Type *</label>
-          <select id="type" name="type" required>
-            <option value="">Select Type</option>
+          <label>Type *</label>
+          <select name="type" required>
+            <option value="">-- Select Type --</option>
             <option value="Training" <%= program.Type === 'Training' ? 'selected' : '' %>>Training</option>
             <option value="Health & Wellness" <%= program.Type === 'Health & Wellness' ? 'selected' : '' %>>Health & Wellness</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="description">Description *</label>
-          <textarea id="description" name="description" required><%= program.Description %></textarea>
+          <label>Description *</label>
+          <textarea name="description" required><%= program.Description %></textarea>
         </div>
 
         <div class="form-group">
-          <label for="startDate">Start Date *</label>
-          <input type="text" id="startDate" name="startDate" value="<%= new Date(program.Start_Date).toISOString().split('T')[0] %>" required readonly />
+          <label>Points Reward *</label>
+          <input type="number" name="points_reward" value="<%= program.points_reward %>" min="1" max="1000" required />
         </div>
 
         <div class="form-group">
-          <label for="endDate">End Date *</label>
-          <input type="text" id="endDate" name="endDate" value="<%= new Date(program.End_Date).toISOString().split('T')[0] %>" required readonly />
+          <label>Duration (mins) *</label>
+          <input type="number" name="duration" value="<%= timeslots[0]?.Duration || 1 %>" min="1" required />
         </div>
 
-        <div class="form-group">
-          <label for="pointsReward">Points Reward *</label>
-          <input type="number" id="pointsReward" name="pointsReward" value="<%= program.points_reward %>" min="1" max="1000" required />
+        <hr>
+        <h4>Timeslots</h4>
+        <div id="timeslots-container">
+          <% timeslots.forEach((ts, i) => {
+            const dateVal = ts.Date.toISOString().split('T')[0];
+            const timeVal = ts.Start_Time.substring(0,5);
+            const datetime = new Date(`${dateVal}T${timeVal}`);
+            const now = new Date();
+            const isPast = datetime <= now;
+          %>
+            <div class="timeslot-group <%= isPast ? 'locked' : '' %>">
+              <% if (!isPast) { %>
+                <button type="button" class="remove-btn" onclick="removeTimeslot(this)">×</button>
+              <% } %>
+              <input type="hidden" name="timeslotID" value="<%= ts.timeslotID %>">
+              <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="timeslot_date" value="<%= dateVal %>" <%= isPast ? 'readonly' : '' %> required>
+              </div>
+              <div class="form-group">
+                <label>Start Time</label>
+                <input type="time" name="timeslot_start" value="<%= timeVal %>" <%= isPast ? 'readonly' : '' %> required>
+              </div>
+              <div class="form-group">
+                <label>Slots</label>
+                <input type="number" name="timeslot_slots" value="<%= ts.Slots_availablility %>" min="1" required>
+              </div>
+            </div>
+          <% }) %>
         </div>
 
+        <button type="button" class="btn btn-secondary" onclick="addTimeslot()">+ Add Timeslot</button>
+        <br><br>
         <button type="submit" class="btn btn-primary">Save</button>
         <a href="/admin/programs" class="btn btn-secondary">Cancel</a>
       </form>
-
     <% } else { %>
       <p>Program not found.</p>
       <a href="/admin/programs" class="btn btn-secondary">Back</a>
     <% } %>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
-    flatpickr("#startDate", { dateFormat: "Y-m-d" });
-    flatpickr("#endDate", { dateFormat: "Y-m-d" });
+    function removeTimeslot(button) {
+      const group = button.closest('.timeslot-group');
+      if (!group) return;
+
+      const date = group.querySelector('input[name="timeslot_date"]').value;
+      const time = group.querySelector('input[name="timeslot_start"]').value;
+      const slotDateTime = new Date(`${date}T${time}`);
+      const now = new Date();
+
+      if (slotDateTime <= now) {
+        alert("You cannot delete current or past timeslots.");
+        return;
+      }
+
+      group.remove();
+    }
+
+    function addTimeslot() {
+      const container = document.getElementById('timeslots-container');
+      const today = new Date();
+      today.setDate(today.getDate() + 1);
+      const defaultDate = today.toISOString().split('T')[0];
+
+      const div = document.createElement('div');
+      div.className = 'timeslot-group';
+      div.innerHTML = `
+        <button type="button" class="remove-btn" onclick="removeTimeslot(this)">×</button>
+        <input type="hidden" name="timeslotID" value="">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" name="timeslot_date" value="${defaultDate}" min="${defaultDate}" required>
+        </div>
+        <div class="form-group">
+          <label>Start Time</label>
+          <input type="time" name="timeslot_start" required>
+        </div>
+        <div class="form-group">
+          <label>Slots</label>
+          <input type="number" name="timeslot_slots" min="1" required>
+        </div>
+      `;
+      container.appendChild(div);
+      div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   </script>
 </body>
 </html>

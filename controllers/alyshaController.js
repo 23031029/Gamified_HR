@@ -1,28 +1,68 @@
 const db = require('../db');
 
-// Admin - List all programs
+// Admin - List all programs (with timeslot info)
 exports.getProgramsAdmin = (req, res) => {
     const query = `
         SELECT 
-            program.*,
-            concat(staff.first_name, " ",staff.last_name) as name
-        FROM Program 
-        inner Join staff ON staff.staffID= program.created_by
-        ORDER BY Start_Date ASC
+            p.ProgramID, p.Title, p.Type, p.points_reward, p.Created_By, 
+            CONCAT(s.first_name, " ", s.last_name) AS name,
+            t.Date, 
+            t.Start_Time, 
+            t.Duration, 
+            ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time,
+            t.Slots_availablility, 
+            t.timeslotID
+        FROM Program p
+        LEFT JOIN Staff s ON s.staffID = p.Created_By
+        LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
+        WHERE 
+            (t.Date > CURDATE())
+            OR (t.Date = CURDATE() AND t.Start_Time > CURTIME())
+            OR t.Date IS NULL -- Show programs with no timeslots
+        ORDER BY p.ProgramID ASC, t.Date ASC
     `;
 
     db.query(query, (err, programs) => {
         if (err) {
-            console.error('Error retrieving programs:', err.messageP);
-            return res.status(500).send('Server error');
+            console.error(err);
+            req.flash('errorP', 'Error fetching programs');
+            return res.redirect('/admin/programs');
         }
+
+        const grouped = {};
+
+        programs.forEach(p => {
+            if (!grouped[p.ProgramID]) {
+                grouped[p.ProgramID] = {
+                    ProgramID: p.ProgramID,
+                    Title: p.Title,
+                    Type: p.Type,
+                    Duration: p.Duration,
+                    points_reward: p.points_reward,
+                    Created_By: p.Created_By,
+                    name: p.name,
+                    timeslots: []
+                };
+            }
+
+            if (p.Date && p.Start_Time && p.End_Time) {
+                grouped[p.ProgramID].timeslots.push({
+                    date: new Date(p.Date).toLocaleDateString(),
+                    startTime: p.Start_Time.substring(0, 5),
+                    endTime: p.End_Time.substring(0, 5),
+                    slots: p.Slots_availablility
+                });
+            }
+        });
+
+        const groupedPrograms = Object.values(grouped);
 
         const successMessage = req.flash('successP');
         const errorMessage = req.flash('errorP');
 
-        res.render('admin/programsAdmin', { 
-            programs, 
-            error: err, 
+        res.render('admin/programsAdmin', {
+            programs: groupedPrograms,
+            error: null,
             messageP: successMessage.length > 0 ? successMessage[0] : (errorMessage.length > 0 ? errorMessage[0] : null),
             messageType: successMessage.length > 0 ? 'success' : (errorMessage.length > 0 ? 'error' : null),
             currentPath: req.path
@@ -30,313 +70,249 @@ exports.getProgramsAdmin = (req, res) => {
     });
 };
 
-// User - List all programs
+
+// User - List all programs (with timeslot info)
 exports.getProgramsUser = (req, res) => {
     const query = `
         SELECT 
-            ProgramID, Title, Description, Type, Start_Date, End_Date,
-            start_time, end_time, Created_By, points_reward, QR_code
-        FROM Program 
-        ORDER BY Start_Date ASC
+            p.ProgramID, p.Title, p.Description, p.Type, p.points_reward, p.QR_code,
+            t.Date, t.Start_Time, t.Duration, t.Slots_availablility, t.timeslotID
+        FROM Program p
+        LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
+        WHERE 
+            (t.Date > CURDATE())
+            OR (t.Date = CURDATE() AND t.Start_Time > CURTIME())
+            OR t.Date IS NULL
+        ORDER BY p.ProgramID ASC, t.Date ASC
     `;
-
     db.query(query, (err, programs) => {
-        if (err) {
-            console.error('Error retrieving programs:', err.messageP);
-            return res.status(500).send('Server error');
-        }
-
-        res.render('user/programsUser', { 
-            programs, 
-            error: err, 
+        res.render('user/programsUser', {
+            programs,
+            error: err,
             messageP: req.flash('successP'),
             currentPath: req.path
         });
     });
 };
 
-// Public view
-// exports.showProgramsPage = (req, res) => {
-//     const query = `
-//         SELECT 
-//             ProgramID, Title, Description, Type, Start_Date, End_Date,
-//             start_time, end_time, Created_By, points_reward, QR_code
-//         FROM Program 
-//         ORDER BY Start_Date DESC
-//     `;
-
-//     db.query(query, (err, programs) => {
-//         if (err) {
-//             console.error('Error fetching programs:', err);
-//             return res.status(500).render('error', { message: 'Failed to load programs' });
-//         }
-
-//         res.render('programs', { programs });
-//     });
-// };
-
-// API endpoint
-exports.getProgramsAPI = (req, res) => {
-    const query = `
-        SELECT 
-            ProgramID, Title, Description, Type, Start_Date, End_Date,
-            start_time, end_time, Created_By, points_reward, QR_code
-        FROM Program 
-        ORDER BY Start_Date DESC
-    `;
-
-    db.query(query, (err, programs) => {
-        if (err) {
-            console.error('Error fetching programs:', err);
-            return res.status(500).json({ error: 'Failed to load programs' });
-        }
-
-        res.json(programs);
-    });
-};
-
-// Delete a program
-exports.deleteProgram = (req, res) => {
-    const programID = req.params.id;
-
-    if (!programID) {
-        return res.status(400).json({ successP: false, messageP: 'Program ID is required' });
-    }
-
-    const checkQuery = 'SELECT Title FROM Program WHERE ProgramID = ?';
-
-    db.query(checkQuery, [programID], (err, results) => {
-        if (err) {
-            console.error('Error checking program:', err.message);
-            return res.status(500).json({ success: false, messageP: 'Server error while checking program' });
-        }
-
-        if (results.length === 0) {
-            return res.status(404).json({ success: false, messageP: 'Program not found' });
-        }
-
-        // Before deleting the program
-        const deleteRelated = 'DELETE FROM staff_program WHERE ProgramID = ?';
-        db.query(deleteRelated, [programID], (relErr) => {
-            if (relErr) {
-                console.error('Error deleting related records:', relErr.message);
-                return res.status(500).json({ success: false, messageP: 'Failed to delete related records' });
-            }
-
-            const deleteQuery = 'DELETE FROM Program WHERE ProgramID = ?';
-
-            db.query(deleteQuery, [programID], (deleteErr) => {
-                if (deleteErr) {
-                    console.error('Error deleting program:', deleteErr.message);
-                    return res.status(500).json({ success: false, messageP: 'Failed to delete program' });
-                }
-
-                console.log(`Program ${programID} deleted successfully`);
-                return res.redirect(`/admin/programs`);
-            });
-        });
-    });
-};
-
 // Render add program form
 exports.getAddProgram = (req, res) => {
-    const query = `SELECT ProgramID FROM Program ORDER BY ProgramID DESC LIMIT 1`;
-
-    db.query(query, (err, result) => {
-        if (err) {
-            console.error('Error fetching last ProgramID:', err.messageP);
-            return res.status(500).send('Error loading form');
-        }
-
-        let nextId = 'P001';
-        if (result.length > 0) {
-            const lastId = result[0].ProgramID;
-            const numericPart = parseInt(lastId.slice(1)) + 1;
-            nextId = 'P' + numericPart.toString().padStart(3, '0');
-        }
-
-        res.render('admin/addPrograms', { nextId, currentPath: req.path });
-    });
+  const query = `SELECT ProgramID FROM Program ORDER BY ProgramID DESC LIMIT 1`;
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error('Error fetching last ProgramID:', err);
+      req.flash('errorP', 'Error loading add program form');
+      return res.redirect('/admin/programs');
+    }
+    let nextId = 'P001';
+    if (result.length > 0) {
+      const lastId = result[0].ProgramID;
+      const numericPart = parseInt(lastId.slice(1)) + 1;
+      nextId = 'P' + numericPart.toString().padStart(3, '0');
+    }
+    res.render('admin/addPrograms', { nextId, currentPath: req.path });
+  });
 };
 
-// Handle POST add program
+// Handle POST add program (with timeslot)
 exports.postAddProgram = (req, res) => {
-    const {
-        title, description, type,
-        start_date, end_date, start_time, end_time,
-        points_reward, staffID, avaliable_slots // <-- add this
-    } = req.body;
+  const {
+    title,
+    description,
+    type,
+    points_reward,
+    staffID,
+    timeslot_date,
+    timeslot_start,
+    timeslot_slots,
+    duration // shared duration
+  } = req.body;
 
-    let QR_code = null;
-    if (req.file) {
-        QR_code = req.file.filename;
+  let QR_code = null;
+  if (req.file) QR_code = req.file.filename;
+
+  const getLastIdQuery = `SELECT ProgramID FROM Program ORDER BY ProgramID DESC LIMIT 1`;
+  db.query(getLastIdQuery, (err, result) => {
+    if (err) {
+      console.error('Error fetching last ProgramID:', err);
+      req.flash('errorP', 'Error processing program');
+      return res.redirect('/admin/programs');
     }
 
-    const getLastIdQuery = `SELECT ProgramID FROM Program ORDER BY ProgramID DESC LIMIT 1`;
+    let nextId = 'P001';
+    if (result.length > 0) {
+      const lastId = result[0].ProgramID;
+      const numericPart = parseInt(lastId.slice(1)) + 1;
+      nextId = 'P' + numericPart.toString().padStart(3, '0');
+    }
 
-    db.query(getLastIdQuery, (err, result) => {
-        if (err) {
-            console.error('Error fetching last ProgramID:', err.messageP);
-            return res.status(500).send('Error saving program');
-        }
+    const insertProgramQuery = `
+      INSERT INTO Program 
+      (ProgramID, Title, Description, Type, points_reward, QR_code, Created_By) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    const programValues = [
+      nextId,
+      title,
+      description,
+      type,
+      points_reward,
+      QR_code,
+      staffID,
+    ];
 
-        let nextId = 'P001';
-        if (result.length > 0) {
-            const lastId = result[0].ProgramID;
-            const numericPart = parseInt(lastId.slice(1)) + 1;
-            nextId = 'P' + numericPart.toString().padStart(3, '0');
-        }
+    db.query(insertProgramQuery, programValues, (insertErr) => {
+      if (insertErr) {
+        console.error('Insert Program Error:', insertErr);
+        req.flash('errorP', 'Error saving program');
+        return res.redirect('/admin/programs');
+      }
 
-        const insertQuery = `
-            INSERT INTO Program 
-            (ProgramID, Title, Description, Type, Start_Date, End_Date, start_time, end_time, points_reward, avaliable_slots, QR_code, created_by) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+      // Normalize timeslot arrays
+      const dates = Array.isArray(timeslot_date) ? timeslot_date : [timeslot_date];
+      const starts = Array.isArray(timeslot_start) ? timeslot_start : [timeslot_start];
+      const slots = Array.isArray(timeslot_slots) ? timeslot_slots : [timeslot_slots];
 
-        const values = [
+      let timeslotInserts = [];
+      for (let i = 0; i < dates.length; i++) {
+        if (dates[i] && starts[i] && slots[i]) {
+          timeslotInserts.push([
             nextId,
-            title,
-            description,
-            type,
-            start_date,
-            end_date,
-            start_time,
-            end_time,
-            points_reward,
-            avaliable_slots, // <-- add this
-            QR_code,
-            staffID
-        ];
+            dates[i],
+            starts[i],
+            duration, // shared duration
+            slots[i],
+          ]);
+        }
+      }
 
-        db.query(insertQuery, values, (insertErr) => {
-            if (insertErr) {
-                console.error('Error inserting program:', insertErr.messageP);
-                return res.status(500).send('Error saving program');
-            }
-
-            req.flash('successP', 'Program added successfully!');
-            res.redirect('/admin/programs');
+      if (timeslotInserts.length > 0) {
+        const insertTimeslotQuery = `
+          INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility)
+          VALUES ?
+        `;
+        db.query(insertTimeslotQuery, [timeslotInserts], (tsErr) => {
+          if (tsErr) {
+            console.error('Insert Timeslot Error:', tsErr);
+            req.flash('errorP', 'Program added, but error saving timeslots');
+            return res.redirect('/admin/programs');
+          }
+          req.flash('successP', 'Program and timeslots added successfully!');
+          res.redirect('/admin/programs');
         });
+      } else {
+        req.flash('successP', 'Program added successfully!');
+        res.redirect('/admin/programs');
+      }
     });
+  });
 };
 
-// Render edit form
+
+// Render edit form (with timeslot)
 exports.getEditProgram = (req, res) => {
     const programID = req.params.id;
-    const query = `SELECT * FROM Program WHERE ProgramID = ?`;
+    // Get program info
+    const programQuery = `SELECT * FROM Program WHERE ProgramID = ?`;
+    // Get all timeslots for this program
+    const timeslotQuery = `SELECT * FROM Timeslot WHERE ProgramID = ? ORDER BY Date, Start_Time`;
 
-    db.query(query, [programID], (err, results) => {
-        if (err) {
-            console.error('Error fetching program:', err.messageP);
-            return res.status(500).send('Error retrieving program');
-        }
-
-        if (results.length === 0) {
+    db.query(programQuery, [programID], (err, programResults) => {
+        if (err || programResults.length === 0) {
             return res.status(404).send('Program not found');
         }
-
-        res.render('admin/editPrograms', {
-            program: results[0],
-            messageP: req.flash('successP')[0] || req.flash('error')[0] || null,
-            messageType: req.flash('errorP').length > 0 ? 'error' : (req.flash('successP').length > 0 ? 'successP' : null),
-            currentPath: req.path
+        db.query(timeslotQuery, [programID], (tsErr, timeslotResults) => {
+            res.render('admin/editPrograms', {
+                program: programResults[0],
+                timeslots: timeslotResults,
+                messageP: req.flash('successP')[0] || req.flash('error')[0] || null,
+                messageType: req.flash('errorP').length > 0 ? 'error' : (req.flash('successP').length > 0 ? 'successP' : null),
+                currentPath: req.path
+            });
         });
     });
 };
 
-// Handle POST edit program
+// Handle POST edit program (with timeslot)
 exports.postEditProgram = (req, res) => {
     const programId = req.params.id;
-    const { title, type, description, startDate, endDate, pointsReward } = req.body;
+    const { title, type, description, points_reward } = req.body;
 
-    if (!title || !type || !description || !startDate || !endDate || !pointsReward) {
-        req.flash('error', 'All fields are required');
+    // Timeslot fields as arrays
+    const timeslotID = req.body.timeslotID || [];
+    const timeslot_date = req.body.timeslot_date || [];
+    const timeslot_start = req.body.timeslot_start || [];
+    const timeslot_duration = req.body.timeslot_duration || [];
+    const timeslot_slots = req.body.timeslot_slots || [];
+
+    if (!title || !type || !description || !points_reward) {
+        req.flash('errorP', 'All fields are required');
         return res.redirect(`/programs/edit/${programId}`);
     }
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (end <= start) {
-        req.flash('error', 'End date must be after start date');
-        return res.redirect(`/programs/edit/${programId}`);
-    }
-
-    const points = parseInt(pointsReward);
-    if (points < 1 || points > 1000) {
-        req.flash('error', 'Points reward must be between 1 and 1000');
-        return res.redirect(`/programs/edit/${programId}`);
-    }
-
-    const updateQuery = `
+    const updateProgramQuery = `
         UPDATE Program 
-        SET Title = ?, Type = ?, Description = ?, 
-            Start_Date = ?, End_Date = ?, points_reward = ?
+        SET Title = ?, Type = ?, Description = ?, points_reward = ?
         WHERE ProgramID = ?
     `;
-
-    const values = [title, type, description, startDate, endDate, points, programId];
-
-    db.query(updateQuery, values, (err, result) => {
+    const values = [title, type, description, points_reward, programId];
+    db.query(updateProgramQuery, values, (err) => {
         if (err) {
-            console.error('Error updating program:', err.messageP);
-            req.flash('error', 'Failed to update program. Please try again.');
+            req.flash('errorP', 'Failed to update program. Please try again.');
             return res.redirect(`/programs/edit/${programId}`);
         }
+        // Update or insert timeslots
+        let updates = [];
+        let inserts = [];
+        // Ensure all timeslot fields are arrays
+        const tsIDs = Array.isArray(timeslotID) ? timeslotID : [timeslotID];
+        const tsDates = Array.isArray(timeslot_date) ? timeslot_date : [timeslot_date];
+        const tsStarts = Array.isArray(timeslot_start) ? timeslot_start : [timeslot_start];
+        const tsDurations = Array.isArray(timeslot_duration) ? timeslot_duration : [timeslot_duration];
+        const tsSlots = Array.isArray(timeslot_slots) ? timeslot_slots : [timeslot_slots];
 
-        if (result.affectedRows === 0) {
-            req.flash('error', 'Program not found or no changes made');
-            return res.redirect(`/programs/edit/${programId}`);
+        for (let i = 0; i < tsDates.length; i++) {
+            if (tsDates[i] && tsStarts[i] && tsDurations[i] && tsSlots[i]) {
+                if (tsIDs[i]) {
+                    // Existing timeslot, update
+                    updates.push(new Promise((resolve, reject) => {
+                        db.query(
+                            `UPDATE Timeslot SET Date=?, Start_Time=?, Duration=?, Slots_availablility=? WHERE timeslotID=?`,
+                            [tsDates[i], tsStarts[i], tsDurations[i], tsSlots[i], tsIDs[i]],
+                            (err) => err ? reject(err) : resolve()
+                        );
+                    }));
+                } else {
+                    // New timeslot, insert
+                    inserts.push(new Promise((resolve, reject) => {
+                        db.query(
+                            `INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) VALUES (?, ?, ?, ?, ?)`,
+                            [programId, tsDates[i], tsStarts[i], tsDurations[i], tsSlots[i]],
+                            (err) => err ? reject(err) : resolve()
+                        );
+                    }));
+                }
+            }
         }
-
-        req.flash('successP', 'Program updated successfully!');
-        res.redirect('/admin/programs');
+        Promise.all([...updates, ...inserts])
+            .then(() => {
+                req.flash('successP', 'Program and timeslots updated successfully!');
+                res.redirect('/admin/programs');
+            })
+            .catch(() => {
+                req.flash('errorP', 'Program updated, but failed to update/add timeslots.');
+                res.redirect(`/programs/edit/${programId}`);
+            });
     });
 };
 
-exports.joinProgram = (req, res) => {
-    const { programID, slotDate, slotTime } = req.body;
-    const userID = req.session.staff.staffID;
-
-    if (!programID || !slotDate || !slotTime || !userID) {
-        return res.json({ success: false, message: "Missing required data." });
-    }
-
-    const checkQuery = `SELECT * FROM program_booking WHERE staffID = ? AND ProgramID = ?`;
-    db.query(checkQuery, [userID, programID], (checkErr, results) => {
-        if (checkErr) return res.json({ success: false, message: "Database error." });
-
-        if (results.length > 0) {
-            return res.json({ success: false, message: "Already booked this program." });
-        }
-
-        const insertQuery = `
-            INSERT INTO program_booking (ProgramID, staffID, slot_date, slot_time)
-            VALUES (?, ?, ?, ?)
-        `;
-
-        db.query(insertQuery, [programID, userID, slotDate, slotTime], (insertErr) => {
-            if (insertErr) return res.json({ success: false, message: "Failed to book slot." });
-
-            // Award points
-            const getPointsQuery = `SELECT points_reward FROM Program WHERE ProgramID = ?`;
-            db.query(getPointsQuery, [programID], (err, result) => {
-                if (err || result.length === 0) return res.json({ success: true, message: "Booked, but failed to add points." });
-
-                const pointsToAdd = result[0].points_reward;
-                const updatePoints = `
-                    INSERT INTO points (staffID, earned, spent, balance)
-                    VALUES (?, ?, 0, ?)
-                    ON DUPLICATE KEY UPDATE 
-                    earned = earned + ?, balance = balance + ?
-                `;
-
-                db.query(updatePoints, [userID, pointsToAdd, pointsToAdd, pointsToAdd, pointsToAdd], (err2) => {
-                    if (err2) return res.json({ success: true, message: "Slot booked. Error updating points." });
-
-                    return res.json({ success: true, message: "Slot booked and points awarded!" });
-                });
-            });
+// Delete a program (and its timeslots)
+exports.deleteProgram = (req, res) => {
+    const programID = req.params.id;
+    const deleteTimeslots = 'DELETE FROM Timeslot WHERE ProgramID = ?';
+    db.query(deleteTimeslots, [programID], (relErr) => {
+        const deleteQuery = 'DELETE FROM Program WHERE ProgramID = ?';
+        db.query(deleteQuery, [programID], (deleteErr) => {
+            return res.redirect(`/admin/programs`);
         });
     });
 };

@@ -280,15 +280,15 @@
                 </table>
             </div>
         </div>
-        <div class="col-md-6 mb-4">
+         <div class="col-md-6 mb-4">
             <div class="profile-section">
                 <h5 class="section-title">
-                    <i class="fas fa-tasks"></i>
-                    Ongoing Programs
+                    <i class="fas fa-check"></i>
+                    Completed Programs
                 </h5>
-                <% if (typeof ongoingPrograms !== 'undefined' && ongoingPrograms.length > 0) { %>
+                <% if (typeof completedPrograms !== 'undefined' && completedPrograms.length > 0) { %>
                     <div>
-                        <% ongoingPrograms.forEach(function(prog) { %>
+                        <% completedPrograms.forEach(function(prog) { %>
                             <div class="program-item">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="program-title"><%= prog.title %></span>
@@ -300,13 +300,12 @@
                 <% } else { %>
                     <div class="no-programs">
                         <i class="fas fa-inbox fa-2x"></i>
-                        <p class="mb-0">No ongoing programs.</p>
+                        <p class="mb-0">No completed programs.</p>
                     </div>
                 <% } %>
             </div>
         </div>
     </div>
-</div>
 
 <script>
 function startEdit(field) {

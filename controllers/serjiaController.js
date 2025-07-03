@@ -1,4 +1,6 @@
 const db = require('../db');
+const updateProgramStatus = require('../realtimeUpdates');
+
 
 exports.getSignIn= (req, res)=>{
     res.render('user/index', {
@@ -45,27 +47,42 @@ exports.getRegister = (req, res) => {
   });
 };
 
-exports.login=(req,res)=>{
-    const {staffID, password}= req.body;
-    const sql=`Select * from staff WHERE staffID= ? AND password=SHA1(?)`;
-    db.query(sql, [staffID, password], (err, results)=>{
-        if(err){
-            throw err;
-        }
+exports.login = async (req, res) => {
+  const { staffID, password } = req.body;
+  const sql = `SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?)`;
 
-        if (results.length>0){
-            req.session.staff= results[0];
-            req.flash('successLogin', 'Login success');
-            if(req.session.staff.role=='user')
-            res.redirect('/user/dashboard');
-            else if(req.session.staff.role=='admin')
-            res.redirect('/admin/dashboard');
-        } else {
-            req.flash('errorLogin', 'Invalid email or password.');
-            res.redirect('/');
-        }
-    });
+  db.query(sql, [staffID, password], async (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Database error');
+    }
+
+    if (results.length > 0) {
+      req.session.staff = results[0];
+      req.flash('successLogin', 'Login success');
+
+      try {
+        await updateProgramStatus();
+      } catch (updateErr) {
+        console.error('Error updating program status:', updateErr);
+        req.flash('error', 'Failed to update program statuses.');
+      }
+
+      if (req.session.staff.role === 'user') {
+        return res.redirect('/user/dashboard');
+      } else if (req.session.staff.role === 'admin') {
+        return res.redirect('/admin/dashboard');
+      } else {
+        // fallback redirect if role is unexpected
+        return res.redirect('/');
+      }
+    } else {
+      req.flash('errorLogin', 'Invalid staff ID or password.');
+      return res.redirect('/');
+    }
+  });
 };
+
 
 exports.register = (req, res) => {
     const { first, last, email, password, role, department, address, phone, dob, gender } = req.body;
@@ -356,6 +373,13 @@ exports.getEditDetail = (req, res) => {
         WHERE sp.staffID = ? AND sp.Status = 'Ongoing'
     `;
 
+    const completedProgramsQuery = `
+  SELECT p.Title as title, sp.Status as status
+  FROM staff_program sp
+  JOIN Program p ON sp.programID = p.ProgramID
+  WHERE sp.staffID = ? AND sp.Status = 'Completed'
+`;
+
     db.query(staffQuery, [staffID], (err, results) => {
         if (err) {
             console.error('Database error:', err);
@@ -374,11 +398,14 @@ exports.getEditDetail = (req, res) => {
                 return res.status(500).send("Internal Server Error");
             }
 
-            res.render('user/editDetail', {
-                staff: staffData,
-                ongoingPrograms: ongoingResults,
-                currentPath: req.path
-            });
+            db.query(completedProgramsQuery, [staffID], (err, completedPrograms) => {
+                // ...pass completedPrograms to your render
+                res.render('user/editDetail', {
+                  staff: staffData,
+                  completedPrograms,
+                  currentPath: req.path
+                });
+              });
         });
     });
 };
@@ -474,6 +501,75 @@ exports.editStaff = (req, res) => {
         });
     });
 };
+
+exports.getEditStaff = (req, res) => {
+    const staffID = req.params.staffID;
+
+    // Get staff details and all departments for dropdown
+    const staffQuery = `
+        SELECT staff.*, department.name AS department_name
+        FROM staff
+        INNER JOIN department ON department.departmentID = staff.department
+        WHERE staff.staffID = ?
+    `;
+    const deptQuery = `SELECT * FROM department`;
+
+    db.query(staffQuery, [staffID], (err, staffResults) => {
+        if (err || staffResults.length === 0) {
+            req.flash('errorStaff', 'Staff not found');
+            return res.redirect('/admin/dashboard');
+        }
+        db.query(deptQuery, (err2, deptResults) => {
+            if (err2) {
+                req.flash('errorStaff', 'Failed to load departments');
+                return res.redirect('/admin/dashboard');
+            }
+            res.render('admin/editStaff', {
+                staff: staffResults[0],
+                departments: deptResults,
+                error: req.flash('errorStaff'),
+                success: req.flash('successStaff'),
+                currentPath: req.path
+            });
+        });
+    });
+};
+
+// POST: Update staff details (name, role, department, profile image)
+exports.postEditStaff = (req, res) => {
+    const staffID = req.params.staffID;
+    const { first_name, last_name, role, department, old_profile_image } = req.body;
+
+    // Handle profile image
+    let profile_image = old_profile_image;
+    if (req.file && req.file.filename) {
+        profile_image = req.file.filename;
+    }
+
+    // Validate department exists
+    const deptQuery = `SELECT departmentID FROM department WHERE departmentID = ?`;
+    db.query(deptQuery, [department], (err, deptResults) => {
+        if (err || deptResults.length === 0) {
+            req.flash('errorStaff', 'Invalid department');
+            return res.redirect(`/editStaff/${staffID}`);
+        }
+
+        const updateSql = `
+            UPDATE staff
+            SET first_name = ?, last_name = ?, role = ?, department = ?, profile_image = ?
+            WHERE staffID = ?
+        `;
+        db.query(updateSql, [first_name, last_name, role, department, profile_image, staffID], (err2) => {
+            if (err2) {
+                req.flash('errorStaff', 'Failed to update staff details');
+                return res.redirect(`/editStaff/${staffID}`);
+            }
+            req.flash('successStaff', 'Staff details updated successfully');
+            res.redirect('/admin/dashboard');
+        });
+    });
+};
+
 
 exports.editParticulars = (req, res) => {
     const staffID = req.session.staff?.staffID;

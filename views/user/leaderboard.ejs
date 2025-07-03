@@ -168,37 +168,3 @@
         <% }) %>
       </tbody>
     </table>
-
-    <!-- Leaderboard History -->
-    <div class="title">📜 Leaderboard History</div>
-    <table class="leaderboard-table">
-      <thead>
-        <tr>
-          <th>Year</th>
-          <th>Half</th>
-          <th>Rank</th>
-          <th>Name</th>
-          <th>Department</th>
-          <th>Reward</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% history.forEach(entry => { %>
-          <tr>
-            <td><%= entry.year %></td>
-            <td><%= entry.half %></td>
-            <td>
-              <% if (entry.rank_position === 1) { %> 🥇 <% } 
-                 else if (entry.rank_position === 2) { %> 🥈 <% } 
-                 else if (entry.rank_position === 3) { %> 🥉 <% } %>
-            </td>
-            <td><%= entry.name %></td>
-            <td><%= entry.department_name %></td>
-            <td><%= entry.reward %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</body>
-</html>

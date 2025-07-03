@@ -193,42 +193,5 @@
         <% }) %>
       </tbody>
     </table>
-
-    <div class="title">📜 Leaderboard History</div>
-
-    <a href="/admin/leaderboard/add" class="add-entry-btn">+ Add Leaderboard Entry</a>
-
-    <table class="leaderboard-table">
-      <thead>
-        <tr>
-          <th>Year</th>
-          <th>Half</th>
-          <th>Rank</th>
-          <th>Name</th>
-          <th>Department</th>
-          <th>Reward</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% history.forEach(entry => { %>
-          <tr>
-            <td><%= entry.year %></td>
-            <td><%= entry.half %></td>
-            <td><%= ['🥇','🥈','🥉'][entry.rank_position - 1] %></td>
-            <td><%= entry.name %></td>
-            <td><%= entry.department_name %></td>
-            <td><%= entry.reward %></td>
-            <td class="action-buttons">
-              <a href="/admin/leaderboard/edit/<%= entry.Leaderboard_ID %>">✏️</a>
-              <form action="/admin/leaderboard/delete/<%= entry.Leaderboard_ID %>" method="POST" onsubmit="return confirm('Are you sure you want to delete this entry?');">
-                <button type="submit">🗑️</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
 </body>
 </html>

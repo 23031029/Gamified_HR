@@ -33,6 +33,12 @@
       gap: 20px;
     }
 
+    .upcoming-green {
+    background: #c8d83da3 !important; 
+    color: #222;
+    border: 1px solid #b8d42f;
+  }
+
     .points-box {
       flex: 1;
       min-width: 200px;
@@ -188,21 +194,59 @@
       </div>
     </div>
 
-    <!-- Upcoming Programs -->
-    <% if (programs && programs.length) { %>
-      <div class="card">
-        <div class="section-header">Your Ongoing Programs</div>
-        <div class="upcoming-programs">
-          <% programs.forEach(program => { %>
-            <div class="list-item">
-              <h4><%= program.Title %></h4>
-              <small><%= program.Type %> | <%= program.Start_Date %> to <%= program.End_Date %></small><br/>
-              <small>Status: <strong><%= program.Status %></strong></small>
-            </div>
-          <% }); %>
+    <!-- Your Programs -->
+    <div class="card">
+      <div class="section-header">Your Programs</div>
+      <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+        <!-- Upcoming Programs -->
+        <div style="flex:1; min-width: 250px;">
+          <h3>Upcoming</h3>
+          <div class="upcoming-programs">
+            <% if (upcomingPrograms.length) { %>
+              <% upcomingPrograms.forEach(program => { %>
+                <div class="list-item upcoming-green">
+                  <h4><%= program.Title %></h4>
+                  <small>
+                    <%= program.Type %> | 
+                   <span style="color: red; font-weight: bolder;"> <%= program.Date ? (program.Date.toLocaleDateString ? program.Date.toLocaleDateString() : program.Date) : '' %>
+                    &nbsp;
+                    <%= program.Start_Time ? program.Start_Time.substring(0,5) : '' %>
+                    (<%= program.Duration %> mins)
+                   </span>
+                  </small><br/>
+                  <small>Status: <strong><%= program.Status %></strong></small>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <div class="list-item">No upcoming programs.</div>
+            <% } %>
+          </div>
+        </div>
+        <!-- Ongoing Programs -->
+        <div style="flex:1; min-width: 250px;">
+          <h3>Registered</h3>
+          <div class="ongoing-programs">
+            <% if (ongoingPrograms.length) { %>
+              <% ongoingPrograms.forEach(program => { %>
+                <div class="list-item">
+                  <h4><%= program.Title %></h4>
+                  <small>
+                    <%= program.Type %> | 
+                    <%= program.Date ? (program.Date.toLocaleDateString ? program.Date.toLocaleDateString() : program.Date) : '' %>
+                    &nbsp;
+                    <%= program.Start_Time ? program.Start_Time.substring(0,5) : '' %>
+                    (<%= program.Duration %> mins)
+                  </small><br/>
+                  <small>Status: <strong><%= program.Status %></strong></small>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <div class="list-item">No registered programs.</div>
+            <% } %>
+          </div>
         </div>
       </div>
-    <% } %>
+    </div>
 
     <!-- Reward Suggestions -->
     <% if (rewards && rewards.length) { 

@@ -163,11 +163,12 @@ CREATE TABLE staff_program (
 INSERT INTO staff_program (staffID, programID, timeslotID, `Status`) VALUES
 ('S005', 'P001', 1, 'Ongoing'),       -- first morning slot
 ('S006', 'P001', 2, 'Completed'),     -- next week's same time
+('S002', 'P001', 2, 'Completed'),     -- next week's same time
 ('S003', 'P001', 3, 'Ongoing'),       -- same day, different time
 
 ('S004', 'P002', 4, 'Completed'),     -- original 10am
+('S002', 'P002', 4, 'Completed'),     -- original 10am
 ('S001', 'P002', 5, 'Ongoing'),       -- same day, afternoon
-('S002', 'P002', 6, 'Registered'),    -- next week
 
 ('S005', 'P003', 7, 'Completed'),     -- original afternoon
 ('S006', 'P003', 8, 'Ongoing'),       -- morning

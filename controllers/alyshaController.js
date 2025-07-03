@@ -17,7 +17,7 @@ exports.getProgramsAdmin = (req, res) => {
         LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
         WHERE 
             (t.Date > CURDATE())
-            OR (t.Date = CURDATE() AND t.Start_Time > CURTIME())
+            OR (t.Date = CURDATE() && t.Start_Time > CURTIME())
             OR t.Date IS NULL -- Show programs with no timeslots
         ORDER BY p.ProgramID ASC, t.Date ASC
     `;
@@ -70,8 +70,6 @@ exports.getProgramsAdmin = (req, res) => {
     });
 };
 
-
-// User - List all programs (with timeslot info)
 exports.getProgramsUser = (req, res) => {
     const query = `
         SELECT 
@@ -81,20 +79,61 @@ exports.getProgramsUser = (req, res) => {
         LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
         WHERE 
             (t.Date > CURDATE())
-            OR (t.Date = CURDATE() AND t.Start_Time > CURTIME())
+            OR (t.Date = CURDATE() && t.Start_Time > CURTIME())
             OR t.Date IS NULL
-        ORDER BY p.ProgramID ASC, t.Date ASC
+        ORDER BY p.ProgramID ASC, t.Date ASC, t.Start_Time ASC
     `;
-    db.query(query, (err, programs) => {
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.render('user/programsUser', {
+                programs: [],
+                error: err,
+                messageP: req.flash('successP'),
+                currentPath: req.path
+            });
+        }
+
+        // Group timeslots by program
+        const programsMap = new Map();
+        
+        results.forEach(row => {
+            const programId = row.ProgramID;
+            
+            if (!programsMap.has(programId)) {
+                programsMap.set(programId, {
+                    ProgramID: row.ProgramID,
+                    Title: row.Title,
+                    Description: row.Description,
+                    Type: row.Type,
+                    points_reward: row.points_reward,
+                    QR_code: row.QR_code,
+                    timeslots: []
+                });
+            }
+
+            if (row.timeslotID) {
+                programsMap.get(programId).timeslots.push({
+                    timeslotID: row.timeslotID,
+                    Date: row.Date,
+                    Start_Time: row.Start_Time,
+                    Duration: row.Duration,
+                    Slots_availablility: row.Slots_availablility
+                });
+            }
+        });
+
+        // Convert map to array
+        const programs = Array.from(programsMap.values());
+
         res.render('user/programsUser', {
             programs,
-            error: err,
+            error: null,
             messageP: req.flash('successP'),
             currentPath: req.path
         });
     });
 };
-
 // Render add program form
 exports.getAddProgram = (req, res) => {
   const query = `SELECT ProgramID FROM Program ORDER BY ProgramID DESC LIMIT 1`;
@@ -316,3 +355,105 @@ exports.deleteProgram = (req, res) => {
         });
     });
 };
+
+exports.joinProgram = (req, res) => {
+  const { programID, timeslotID } = req.body;
+  const staffID = req.session.staff && req.session.staff.staffID;
+
+  if (!programID || !timeslotID || !staffID) {
+    req.flash('errorP', 'Missing required information. Please try again.');
+    return res.redirect('/user/programs');
+  }
+
+  // 1. Check if staff already registered for the program
+  const checkExistingQuery = `
+    SELECT participantID 
+    FROM staff_program 
+    WHERE staffID = ? AND programID = ?
+  `;
+
+  db.query(checkExistingQuery, [staffID, programID], (err1, existingResults) => {
+    if (err1) {
+      console.error(err1);
+      req.flash('error', 'Database error occurred.');
+      return res.redirect('/user/programs');
+    }
+
+    if (existingResults.length > 0) {
+      req.flash('error', 'You are already registered for this program.');
+      return res.redirect('/user/programs');
+    }
+
+    // 2. Validate selected timeslot
+    const checkSlotQuery = `
+      SELECT Slots_availablility, Date, Start_Time 
+      FROM Timeslot 
+      WHERE timeslotID = ? AND ProgramID = ?
+    `;
+
+    db.query(checkSlotQuery, [timeslotID, programID], (err2, slotResults) => {
+      if (err2) {
+        console.error(err2);
+        req.flash('error', 'Failed to retrieve timeslot.');
+        return res.redirect('/user/programs');
+      }
+
+      if (slotResults.length === 0) {
+        req.flash('error', 'Invalid timeslot selected.');
+        return res.redirect('/user/programs');
+      }
+
+      const slot = slotResults[0];
+      const now = new Date();
+      const slotDateTime = new Date(`${slot.Date}T${slot.Start_Time}`);
+
+      if (slotDateTime <= now) {
+        req.flash('error', 'This timeslot has already passed.');
+        return res.redirect('/user/programs');
+      }
+
+      if (slot.Slots_availablility <= 0) {
+        req.flash('error', 'This timeslot is fully booked.');
+        return res.redirect('/user/programs');
+      }
+
+      // 3. Determine status based on if timeslot is within next 3 days
+      const diffMs = slotDateTime - now;
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      const status = diffDays <= 3 ? 'Upcoming' : 'Registered';
+
+      // 4. Insert registration
+      const insertQuery = `
+        INSERT INTO staff_program (staffID, programID, timeslotID, Status) 
+        VALUES (?, ?, ?, ?)
+      `;
+
+      db.query(insertQuery, [staffID, programID, timeslotID, status], (err4) => {
+        if (err4) {
+          console.error(err4);
+          req.flash('error', 'Failed to register for program.');
+          return res.redirect('/user/programs');
+        }
+
+        // 5. Update timeslot availability
+        const updateSlotQuery = `
+          UPDATE Timeslot 
+          SET Slots_availablility = Slots_availablility - 1 
+          WHERE timeslotID = ?
+        `;
+
+        db.query(updateSlotQuery, [timeslotID], (err5) => {
+          if (err5) {
+            console.error(err5);
+            req.flash('error', 'Failed to update slot availability.');
+            return res.redirect('/user/programs');
+          }
+
+          req.flash('successP', `Successfully registered${status === 'Upcoming' ? ' (Upcoming)' : ''}!`);
+          return res.redirect('/user/programs');
+        });
+      });
+    });
+  });
+};
+

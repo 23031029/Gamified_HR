@@ -417,10 +417,10 @@ exports.joinProgram = (req, res) => {
         return res.redirect('/user/programs');
       }
 
-      // 3. Determine status based on if timeslot is within next 3 days
+      // 3. Determine status based on whether it's within next 3 days
+      const oneDayMs = 24 * 60 * 60 * 1000;
       const diffMs = slotDateTime - now;
-      const diffDays = diffMs / (1000 * 60 * 60 * 24);
-      const status = diffDays <= 3 ? 'Upcoming' : 'Registered';
+      const status = (diffMs <= 3 * oneDayMs) ? 'Upcoming' : 'Registered';
 
       // 4. Insert registration
       const insertQuery = `
@@ -456,4 +456,3 @@ exports.joinProgram = (req, res) => {
     });
   });
 };
-

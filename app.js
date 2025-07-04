@@ -11,7 +11,7 @@ const db = require('./db');
 const update = require('./realtimeUpdates');
 
 // Add this after your other requires and before app.listen:
-cron.schedule('* * * * *', () => {
+cron.schedule('0 0 * * *', () => {
   update();
   console.log('Auto-updated program statuses');
 });
@@ -124,6 +124,7 @@ app.get('/user/rewards', checkAuthentication, checkUser, isabelControl.userRewar
 app.get('/rewards/read/:id', checkAuthentication, checkUser, isabelControl.readReward);
 app.get('/reward/:id', checkAuthentication, checkUser, isabelControl.viewSingleReward);
 app.post('/claimReward/:id', checkAuthentication, checkUser, isabelControl.claimReward);
+app.get('/user/redeemHist', checkAuthentication, checkUser, isabelControl.redeemHistory);
 
 // Niki's user and admin leaderboard routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);

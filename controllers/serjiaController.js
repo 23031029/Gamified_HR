@@ -49,37 +49,59 @@ exports.getRegister = (req, res) => {
 
 exports.login = async (req, res) => {
   const { staffID, password } = req.body;
-  const sql = `SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?)`;
 
-  db.query(sql, [staffID, password], async (err, results) => {
+  // First, check if the staff ID exists
+  const findUserSql = `SELECT * FROM staff WHERE staffID = ?`;
+  db.query(findUserSql, [staffID], async (err, users) => {
     if (err) {
       console.error(err);
       return res.status(500).send('Database error');
     }
 
-    if (results.length > 0) {
-      req.session.staff = results[0];
-      req.flash('successLogin', 'Login success');
-
-      try {
-        await updateProgramStatus();
-      } catch (updateErr) {
-        console.error('Error updating program status:', updateErr);
-        req.flash('error', 'Failed to update program statuses.');
-      }
-
-      if (req.session.staff.role === 'user') {
-        return res.redirect('/user/dashboard');
-      } else if (req.session.staff.role === 'admin') {
-        return res.redirect('/admin/dashboard');
-      } else {
-        // fallback redirect if role is unexpected
-        return res.redirect('/');
-      }
-    } else {
-      req.flash('errorLogin', 'Invalid staff ID or password.');
+    if (users.length === 0) {
+      req.flash('errorLogin', 'User not found');
       return res.redirect('/');
     }
+
+    const user = users[0];
+
+    if (user.status === 'Deactive') {
+      req.flash('errorLogin', 'User not found');
+      return res.redirect('/');
+    }
+
+    // Now check password
+    const sql = `SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?) AND status != "Deactive"`;
+    db.query(sql, [staffID, password], async (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Database error');
+      }
+
+      if (results.length > 0) {
+        req.session.staff = results[0];
+        req.flash('successLogin', 'Login success');
+
+        try {
+          await updateProgramStatus();
+        } catch (updateErr) {
+          console.error('Error updating program status:', updateErr);
+          req.flash('error', 'Failed to update program statuses.');
+        }
+
+        if (req.session.staff.role === 'user') {
+          return res.redirect('/user/dashboard');
+        } else if (req.session.staff.role === 'admin') {
+          return res.redirect('/admin/dashboard');
+        } else {
+          // fallback redirect if role is unexpected
+          return res.redirect('/');
+        }
+      } else {
+        req.flash('errorLogin', 'Invalid staff ID or password.');
+        return res.redirect('/');
+      }
+    });
   });
 };
 

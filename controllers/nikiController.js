@@ -1,4 +1,5 @@
 const db = require('../db');
+const update = require('../realtimeUpdates');
 
 // =========================
 // USER DASHBOARD
@@ -60,6 +61,7 @@ exports.getUserDashboard = (req, res) => {
     JOIN Reward r ON re.RewardID = r.RewardID 
     WHERE re.staffID = ?
   `;
+  update();
 
   db.query(userInfoQuery, [staffID], (err, userResults) => {
     if (err) return res.status(500).send("Error fetching user info");

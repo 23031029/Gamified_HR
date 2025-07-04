@@ -11,7 +11,7 @@ const db = require('./db');
 const update = require('./realtimeUpdates');
 
 // Add this after your other requires and before app.listen:
-cron.schedule('* * * * *', () => {
+cron.schedule('0 0 * * *', () => {
   update();
   console.log('Auto-updated program statuses');
 });

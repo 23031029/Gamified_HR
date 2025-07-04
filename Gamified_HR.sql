@@ -123,9 +123,9 @@ INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility
 
 -- P002: Training 101
 INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) VALUES
-('P002', '2025-05-11', '10:00:00', 90, 15), -- original
-('P002', '2025-05-11', '14:00:00', 90, 10), -- same day, different time
-('P002', '2025-05-18', '10:00:00', 90, 15); -- same time, different date
+('P002', '2025-05-11', '10:00:00', 90, 15),
+('P002', '2025-05-11', '14:00:00', 90, 10),
+('P002', '2025-05-18', '10:00:00', 90, 15);
 
 -- P003: Leadership Workshop
 INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) VALUES
@@ -161,25 +161,25 @@ CREATE TABLE staff_program (
 -- Sample INSERTs for staff_program
 -- Continuing from earlier inserts
 INSERT INTO staff_program (staffID, programID, timeslotID, `Status`) VALUES
-('S005', 'P001', 1, 'Ongoing'),       -- first morning slot
+('S005', 'P001', 1, 'Completed'),       -- first morning slot
 ('S006', 'P001', 2, 'Completed'),     -- next week's same time
 ('S002', 'P001', 2, 'Completed'),     -- next week's same time
-('S003', 'P001', 3, 'Ongoing'),       -- same day, different time
+('S003', 'P001', 3, 'Completed'),       -- same day, different time
 
 ('S004', 'P002', 4, 'Completed'),     -- original 10am
 ('S002', 'P002', 4, 'Completed'),     -- original 10am
-('S001', 'P002', 5, 'Ongoing'),       -- same day, afternoon
+('S001', 'P002', 5, 'Completed'),       -- same day, afternoon
 
-('S005', 'P003', 7, 'Completed'),     -- original afternoon
-('S006', 'P003', 8, 'Ongoing'),       -- morning
+('S005', 'P003', 7, 'Registered'),     -- original afternoon
+('S006', 'P003', 8, 'Registered'),       -- morning
 ('S004', 'P003', 9, 'Registered'),    -- next week's afternoon
 
-('S001', 'P004', 10, 'Completed'),    -- morning Yoga
-('S003', 'P004', 11, 'Ongoing'),      -- evening Yoga
+('S001', 'P004', 10, 'Registered'),    -- morning Yoga
+('S003', 'P004', 11, 'Registered'),      -- evening Yoga
 ('S002', 'P004', 12, 'Registered'),   -- next week morning
 
 ('S006', 'P005', 13, 'Completed'),    -- first Cyber slot
-('S005', 'P005', 14, 'Ongoing'),      -- same day, different time
+('S005', 'P005', 14, 'Registered'),      -- same day, different time
 ('S003', 'P005', 15, 'Registered');   -- next week's same time
 
 -- Table: Program_Feedback

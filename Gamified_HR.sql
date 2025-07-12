@@ -179,8 +179,8 @@ INSERT INTO staff_program (staffID, programID, timeslotID, `Status`) VALUES
 ('S002', 'P004', 12, 'Registered'),   -- next week morning
 
 ('S006', 'P005', 13, 'Completed'),    -- first Cyber slot
-('S005', 'P005', 15, 'Registered'),      -- same day, different time
-('S003', 'P005', 14, 'Upcoming');   -- next week's same time
+('S005', 'P005', 14, 'Ongoing'),      -- same day, different time
+('S003', 'P005', 15, 'Registered');   -- next week's same time
 
 -- Table: Program_Feedback
 CREATE TABLE Program_Feedback (

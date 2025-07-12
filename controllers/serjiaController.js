@@ -1,5 +1,6 @@
 const db = require('../db');
 const updateProgramStatus = require('../realtimeUpdates');
+const QRCode = require('qrcode');
 
 
 exports.getSignIn= (req, res)=>{
@@ -614,3 +615,68 @@ exports.editParticulars = (req, res) => {
         res.redirect('/user/profile');
     });
 };
+
+exports.getGenerateQR = (req, res) => {
+  const todayProgramsQuery = `
+    SELECT t.timeslotID, p.Title, t.Date, t.Start_Time 
+    FROM Timeslot t 
+    JOIN Program p ON t.ProgramID = p.ProgramID 
+    WHERE t.Date = CURDATE()
+  `;
+
+  db.query(todayProgramsQuery, async (err, timeslots) => {
+    if (err) {
+      console.error('Error fetching today programs:', err);
+      return res.status(500).send('DB Error');
+    }
+
+    const staffID = req.session.staff?.staffID || 'S001';
+
+    const qrPromises = timeslots.map(ts => {
+      const url = `http://localhost:3000/user/attend?staffID=${staffID}&timeslotID=${ts.timeslotID}`;
+      return QRCode.toDataURL(url).then(qr => ({ ...ts, qr }));
+    });
+
+    const qrTimeslots = await Promise.all(qrPromises);
+
+    res.render('admin/generate', {
+      qrTimeslots,
+      currentPath: req.path
+    });
+  });
+};
+
+exports.getScanQR = (req, res) => {
+  res.render('user/scan', {
+    currentPath: req.path
+  });
+};
+
+
+exports.markAttendance = (req, res) => {
+  const { staffID, timeslotID } = req.query;
+
+  if (!staffID || !timeslotID) {
+    return res.status(400).send("Invalid QR parameters.");
+  }
+
+  const query = `
+    UPDATE staff_program 
+    SET Status = 'Completed' 
+    WHERE staffID = ? AND timeslotID = ?
+  `;
+
+  db.query(query, [staffID, timeslotID], (err, result) => {
+    if (err) {
+      console.error('Attendance error:', err);
+      return res.status(500).send("Database error.");
+    }
+
+    if (result.affectedRows > 0) {
+      res.send("✅ Attendance marked successfully!");
+    } else {
+      res.send("⚠️ Attendance not recorded. Maybe already completed or not registered.");
+    }
+  });
+};
+

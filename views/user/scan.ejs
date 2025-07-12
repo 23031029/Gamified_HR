@@ -1,0 +1,22 @@
+<h2>Scan QR Code to Mark Attendance</h2>
+<div id="reader" style="width: 300px;"></div>
+<div id="result" style="margin-top: 1rem;"></div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+  function onScanSuccess(decodedText, decodedResult) {
+    document.getElementById('result').innerText = "✅ Scanned: " + decodedText;
+    window.location.href = decodedText;
+  }
+
+  function onScanFailure(error) {
+    // Optional: console.warn(error);
+  }
+
+  const scanner = new Html5QrcodeScanner("reader", {
+    fps: 10,
+    qrbox: 250
+  });
+
+  scanner.render(onScanSuccess, onScanFailure);
+</script>

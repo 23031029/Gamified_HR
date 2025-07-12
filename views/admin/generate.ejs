@@ -1,0 +1,8 @@
+<h2>QR Codes for Today's Programs</h2>
+<% qrTimeslots.forEach(item => { %>
+  <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 20px;">
+    <strong><%= item.Title %></strong><br>
+    <small><%= item.Date.toISOString().split('T')[0] %> @ <%= item.Start_Time %></small><br>
+    <img src="<%= item.qr %>" alt="QR Code" width="200">
+  </div>
+<% }) %>

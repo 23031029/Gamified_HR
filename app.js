@@ -110,6 +110,9 @@ app.post('/user/change-password', checkAuthentication, validatePasswordChange, s
 app.post('/user/edit-particulars', serjiaControl.editParticulars)
 app.get('/editStaff/:staffID', checkAuthentication, checkAdmin, serjiaControl.getEditStaff);
 app.post('/editStaff/:staffID', checkAuthentication, checkAdmin, upload.single('profile'), serjiaControl.postEditStaff);
+app.get('/admin/generate', serjiaControl.getGenerateQR);
+app.get('/user/scan', serjiaControl.getScanQR);
+app.get('/user/attend', serjiaControl.markAttendance);
 
 // Isabel's reward routes (admin only)
 app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);

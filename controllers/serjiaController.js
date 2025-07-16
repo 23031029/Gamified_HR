@@ -558,10 +558,10 @@ exports.getEditStaff = (req, res) => {
     });
 };
 
-// POST: Update staff details (name, role, department, profile image)
+// POST: Update staff details (name, role, department, profile image, add new department if needed)
 exports.postEditStaff = (req, res) => {
     const staffID = req.params.staffID;
-    const { first_name, last_name, role, department, old_profile_image } = req.body;
+    const { first_name, last_name, role, department, other_department, old_profile_image } = req.body;
 
     // Handle profile image
     let profile_image = old_profile_image;
@@ -569,20 +569,42 @@ exports.postEditStaff = (req, res) => {
         profile_image = req.file.filename;
     }
 
-    // Validate department exists
-    const deptQuery = `SELECT departmentID FROM department WHERE departmentID = ?`;
-    db.query(deptQuery, [department], (err, deptResults) => {
-        if (err || deptResults.length === 0) {
-            req.flash('errorStaff', 'Invalid department');
-            return res.redirect(`/editStaff/${staffID}`);
-        }
+    // If "other" is selected, add new department and use its ID
+    if (department === 'other' && other_department && other_department.trim() !== '') {
+        // Generate new departmentID (e.g., D005)
+        const getLastDeptID = `SELECT departmentID FROM department ORDER BY departmentID DESC LIMIT 1`;
+        db.query(getLastDeptID, (err, deptResults) => {
+            if (err) {
+                req.flash('errorStaff', 'Failed to add new department');
+                return res.redirect(`/editStaff/${staffID}`);
+            }
+            let newDeptNum = 1;
+            if (deptResults.length > 0) {
+                newDeptNum = parseInt(deptResults[0].departmentID.substring(1)) + 1;
+            }
+            const newDeptID = 'D' + String(newDeptNum).padStart(3, '0');
+            const insertDept = `INSERT INTO department (departmentID, name) VALUES (?, ?)`;
+            db.query(insertDept, [newDeptID, other_department.trim()], (err2) => {
+                if (err2) {
+                    req.flash('errorStaff', 'Failed to add new department');
+                    return res.redirect(`/editStaff/${staffID}`);
+                }
+                // Now update staff with new departmentID
+                updateStaff(newDeptID);
+            });
+        });
+    } else {
+        // Use selected department
+        updateStaff(department);
+    }
 
+    function updateStaff(departmentID) {
         const updateSql = `
             UPDATE staff
             SET first_name = ?, last_name = ?, role = ?, department = ?, profile_image = ?
             WHERE staffID = ?
         `;
-        db.query(updateSql, [first_name, last_name, role, department, profile_image, staffID], (err2) => {
+        db.query(updateSql, [first_name, last_name, role, departmentID, profile_image, staffID], (err2) => {
             if (err2) {
                 req.flash('errorStaff', 'Failed to update staff details');
                 return res.redirect(`/editStaff/${staffID}`);
@@ -590,7 +612,7 @@ exports.postEditStaff = (req, res) => {
             req.flash('successStaff', 'Staff details updated successfully');
             res.redirect('/admin/dashboard');
         });
-    });
+    }
 };
 
 
@@ -621,7 +643,6 @@ exports.getGenerateQR = (req, res) => {
     SELECT t.timeslotID, p.Title, t.Date, t.Start_Time 
     FROM Timeslot t 
     JOIN Program p ON t.ProgramID = p.ProgramID 
-    WHERE t.Date = CURDATE()
   `;
 
   db.query(todayProgramsQuery, async (err, timeslots) => {

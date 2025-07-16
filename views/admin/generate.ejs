@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  
+<% qrTimeslots.forEach(item => { %>
+  <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 20px;">
+    <strong><%= item.Title %></strong><br>
+    <small><%= item.Date.toISOString().split('T')[0] %> @ <%= item.Start_Time %></small><br>
+    <img src="<%= item.qr %>" alt="QR Code" width="200">
+  </div>
+<% }) %>
+
+</body>
+</html>

@@ -349,11 +349,11 @@
                 <% if (typeof completedPrograms !== 'undefined' && completedPrograms.length > 0) { %>
                     <div>
                         <% completedPrograms.forEach(function(prog) { %>
-                        <div class="program-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="program-title"><%= prog.title %></span>
-                                <span class="program-badge"><%= prog.status %></span>
+                            <div class="program-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="program-title"><%= prog.title %></span>
+                                    <span class="program-badge"><%= prog.status %></span>
+                                </div>
                             </div>
 
                             <% if (!prog.hasFeedback) { %>

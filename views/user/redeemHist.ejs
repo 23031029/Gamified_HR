@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Redeemed Rewards</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; }
+    .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); padding: 32px; }
+    h2 { text-align: center; color: #777067; margin-bottom: 32px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 14px 10px; text-align: left; }
+    th { background: #C6D537; color: #fff; }
+    tr:nth-child(even) { background: #f2f2f2; }
+    tr:hover { background: #e9f5d6; }
+    .no-records { text-align: center; color: #888; margin: 40px 0; }
+    a.back-link { display: inline-block; margin-bottom: 18px; color: #C6D537; text-decoration: none; font-weight: 600; }
+    a.back-link:hover { text-decoration: underline; }
+    .highlight-row { background: #fffbe6 !important; font-weight: bold; border-left: 6px solid #C6D537; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/user/rewards" class="back-link">&larr; Back to Rewards</a>
+    <h2>My Redeemed Rewards</h2>
+    <% if (redeems && redeems.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>Reward Name</th>
+            <th>Points Used</th>
+            <th>Date Redeemed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% redeems.forEach(function(item, idx) { %>
+            <tr class="<%= idx === 0 ? 'highlight-row' : '' %>">
+              <td><%= item.name %></td>
+              <td><%= item.points %></td>
+              <td>
+                <% if (item.Redeem_Date) {
+                     const dateObj = new Date(item.Redeem_Date);
+                     const localDate = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
+                %>
+                  <%= localDate.toISOString().slice(0, 10) %>
+                <% } else { %>
+                  -
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <div class="no-records">You have not redeemed any rewards yet.</div>
+    <% } %>
+  </div>
+</body>
+</html>

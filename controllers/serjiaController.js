@@ -1,5 +1,6 @@
 const db = require('../db');
 const updateProgramStatus = require('../realtimeUpdates');
+const QRCode = require('qrcode');
 
 
 exports.getSignIn= (req, res)=>{
@@ -49,39 +50,52 @@ exports.getRegister = (req, res) => {
 
 exports.login = async (req, res) => {
   const { staffID, password } = req.body;
-  const sql = `SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?)`;
 
-  db.query(sql, [staffID, password], async (err, results) => {
+  const findUserSql = `SELECT * FROM staff WHERE staffID = ?`;
+  db.query(findUserSql, [staffID], async (err, users) => {
     if (err) {
       console.error(err);
       return res.status(500).send('Database error');
     }
 
-    if (results.length > 0) {
-      req.session.staff = results[0];
-      req.flash('successLogin', 'Login success');
-
-      try {
-        await updateProgramStatus();
-      } catch (updateErr) {
-        console.error('Error updating program status:', updateErr);
-        req.flash('error', 'Failed to update program statuses.');
-      }
-
-      if (req.session.staff.role === 'user') {
-        return res.redirect('/user/dashboard');
-      } else if (req.session.staff.role === 'admin') {
-        return res.redirect('/admin/dashboard');
-      } else {
-        // fallback redirect if role is unexpected
-        return res.redirect('/');
-      }
-    } else {
-      req.flash('errorLogin', 'Invalid staff ID or password.');
+    if (users.length === 0 || users[0].status === 'Deactive') {
+      req.flash('errorLogin', 'User not found');
       return res.redirect('/');
     }
+
+    const sql = `SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?) AND status != "Deactive"`;
+    db.query(sql, [staffID, password], async (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Database error');
+      }
+
+      if (results.length > 0) {
+        req.session.staff = results[0];
+        req.flash('successLogin', 'Login success');
+
+        try {
+          await updateProgramStatus();
+        } catch (updateErr) {
+          console.error('Error updating program status:', updateErr);
+          req.flash('error', 'Failed to update program statuses.');
+        }
+
+        if (req.session.staff.role === 'user') {
+          return res.redirect('/user/dashboard');
+        } else if (req.session.staff.role === 'admin') {
+          return res.redirect('/admin/dashboard');
+        } else {
+          return res.redirect('/');
+        }
+      } else {
+        req.flash('errorLogin', 'Invalid staff ID or password.');
+        return res.redirect('/');
+      }
+    });
   });
 };
+
 
 
 exports.register = (req, res) => {
@@ -374,17 +388,17 @@ exports.getEditDetail = (req, res) => {
     `;
 
     const completedProgramsQuery = `
-    SELECT 
-        p.Title AS title, 
-        sp.Status AS status,
-        p.ProgramID AS programID,
-        EXISTS (
-            SELECT 1 FROM program_feedback pf 
-            WHERE pf.ProgramID = p.ProgramID AND pf.staffID = sp.staffID
-        ) AS hasFeedback
-    FROM staff_program sp
-    JOIN Program p ON sp.programID = p.ProgramID
-    WHERE sp.staffID = ? AND sp.Status = 'Completed'
+        SELECT 
+            p.Title AS title, 
+            sp.Status AS status,
+            p.ProgramID AS programID,
+            EXISTS (
+                SELECT 1 FROM program_feedback pf 
+                WHERE pf.ProgramID = p.ProgramID AND pf.staffID = sp.staffID
+            ) AS hasFeedback
+        FROM staff_program sp
+        JOIN Program p ON sp.programID = p.ProgramID
+        WHERE sp.staffID = ? AND sp.Status = 'Completed'
     `;
 
     db.query(staffQuery, [staffID], (err, results) => {
@@ -405,14 +419,19 @@ exports.getEditDetail = (req, res) => {
                 return res.status(500).send("Internal Server Error");
             }
 
-            db.query(completedProgramsQuery, [staffID], (err, completedPrograms) => {
-                // ...pass completedPrograms to your render
+            db.query(completedProgramsQuery, [staffID], (err3, completedPrograms) => {
+                if (err3) {
+                    console.error('Database error:', err3);
+                    return res.status(500).send("Internal Server Error");
+                }
+
                 res.render('user/editDetail', {
-                  staff: staffData,
-                  completedPrograms,
-                  currentPath: req.path
+                    staff: staffData,
+                    ongoingPrograms: ongoingResults,
+                    completedPrograms,
+                    currentPath: req.path
                 });
-              });
+            });
         });
     });
 };
@@ -542,39 +561,66 @@ exports.getEditStaff = (req, res) => {
     });
 };
 
-// POST: Update staff details (name, role, department, profile image)
+// POST: Update staff details (name, role, department, profile image, add new department if needed)
 exports.postEditStaff = (req, res) => {
     const staffID = req.params.staffID;
-    const { first_name, last_name, role, department, old_profile_image } = req.body;
+    const {
+        first_name,
+        last_name,
+        role,
+        department,
+        other_department,
+        old_profile_image
+    } = req.body;
 
-    // Handle profile image
-    let profile_image = old_profile_image;
-    if (req.file && req.file.filename) {
-        profile_image = req.file.filename;
+    // Profile image fallback
+    const profile_image = req.file?.filename || old_profile_image;
+
+    // If "other" department is selected
+    if (department === 'other' && other_department?.trim()) {
+        const getLastDeptID = `SELECT departmentID FROM department ORDER BY departmentID DESC LIMIT 1`;
+        db.query(getLastDeptID, (err, deptResults) => {
+            if (err) {
+                console.error(err);
+                req.flash('errorStaff', 'Failed to retrieve last department ID');
+                return res.redirect(`/editStaff/${staffID}`);
+            }
+
+            const lastID = deptResults[0]?.departmentID || 'D000';
+            const newDeptNum = parseInt(lastID.substring(1)) + 1;
+            const newDeptID = 'D' + String(newDeptNum).padStart(3, '0');
+
+            const insertDept = `INSERT INTO department (departmentID, name) VALUES (?, ?)`;
+            db.query(insertDept, [newDeptID, other_department.trim()], (err2) => {
+                if (err2) {
+                    console.error(err2);
+                    req.flash('errorStaff', 'Failed to add new department');
+                    return res.redirect(`/editStaff/${staffID}`);
+                }
+                updateStaff(newDeptID);
+            });
+        });
+    } else {
+        updateStaff(department);
     }
 
-    // Validate department exists
-    const deptQuery = `SELECT departmentID FROM department WHERE departmentID = ?`;
-    db.query(deptQuery, [department], (err, deptResults) => {
-        if (err || deptResults.length === 0) {
-            req.flash('errorStaff', 'Invalid department');
-            return res.redirect(`/editStaff/${staffID}`);
-        }
-
+    // Update staff helper function
+    function updateStaff(departmentID) {
         const updateSql = `
             UPDATE staff
             SET first_name = ?, last_name = ?, role = ?, department = ?, profile_image = ?
             WHERE staffID = ?
         `;
-        db.query(updateSql, [first_name, last_name, role, department, profile_image, staffID], (err2) => {
+        db.query(updateSql, [first_name, last_name, role, departmentID, profile_image, staffID], (err2) => {
             if (err2) {
+                console.error(err2);
                 req.flash('errorStaff', 'Failed to update staff details');
                 return res.redirect(`/editStaff/${staffID}`);
             }
             req.flash('successStaff', 'Staff details updated successfully');
             res.redirect('/admin/dashboard');
         });
-    });
+    }
 };
 
 
@@ -599,3 +645,67 @@ exports.editParticulars = (req, res) => {
         res.redirect('/user/profile');
     });
 };
+
+exports.getGenerateQR = (req, res) => {
+  const todayProgramsQuery = `
+    SELECT t.timeslotID, p.Title, t.Date, t.Start_Time 
+    FROM Timeslot t 
+    JOIN Program p ON t.ProgramID = p.ProgramID 
+  `;
+
+  db.query(todayProgramsQuery, async (err, timeslots) => {
+    if (err) {
+      console.error('Error fetching today programs:', err);
+      return res.status(500).send('DB Error');
+    }
+
+    const staffID = req.session.staff?.staffID || 'S001';
+
+    const qrPromises = timeslots.map(ts => {
+      const url = `http://localhost:3000/user/attend?staffID=${staffID}&timeslotID=${ts.timeslotID}`;
+      return QRCode.toDataURL(url).then(qr => ({ ...ts, qr }));
+    });
+
+    const qrTimeslots = await Promise.all(qrPromises);
+
+    res.render('admin/generate', {
+      qrTimeslots,
+      currentPath: req.path
+    });
+  });
+};
+
+exports.getScanQR = (req, res) => {
+  res.render('user/scan', {
+    currentPath: req.path
+  });
+};
+
+
+exports.markAttendance = (req, res) => {
+  const { staffID, timeslotID } = req.query;
+
+  if (!staffID || !timeslotID) {
+    return res.status(400).send("Invalid QR parameters.");
+  }
+
+  const query = `
+    UPDATE staff_program 
+    SET Status = 'Completed' 
+    WHERE staffID = ? AND timeslotID = ?
+  `;
+
+  db.query(query, [staffID, timeslotID], (err, result) => {
+    if (err) {
+      console.error('Attendance error:', err);
+      return res.status(500).send("Database error.");
+    }
+
+    if (result.affectedRows > 0) {
+      res.send("✅ Attendance marked successfully!");
+    } else {
+      res.send("⚠️ Attendance not recorded. Maybe already completed or not registered.");
+    }
+  });
+};
+

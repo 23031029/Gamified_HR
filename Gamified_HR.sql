@@ -142,7 +142,7 @@ INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility
 -- P005: Cybersecurity Basics
 INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) VALUES
 ('P005', '2025-07-14', '11:00:00', 90, 18), -- original
-('P005', '2025-07-14', '16:00:00', 90, 12), -- same day, different time
+('P005', '2025-07-09', '16:00:00', 90, 12), -- same day, different time
 ('P005', '2025-07-21', '11:00:00', 90, 20); -- same time, different date
 
 
@@ -179,7 +179,7 @@ INSERT INTO staff_program (staffID, programID, timeslotID, `Status`) VALUES
 ('S002', 'P004', 12, 'Registered'),   -- next week morning
 
 ('S006', 'P005', 13, 'Completed'),    -- first Cyber slot
-('S005', 'P005', 14, 'Registered'),      -- same day, different time
+('S005', 'P005', 14, 'Ongoing'),      -- same day, different time
 ('S003', 'P005', 15, 'Registered');   -- next week's same time
 
 -- Table: Program_Feedback

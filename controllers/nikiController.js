@@ -58,8 +58,6 @@ exports.getUserDashboard = (req, res) => {
     WHERE re.staffID = ?
   `;
 
-  update();
-
   db.query(userInfoQuery, [staffID], (err, userResults) => {
     if (err) return res.status(500).send("Error fetching user info");
     const user = userResults[0];
@@ -99,6 +97,7 @@ exports.getUserDashboard = (req, res) => {
   });
 };
 
+
 // =========================
 // USER LEADERBOARD
 // =========================
@@ -121,9 +120,7 @@ exports.getUserLeaderboard = (req, res) => {
   query += ' ORDER BY total_point DESC';
 
   db.query(query, params, (err, results) => {
-    if (err) {
-      return res.status(500).send('Error loading leaderboard');
-    }
+    if (err) return res.status(500).send('Error loading leaderboard');
 
     res.render('user/leaderboard', {
       leaderboard: results,
@@ -133,6 +130,7 @@ exports.getUserLeaderboard = (req, res) => {
     });
   });
 };
+
 
 // =========================
 // ADMIN LEADERBOARD
@@ -156,9 +154,7 @@ exports.getAdminLeaderboard = (req, res) => {
   query += ' ORDER BY total_point DESC';
 
   db.query(query, params, (err, results) => {
-    if (err) {
-      return res.status(500).send('Error loading leaderboard');
-    }
+    if (err) return res.status(500).send('Error loading leaderboard');
 
     res.render('admin/leaderboard', {
       leaderboard: results,
@@ -169,59 +165,16 @@ exports.getAdminLeaderboard = (req, res) => {
   });
 };
 
-// =========================
-// FEEDBACK
-// =========================
-
-exports.submitFeedback = (req, res) => {
-  const { programID, rating, comment, tags, bonusPoints } = req.body;
-  const staffID = req.session.staff.staffID;
-
-  console.log("==== FEEDBACK SUBMIT ATTEMPT ====");
-  console.log("ProgramID:", programID);
-  console.log("StaffID:", staffID);
-  console.log("Rating:", rating);
-  console.log("Tags:", tags);
-  console.log("Comment:", comment);
-  console.log("BonusPoints:", bonusPoints);
-
-  const sql = `
-    INSERT INTO Program_Feedback (staffID, ProgramID, Rating, Comments, Tags, BonusPoints, Submitted_Date)
-    VALUES (?, ?, ?, ?, ?, ?, CURDATE())
-  `;
-
-  db.query(sql, [staffID, programID, rating, comment, tags, bonusPoints], (err) => {
-    if (err) {
-      console.error("⚠️ INSERT ERROR:", err);
-      return res.status(500).json({ success: false, error: err.message });
-    }
-
-    const updatePointsSql = `UPDATE staff SET total_point = total_point + ? WHERE staffID = ?`;
-    db.query(updatePointsSql, [bonusPoints, staffID], (err2) => {
-      if (err2) {
-        console.error("⚠️ POINTS UPDATE ERROR:", err2);
-        return res.status(500).json({ success: false, error: err2.message });
-      }
-
-      console.log("✅ Feedback and bonus points submitted successfully.");
-      return res.json({ success: true });
-    });
-  });
-};
 
 exports.viewProgramFeedback = (req, res) => {
   const { programID } = req.params;
   const { sort = 'Submitted_Date', order = 'DESC', filter } = req.query;
 
-  // Only allow safe column names
   const allowedSorts = ['Rating', 'Submitted_Date'];
   const allowedOrders = ['ASC', 'DESC'];
 
-  const sortParam = typeof sort === 'string' ? sort : '';
-  const orderParam = typeof order === 'string' ? order.toUpperCase() : '';
-
-  const sortColumn = allowedSorts.includes(sortParam) ? sortParam : 'Submitted_Date';
-  const sortOrder = allowedOrders.includes(orderParam) ? orderParam : 'DESC';
+  const sortColumn = allowedSorts.includes(sort) ? sort : 'Submitted_Date';
+  const sortOrder = allowedOrders.includes(order.toUpperCase()) ? order.toUpperCase() : 'DESC';
 
   let sql = `
     SELECT pf.*, 
@@ -262,6 +215,7 @@ exports.viewProgramFeedback = (req, res) => {
     });
   });
 };
+
 
 // =========================
 // HELPER FUNCTIONS

@@ -112,6 +112,9 @@ app.post('/user/change-password', checkAuthentication, validatePasswordChange, s
 app.post('/user/edit-particulars', serjiaControl.editParticulars)
 app.get('/editStaff/:staffID', checkAuthentication, checkAdmin, serjiaControl.getEditStaff);
 app.post('/editStaff/:staffID', checkAuthentication, checkAdmin, upload.single('profile'), serjiaControl.postEditStaff);
+app.get('/admin/generate', serjiaControl.getGenerateQR);
+app.get('/user/scan', serjiaControl.getScanQR);
+app.get('/user/attend', serjiaControl.markAttendance);
 
 // Isabel's reward routes (admin only)
 app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);
@@ -126,11 +129,12 @@ app.get('/user/rewards', checkAuthentication, checkUser, isabelControl.userRewar
 app.get('/rewards/read/:id', checkAuthentication, checkUser, isabelControl.readReward);
 app.get('/reward/:id', checkAuthentication, checkUser, isabelControl.viewSingleReward);
 app.post('/claimReward/:id', checkAuthentication, checkUser, isabelControl.claimReward);
+app.get('/user/redeemHist', checkAuthentication, checkUser, isabelControl.redeemHistory);
 
 // Niki's user and admin leaderboard routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
-app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
+app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard)
 
 // Niki's feedback routes
 app.post('/submit-feedback', checkAuthentication, nikiController.submitFeedback);
@@ -139,7 +143,6 @@ app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, n
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
 app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
-
 app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
 
 app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);

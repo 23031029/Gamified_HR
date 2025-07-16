@@ -18,7 +18,7 @@ exports.getProgramsAdmin = (req, res) => {
         WHERE 
             (t.Date > CURDATE())
             OR (t.Date = CURDATE() && t.Start_Time > CURTIME())
-            OR t.Date IS NULL
+            OR t.Date IS NULL -- Show programs with no timeslots
         ORDER BY p.ProgramID ASC, t.Date ASC
     `;
 
@@ -295,7 +295,6 @@ exports.getEditProgram = (req, res) => {
 exports.postEditProgram = (req, res) => {
     const programId = req.params.id;
     const { title, type, description, points_reward } = req.body;
-
     // Timeslot fields as arrays
     const timeslotID = req.body.timeslotID || [];
     const timeslot_date = req.body.timeslot_date || [];

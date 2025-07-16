@@ -22,6 +22,17 @@ exports.getProgramsAdmin = (req, res) => {
         ORDER BY p.ProgramID ASC, t.Date ASC
     `;
 
+    const feedbackStatsQuery = `
+        SELECT 
+            pf.ProgramID,
+            p.Title,
+            ROUND(AVG(pf.Rating), 1) AS avg_rating,
+            COUNT(pf.FeedbackID) AS comment_count
+        FROM Program_Feedback pf
+        JOIN Program p ON pf.ProgramID = p.ProgramID
+        GROUP BY pf.ProgramID, p.Title
+    `;
+
     db.query(query, (err, programs) => {
         if (err) {
             console.error(err);
@@ -30,7 +41,6 @@ exports.getProgramsAdmin = (req, res) => {
         }
 
         const grouped = {};
-
         programs.forEach(p => {
             if (!grouped[p.ProgramID]) {
                 grouped[p.ProgramID] = {
@@ -57,15 +67,24 @@ exports.getProgramsAdmin = (req, res) => {
 
         const groupedPrograms = Object.values(grouped);
 
-        const successMessage = req.flash('successP');
-        const errorMessage = req.flash('errorP');
+        db.query(feedbackStatsQuery, (err2, feedbackStats) => {
+            if (err2) {
+                console.error(err2);
+                req.flash('errorP', 'Error fetching feedback data');
+                return res.redirect('/admin/programs');
+            }
 
-        res.render('admin/programsAdmin', {
-            programs: groupedPrograms,
-            error: null,
-            messageP: successMessage.length > 0 ? successMessage[0] : (errorMessage.length > 0 ? errorMessage[0] : null),
-            messageType: successMessage.length > 0 ? 'success' : (errorMessage.length > 0 ? 'error' : null),
-            currentPath: req.path
+            const successMessage = req.flash('successP');
+            const errorMessage = req.flash('errorP');
+
+            res.render('admin/programsAdmin', {
+                programs: groupedPrograms,
+                feedbackStats: feedbackStats || [],
+                error: null,
+                messageP: successMessage.length > 0 ? successMessage[0] : (errorMessage.length > 0 ? errorMessage[0] : null),
+                messageType: successMessage.length > 0 ? 'success' : (errorMessage.length > 0 ? 'error' : null),
+                currentPath: req.path
+            });
         });
     });
 };
@@ -276,7 +295,6 @@ exports.getEditProgram = (req, res) => {
 exports.postEditProgram = (req, res) => {
     const programId = req.params.id;
     const { title, type, description, points_reward } = req.body;
-
     // Timeslot fields as arrays
     const timeslotID = req.body.timeslotID || [];
     const timeslot_date = req.body.timeslot_date || [];

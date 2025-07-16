@@ -87,15 +87,15 @@
       margin-bottom: 5px;
     }
 
-.program-type {
-  background: #c8facc; /* pastel green */
-  color: #2e4a2b;       /* dark green for contrast */
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
+    .program-type {
+      background: #c8facc;
+      color: #2e4a2b;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
 
     .program-description {
       color: #666;
@@ -103,41 +103,73 @@
       line-height: 1.5;
     }
 
-    .program-details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
+    .points-reward {
+      background: linear-gradient(135deg, #fff9c4, #ffeaa7);
+      color: #333;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .timeslots-section {
       margin-bottom: 20px;
     }
 
-    .detail-item {
-      background: #f8f9fa;
-      padding: 10px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    .detail-label {
-      font-size: 0.8rem;
-      color: #666;
-      margin-bottom: 5px;
-    }
-
-    .detail-value {
+    .timeslots-title {
+      font-size: 1rem;
       font-weight: bold;
       color: #333;
+      margin-bottom: 10px;
     }
 
-.points-reward {
-  background: linear-gradient(135deg, #fff9c4, #ffeaa7); /* pastel yellow gradient */
-  color: #333; /* dark text for contrast */
-  padding: 10px;
-  border-radius: 10px;
-  text-align: center;
-  font-weight: bold;
-  margin-bottom: 15px;
-}
+    .timeslots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      margin-bottom: 15px;
+    }
 
+    .timeslot-item {
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.85rem;
+      border: 1px solid #e9ecef;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .timeslot-item:hover {
+      background: #e9ecef;
+      transform: translateY(-1px);
+    }
+
+    .timeslot-item.selected {
+      background: linear-gradient(135deg, #B8D42F, #76B900);
+      color: white;
+      border-color: #76B900;
+    }
+
+    .timeslot-date {
+      font-weight: bold;
+      color: #333;
+      font-size: 0.8rem;
+    }
+
+    .timeslot-time {
+      color: #666;
+      font-size: 0.75rem;
+      margin-top: 2px;
+    }
+
+    .timeslot-slots {
+      color: #666;
+      font-size: 0.7rem;
+      margin-top: 2px;
+    }
 
     .program-actions {
       display: flex;
@@ -166,6 +198,26 @@
       box-shadow: 0 5px 15px rgba(184, 212, 47, 0.4);
     }
 
+    .btn-secondary {
+      background-color: #c9a8e8 !important;
+      color: #000000;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #d9c2f0, #c9a8e8, #b89dd9);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(201, 168, 232, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
     .no-programs {
       text-align: center;
       color: #666;
@@ -173,85 +225,54 @@
       margin-top: 50px;
     }
 
-    .status-badge {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      padding: 5px 10px;
-      border-radius: 15px;
-      font-size: 0.7rem;
-      font-weight: bold;
+    .no-timeslots {
+      text-align: center;
+      color: #666;
+      font-size: 0.9rem;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 15px;
     }
 
-    .status-active { background: #d4edda; color: #155724; }
-    .status-upcoming { background: #fff3cd; color: #856404; }
-    .status-ended { background: #f8d7da; color: #721c24; }
+    .selected-slot-info {
+      background: #e8f5e8;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      color: #2e4a2b;
+      display: none;
+    }
 
     @media (max-width: 768px) {
       .programs-grid {
         grid-template-columns: 1fr;
       }
+      
+      .timeslots-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      }
     }
-
-    .flatpickr-day.available {
-      background-color: #6cbf3c !important;
-      color: white !important;
-      border-radius: 50%;
-    }
-
-.btn-secondary {
-  background-color:  #c9a8e8 !important; /* pastel purple gradient */
-  color: #000000;             /* black text */
-  font-weight: 600;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.btn-secondary:hover {
-  background: linear-gradient(135deg, #d9c2f0, #c9a8e8, #b89dd9); /* slightly deeper purple on hover */
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(201, 168, 232, 0.4); /* soft purple hover shadow */
-}
-
   </style>
 </head>
 <body>
   <%- include('../partials/navbar.ejs') %>
 
-  <div class="header">
-    <h1>CASUGOL</h1>
-  </div>
+  <script>
+    <% if (typeof error !== 'undefined' && error) { %>
+      alert("<%= typeof error === 'string' ? error.replace(/"/g, '\\"') : (error.message || 'An error occurred.') %>");
+    <% } %>
+    <% if (typeof messageP !== 'undefined' && messageP && messageP.length) { %>
+      alert("<%= Array.isArray(messageP) ? messageP[0].replace(/"/g, '\\"') : messageP.replace(/"/g, '\\"') %>");
+    <% } %>
+  </script>
 
   <div class="container">
     <% if (programs && programs.length > 0) { %>
       <div class="programs-grid">
         <% programs.forEach(program => { %>
-          <% 
-            const today = new Date();
-            const startDate = new Date(program.Start_Date);
-            const endDate = new Date(program.End_Date);
-            let status = '';
-            let statusText = '';
-            if (today < startDate) {
-              status = 'upcoming';
-              statusText = 'Upcoming';
-            } else if (today > endDate) {
-              status = 'ended';
-              statusText = 'Ended';
-            } else {
-              status = 'active';
-              statusText = 'Active';
-            }
-            const formatDate = (date) => {
-              return new Date(date).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-              });
-            };
-          %>
           <div class="program-card">
-            <div class="status-badge status-<%= status %>"><%= statusText %></div>
             <div class="program-header">
               <div>
                 <div class="program-title"><%= program.Title %></div>
@@ -260,27 +281,52 @@
             </div>
             <div class="program-description"><%= program.Description %></div>
             <div class="points-reward">🏆 <%= program.points_reward %> Points Reward</div>
-            <div class="program-details">
-              <div class="detail-item">
-                <div class="detail-label">Start Date</div>
-                <div class="detail-value"><%= formatDate(program.Start_Date) %></div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">End Date</div>
-                <div class="detail-value"><%= formatDate(program.End_Date) %></div>
-              </div>
+            
+            <div class="timeslots-section">
+              <% if (program.timeslots && program.timeslots.length > 0) { %>
+                <div class="timeslots-title">Available Time Slots:</div>
+                <div class="timeslots-grid" id="timeslots-<%= program.ProgramID %>">
+                  <% program.timeslots.forEach(slot => { %>
+                    <div class="timeslot-item" 
+                         data-program-id="<%= program.ProgramID %>" 
+                         data-timeslot-id="<%= slot.timeslotID %>"
+                         data-date="<%= slot.Date %>"
+                         data-time="<%= slot.Start_Time %>"
+                         data-duration="<%= slot.Duration %>"
+                         data-slots="<%= slot.Slots_availablility %>">
+                      <div class="timeslot-date">
+                        <%= new Date(slot.Date).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        }) %>
+                      </div>
+                      <div class="timeslot-time">
+                        <%= slot.Start_Time ? slot.Start_Time.substring(0,5) : '-' %>
+                      </div>
+                      <div class="timeslot-slots">
+                        <%= slot.Slots_availablility %> slots
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+                
+                <div class="selected-slot-info" id="selected-info-<%= program.ProgramID %>">
+                  <strong>Selected:</strong> <span id="selected-text-<%= program.ProgramID %>"></span>
+                </div>
+              <% } else { %>
+                <div class="no-timeslots">No time slots available for this program.</div>
+              <% } %>
             </div>
+            
             <div class="program-actions">
-              <% if (status === 'active' || status === 'upcoming') { %>
-                <form class="register-form"
-                    data-program="<%= program.ProgramID %>"
-                    data-start="<%= program.Start_Date %>"
-                    data-end="<%= program.End_Date %>"
-                    data-start-time="<%= program.start_time %>"
-                    data-end-time="<%= program.end_time %>">
-                <button type="button" class="btn btn-primary"><%= status === 'active' ? 'Join Now' : 'Register' %></button>
-              </form>
-
+              <% if (program.timeslots && program.timeslots.length > 0) { %>
+                <form action="/user/programs" method="POST" style="display:inline;" id="join-form-<%= program.ProgramID %>">
+                  <input type="hidden" name="programID" value="<%= program.ProgramID %>">
+                  <input type="hidden" name="timeslotID" value="" id="selected-timeslot-<%= program.ProgramID %>">
+                  <button type="submit" class="btn btn-primary" id="join-btn-<%= program.ProgramID %>" disabled>
+                    Select Time Slot
+                  </button>
+                </form>
               <% } else { %>
                 <button class="btn btn-secondary" disabled>Program Ended</button>
               <% } %>
@@ -294,138 +340,66 @@
     <% } %>
   </div>
 
-  <!-- Booking Modal -->
-  <div id="slotModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
-    <div style="background:#fff; padding:30px; border-radius:10px; width:90%; max-width:400px;">
-      <h2>Select Your Slot</h2>
-      <form id="slotForm">
-        <input type="hidden" name="programID" id="modalProgramID" />
-        <label for="slotDate">Choose a date:</label><br />
-        <input type="text" id="slotDate" name="slotDate" required style="margin-top:10px;" /><br /><br />
-        <label for="slotTime">Choose a time:</label><br />
-        <select id="slotTime" name="slotTime" required style="margin-top:10px; width:100%; padding:8px;">
-          <% programs.forEach(program => { %>
-          <% 
-            const formatTime = (timeStr) => {
-              const [hours, minutes] = timeStr.split(':');
-              const date = new Date();
-              date.setHours(hours, minutes);
-              return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            };
-
-            const startTime = formatTime(program.start_time);
-            const endTime = formatTime(program.end_time);
-          %>
-          <option value="<%= startTime %> - <%= endTime %>"><%= startTime %> - <%= endTime %></option>
-        <% }) %>
-
-        </select><br /><br />
-        <button type="submit" class="btn btn-primary" style="width:100%;">Confirm Booking</button>
-        <button type="button" class="btn btn-secondary" onclick="closeModal()" style="margin-top:10px; width:100%;">Cancel</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Flatpickr JS -->
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
- <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const registerForms = document.querySelectorAll('.register-form');
-
-  registerForms.forEach(form => {
-    form.querySelector('button').addEventListener('click', () => {
-      const programID = form.dataset.program;
-      const start = new Date(form.dataset.start);
-      const end = new Date(form.dataset.end);
-      const startTime = form.dataset.startTime;
-      const endTime = form.dataset.endTime;
-
-      document.getElementById('modalProgramID').value = programID;
-
-      // Show only selected program's date range
-      flatpickr("#slotDate", {
-        dateFormat: "Y-m-d",
-        minDate: start,
-        maxDate: end,
-        defaultDate: start,
-        onDayCreate: function (dObj, dStr, fp, dayElem) {
-          if (!dayElem.classList.contains("flatpickr-disabled")) {
-            dayElem.classList.add("available");
-          }
-        }
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Handle timeslot selection
+      const timeslotItems = document.querySelectorAll('.timeslot-item');
+      
+      timeslotItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const programId = this.dataset.programId;
+          const timeslotId = this.dataset.timeslotId;
+          const date = this.dataset.date;
+          const time = this.dataset.time;
+          const duration = this.dataset.duration;
+          const slots = this.dataset.slots;
+          
+          // Remove selection from other timeslots in the same program
+          document.querySelectorAll(`#timeslots-${programId} .timeslot-item`).forEach(slot => {
+            slot.classList.remove('selected');
+          });
+          
+          // Add selection to clicked timeslot
+          this.classList.add('selected');
+          
+          // Update hidden input
+          document.getElementById(`selected-timeslot-${programId}`).value = timeslotId;
+          
+          // Update selected info display
+          const selectedInfo = document.getElementById(`selected-info-${programId}`);
+          const selectedText = document.getElementById(`selected-text-${programId}`);
+          const formattedDate = new Date(date).toLocaleDateString('en-US', { 
+            weekday: 'short',
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          });
+          const formattedTime = time.substring(0, 5);
+          
+          selectedText.textContent = `${formattedDate} at ${formattedTime} (${duration} mins, ${slots} slots available)`;
+          selectedInfo.style.display = 'block';
+          
+          // Enable join button
+          const joinBtn = document.getElementById(`join-btn-${programId}`);
+          joinBtn.disabled = false;
+          joinBtn.textContent = 'Register Now';
+        });
       });
-
-      // Populate time slot dropdown with the program's time range
-      const slotTimeSelect = document.getElementById('slotTime');
-      slotTimeSelect.innerHTML = '<option value="" hidden>-- Select Time --</option>';
-
-      // Helper: Generate 30-min time slots between start and end
-      const generateTimeSlots = (start, end) => {
-        const slots = [];
-        const [startH, startM] = start.split(':').map(Number);
-        const [endH, endM] = end.split(':').map(Number);
-
-        const startDate = new Date();
-        startDate.setHours(startH, startM, 0, 0);
-
-        const endDate = new Date();
-        endDate.setHours(endH, endM, 0, 0);
-
-        while (startDate < endDate) {
-          const slotStart = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          startDate.setMinutes(startDate.getMinutes() + 60);
-          const slotEnd = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-          if (startDate <= endDate) {
-            slots.push(`${slotStart} - ${slotEnd}`);
+      
+      // Handle form submission
+      document.querySelectorAll('form[id^="join-form-"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          const programId = this.querySelector('input[name="programID"]').value;
+          const timeslotId = this.querySelector('input[name="timeslotID"]').value;
+          
+          if (!timeslotId) {
+            e.preventDefault();
+            alert('Please select a time slot first.');
+            return;
           }
-        }
-        return slots;
-      };
-
-      const timeSlots = generateTimeSlots(startTime, endTime);
-      timeSlots.forEach(slot => {
-        const option = document.createElement('option');
-        option.value = slot;
-        option.textContent = slot;
-        slotTimeSelect.appendChild(option);
+        });
       });
-
-      // Open modal
-      document.getElementById('slotModal').style.display = 'flex';
     });
-  });
-
-  // Form submission handler
-  document.getElementById('slotForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const programID = document.getElementById('modalProgramID').value;
-    const slotDate = document.getElementById('slotDate').value;
-    const slotTime = document.getElementById('slotTime').value;
-
-    fetch('/join-program', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `programID=${programID}&slotDate=${slotDate}&slotTime=${slotTime}`
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        alert("Slot booked successfully!");
-        closeModal();
-        location.reload();
-      } else {
-        alert(data.message || "Booking failed.");
-      }
-    })
-    .catch(() => alert("Error booking slot."));
-  });
-});
-
-function closeModal() {
-  document.getElementById('slotModal').style.display = 'none';
-}
-</script>
-
+  </script>
 </body>
 </html>

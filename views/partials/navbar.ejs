@@ -400,59 +400,57 @@
 
     <div class="nav-menu">
       <ul>
-        <li class="nav-item">
-          <% if (staff.role == "admin") { %>
+        <% if (staff.role == "admin") { %>
+          <li class="nav-item">
             <a href="/admin/dashboard" class="nav-link<%= currentPath === '/admin/dashboard' ? ' active' : '' %>">
-              <i class="fas fa-tachometer-alt"></i>
-              Dashboard
+              <i class="fas fa-chart-line""></i>
+              Admin Dashboard
             </a>
-          <% } else { %>
-            <a href="/user/dashboard" class="nav-link<%= currentPath === '/user/dashboard' ? ' active' : '' %>">
-              <i class="fas fa-tachometer-alt"></i>
-              Dashboard
-            </a>
-          <% } %>
-        </li>
-
-        <li class="nav-item">
-          <% if (staff.role == "admin") { %>
+          </li>
+          <li class="nav-item">
             <a href="/admin/rewards" class="nav-link<%= currentPath === '/admin/rewards' ? ' active' : '' %>">
               <i class="fas fa-gift"></i>
-              Rewards
+              Admin Rewards
             </a>
-          <% } else { %>
-            <a href="/user/rewards" class="nav-link<%= currentPath === '/user/rewards' ? ' active' : '' %>">
-              <i class="fas fa-gift"></i>
-              Rewards
-            </a>
-          <% } %>
-        </li>
-        <li class="nav-item">
-           <% if (staff.role == "admin") { %>
+          </li>
+          <li class="nav-item">
             <a href="/admin/leaderboard" class="nav-link<%= currentPath === '/admin/leaderboard' ? ' active' : '' %>">
               <i class="fas fa-trophy"></i>
               Leaderboard
             </a>
-          <% } else { %>
+          </li>
+          <li class="nav-item">
+            <a href="/admin/programs" class="nav-link<%= currentPath === '/admin/programs' ? ' active' : '' %>">
+              <i class="fas fa-calendar-alt"></i>
+              Admin Program
+            </a>
+          </li>
+        <% } else { %>
+          <li class="nav-item">
+            <a href="/user/dashboard" class="nav-link<%= currentPath === '/user/dashboard' ? ' active' : '' %>">
+              <i class="fas fa-tachometer-alt"></i>
+              Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/user/rewards" class="nav-link<%= currentPath === '/user/rewards' ? ' active' : '' %>">
+              <i class="fas fa-gift"></i>
+              Rewards
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="/user/leaderboard" class="nav-link<%= currentPath === '/user/leaderboard' ? ' active' : '' %>">
               <i class="fas fa-trophy"></i>
               Leaderboard
             </a>
-          <% } %>
-        </li>
-        <li class="nav-item">
-          <% if (staff.role == "admin") { %>
-          <a href="/admin/programs" class="nav-link<%= currentPath === '/admin/programs' ? ' active' : '' %>">
-            <i class="fas fa-calendar-alt"></i>
-            Program
-          </a>
-          <% } else { %>
+          </li>
+          <li class="nav-item">
             <a href="/user/programs" class="nav-link<%= currentPath === '/user/programs' ? ' active' : '' %>">
               <i class="fas fa-calendar-alt"></i>
               Program
             </a>
-          <% } %>
-        </li>
+          </li>
+        <% } %>
       </ul>
     </div>
 

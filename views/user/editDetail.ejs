@@ -173,10 +173,70 @@
                 width: 110px;
                 font-size: 0.85rem;
             }
+
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.1); opacity: 0.8; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+                #earnedPoints {
+                animation: pulse 1s ease 2;
+                color: #28a745;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Feedback Modal Overlay -->
+<div id="feedbackModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999;">
+  <div id="feedbackContent" style="max-width:500px; margin:100px auto; background:#fff; padding:30px; border-radius:15px; position:relative;">
+    
+    <!-- Close Button -->
+    <button onclick="closeFeedback()" style="position:absolute; top:10px; right:15px; font-size:20px; background:none; border:none;">&times;</button>
+
+    <!-- Step 1: Star Rating -->
+    <div class="feedback-step" id="step1">
+      <h4 class="mb-3">(Required) How would you rate this program?</h4>
+      <span class="badge bg-success mb-3">+5 pts</span>
+      <div id="starContainer" style="font-size: 2rem;">
+        <% for (let i = 1; i <= 5; i++) { %>
+          <i class="fa fa-star star" data-value="<%= i %>" style="cursor:pointer; color:#ccc;"></i>
+        <% } %>
+      </div>
+      <button class="btn btn-primary mt-4" onclick="nextStep()" disabled id="nextBtn1">Next ➡️</button>
+    </div>
+
+    <!-- Step 2: Optional Tags -->
+    <div class="feedback-step d-none" id="step2">
+      <h5>(Optional) Select what stood out to you:</h5>
+      <span class="badge bg-success mb-3">+5 pts</span>
+      <div>
+        <label><input type="checkbox" value="Helpful" class="tag-checkbox"> Helpful</label><br>
+        <label><input type="checkbox" value="Engaging" class="tag-checkbox"> Engaging</label><br>
+        <label><input type="checkbox" value="Well-organized" class="tag-checkbox"> Well-organized</label><br>
+        <label><input type="checkbox" value="Would recommend" class="tag-checkbox"> Would recommend</label><br>
+      </div>
+      <button class="btn btn-primary mt-4" onclick="nextStep()">Next ➡️</button>
+    </div>
+
+    <!-- Step 3: Optional Comment -->
+    <div class="feedback-step d-none" id="step3">
+      <h5>Any comments?</h5>
+      <span class="badge bg-success mb-3">+10 pts</span>
+      <textarea id="commentBox" rows="4" class="form-control" placeholder="(Optional) Share your thoughts..."></textarea>
+      <button class="btn btn-success mt-4" onclick="submitFeedback()">Submit ✅</button>
+    </div>
+
+    <!-- Final Step: Thank You -->
+    <div class="feedback-step d-none text-center" id="step4">
+        <h4 class="text-success mb-4">🎉 Thank you for your feedback!</h4>
+        <p>We appreciate your input to help improve our programs.</p>
+        <p><strong>You earned <span id="earnedPoints">0</span> bonus points!</strong></p>
+        <button class="btn btn-outline-secondary mt-3" onclick="closeFeedback()">Close</button>
+    </div>
+  </div>
+</div>
+
 <%- include('../partials/navbar.ejs') %>
 
 <div class="container mt-4">
@@ -280,33 +340,44 @@
                 </table>
             </div>
         </div>
-        <div class="col-md-6 mb-4">
+         <div class="col-md-6 mb-4">
             <div class="profile-section">
                 <h5 class="section-title">
-                    <i class="fas fa-tasks"></i>
-                    Ongoing Programs
+                    <i class="fas fa-check"></i>
+                    Completed Programs
                 </h5>
-                <% if (typeof ongoingPrograms !== 'undefined' && ongoingPrograms.length > 0) { %>
+                <% if (typeof completedPrograms !== 'undefined' && completedPrograms.length > 0) { %>
                     <div>
-                        <% ongoingPrograms.forEach(function(prog) { %>
-                            <div class="program-item">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="program-title"><%= prog.title %></span>
-                                    <span class="program-badge"><%= prog.status %></span>
-                                </div>
+                        <% completedPrograms.forEach(function(prog) { %>
+                        <div class="program-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="program-title"><%= prog.title %></span>
+                                <span class="program-badge"><%= prog.status %></span>
                             </div>
+
+                            <% if (!prog.hasFeedback) { %>
+                                <button 
+                                class="btn btn-sm btn-warning" 
+                                onclick="openFeedback('<%= prog.programID %>', '<%= prog.title %>')">
+                                Give Feedback
+                                </button>
+                            <% } else { %>
+                                <span class="badge bg-success">Feedback submitted</span>
+                            <% } %>
+                            </div>
+                        </div>
                         <% }) %>
                     </div>
                 <% } else { %>
                     <div class="no-programs">
                         <i class="fas fa-inbox fa-2x"></i>
-                        <p class="mb-0">No ongoing programs.</p>
+                        <p class="mb-0">No completed programs.</p>
                     </div>
                 <% } %>
             </div>
         </div>
     </div>
-</div>
 
 <script>
 function startEdit(field) {
@@ -325,8 +396,95 @@ function cancelEdit(field) {
     document.getElementById(field + 'View').classList.remove('d-none');
     document.getElementById(field + 'Edit').classList.add('d-none');
 }
+
+let currentStep = 1;
+let selectedRating = 0;
+let selectedTags = [];
+let programIDSubmitting = "";
+
+function openFeedback(programID, programTitle) {
+  programIDSubmitting = programID;
+  document.getElementById("feedbackModal").style.display = "block";
+  showStep(1);
+}
+
+function closeFeedback() {
+  document.getElementById("feedbackModal").style.display = "none";
+  selectedRating = 0;
+  selectedTags = [];
+  programIDSubmitting = "";
+  document.querySelectorAll('.star').forEach(star => star.style.color = '#ccc');
+  document.getElementById("nextBtn1").disabled = true;
+}
+
+function showStep(step) {
+  currentStep = step;
+  document.querySelectorAll(".feedback-step").forEach(div => div.classList.add("d-none"));
+  document.getElementById("step" + step).classList.remove("d-none");
+}
+
+function nextStep() {
+  if (currentStep === 1 && selectedRating === 0) return;
+  showStep(currentStep + 1);
+}
+
+document.querySelectorAll(".star").forEach(star => {
+  star.addEventListener("click", function () {
+    selectedRating = parseInt(this.dataset.value);
+    document.getElementById("nextBtn1").disabled = false;
+    document.querySelectorAll(".star").forEach(s => {
+      s.style.color = parseInt(s.dataset.value) <= selectedRating ? "#f7c600" : "#ccc";
+    });
+  });
+});
+
+function submitFeedback() {
+  const tags = Array.from(document.querySelectorAll(".tag-checkbox:checked")).map(cb => cb.value);
+  const comment = document.getElementById("commentBox").value.trim();
+
+  // ⭐ BONUS LOGIC
+  let bonusPoints = 0;
+  if (selectedRating > 0) bonusPoints += 5;
+  if (tags.length > 0) bonusPoints += 5;
+  if (comment.length > 0) bonusPoints += 10;
+
+  fetch("/submit-feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      programID: programIDSubmitting,
+      rating: selectedRating,
+      tags: tags.join(","),
+      comment,
+      bonusPoints // ✅ this will update their points in DB
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showStep(4);
+      const allProgramItems = document.querySelectorAll('.program-item');
+      allProgramItems.forEach(item => {
+        if (item.innerHTML.includes(`openFeedback('${programIDSubmitting}'`)) {
+          const button = item.querySelector('button.btn-warning');
+          if (button) {
+            button.remove();
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-success';
+            badge.innerText = 'Feedback submitted';
+            item.querySelector('.d-flex.justify-content-between').appendChild(badge);
+          }
+        }
+      });
+    } else {
+      alert("Error submitting feedback.");
+    }
+  });
+}
+
+document.getElementById("earnedPoints").textContent = bonusPoints;
+
+
 </script>
-
-
 </body>
 </html>

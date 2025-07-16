@@ -89,7 +89,6 @@
       color: #60A5FA;
     }
 
-    /* Top 3 Row Styling */
     .gold-row {
       background-color: #ffd70022;
       font-weight: bold;
@@ -116,14 +115,8 @@
     }
 
     @keyframes popIn {
-      0% {
-        transform: scale(0.95);
-        opacity: 0;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
@@ -133,13 +126,11 @@
   <div class="container">
     <div class="title">🏆 Leaderboard</div>
 
-    <!-- Filter Buttons -->
     <div class="filter">
       <a href="/user/leaderboard?filter=all" class="<%= filter === 'all' ? 'active' : '' %>">All</a>
       <a href="/user/leaderboard?filter=department" class="<%= filter === 'department' ? 'active' : '' %>">My Department</a>
     </div>
 
-    <!-- Live Leaderboard -->
     <table class="leaderboard-table">
       <thead>
         <tr>
@@ -164,37 +155,6 @@
             </td>
             <td><%= user.department_name %></td>
             <td class="points"><%= user.total_point %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-
-    <!-- Leaderboard History -->
-    <div class="title">📜 Leaderboard History</div>
-    <table class="leaderboard-table">
-      <thead>
-        <tr>
-          <th>Year</th>
-          <th>Half</th>
-          <th>Rank</th>
-          <th>Name</th>
-          <th>Department</th>
-          <th>Reward</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% history.forEach(entry => { %>
-          <tr>
-            <td><%= entry.year %></td>
-            <td><%= entry.half %></td>
-            <td>
-              <% if (entry.rank_position === 1) { %> 🥇 <% } 
-                 else if (entry.rank_position === 2) { %> 🥈 <% } 
-                 else if (entry.rank_position === 3) { %> 🥉 <% } %>
-            </td>
-            <td><%= entry.name %></td>
-            <td><%= entry.department_name %></td>
-            <td><%= entry.reward %></td>
           </tr>
         <% }) %>
       </tbody>

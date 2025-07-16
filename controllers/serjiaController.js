@@ -1,4 +1,6 @@
 const db = require('../db');
+const updateProgramStatus = require('../realtimeUpdates');
+
 
 exports.getSignIn= (req, res)=>{
     res.render('user/index', {
@@ -45,27 +47,42 @@ exports.getRegister = (req, res) => {
   });
 };
 
-exports.login=(req,res)=>{
-    const {staffID, password}= req.body;
-    const sql=`Select * from staff WHERE staffID= ? AND password=SHA1(?)`;
-    db.query(sql, [staffID, password], (err, results)=>{
-        if(err){
-            throw err;
-        }
+exports.login = async (req, res) => {
+  const { staffID, password } = req.body;
+  const sql = `SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?)`;
 
-        if (results.length>0){
-            req.session.staff= results[0];
-            req.flash('successLogin', 'Login success');
-            if(req.session.staff.role=='user')
-            res.redirect('/user/dashboard');
-            else if(req.session.staff.role=='admin')
-            res.redirect('/admin/dashboard');
-        } else {
-            req.flash('errorLogin', 'Invalid email or password.');
-            res.redirect('/');
-        }
-    });
+  db.query(sql, [staffID, password], async (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Database error');
+    }
+
+    if (results.length > 0) {
+      req.session.staff = results[0];
+      req.flash('successLogin', 'Login success');
+
+      try {
+        await updateProgramStatus();
+      } catch (updateErr) {
+        console.error('Error updating program status:', updateErr);
+        req.flash('error', 'Failed to update program statuses.');
+      }
+
+      if (req.session.staff.role === 'user') {
+        return res.redirect('/user/dashboard');
+      } else if (req.session.staff.role === 'admin') {
+        return res.redirect('/admin/dashboard');
+      } else {
+        // fallback redirect if role is unexpected
+        return res.redirect('/');
+      }
+    } else {
+      req.flash('errorLogin', 'Invalid staff ID or password.');
+      return res.redirect('/');
+    }
+  });
 };
+
 
 exports.register = (req, res) => {
     const { first, last, email, password, role, department, address, phone, dob, gender } = req.body;
@@ -107,7 +124,7 @@ exports.register = (req, res) => {
                 return res.redirect('/admin/register');
             }
 
-            // Updated insert statement to include address, phone, dob
+            // Updated insert statement to match new database schema
             const insertSql = `INSERT INTO staff 
                 (staffID, first_name, last_name, email, password, role, department, home_address, phone_number, dob, date_join, status, total_point, profile_image, gender) 
                 VALUES (?, ?, ?, ?, SHA1(?), ?, ?, ?, ?, ?, CURDATE(), 'Active', 0, ?, ?)`;
@@ -144,19 +161,18 @@ exports.logout= (req, res)=>{
 exports.getAdmin = (req, res) => {
     const staffQuery = `SELECT COUNT(*) AS staffCount FROM staff WHERE status= "Active"`;
     const rewardQuery = "SELECT COUNT(*) AS rewardCount FROM reward";
-    const programQuery = "SELECT COUNT(*) as programCount  FROM program WHERE current_date() < end_date";
+    const programQuery = "SELECT COUNT(*) as programCount FROM program";
 
     const popular_program = `
-                SELECT 
-            program.title, 
-            ROUND(AVG(pf.rating), 2) AS average_rating
+        SELECT 
+            program.Title as title, 
+            ROUND(AVG(pf.Rating), 2) AS average_rating
         FROM 
             program_feedback AS pf
         INNER JOIN 
-            program ON program.programID = pf.ProgramID
+            program ON program.ProgramID = pf.ProgramID
         GROUP BY 
-            program.title;
-
+            program.Title
     `;
 
     const popular_reward = `
@@ -170,7 +186,7 @@ exports.getAdmin = (req, res) => {
         GROUP BY 
             reward.RewardID, reward.name
         ORDER BY 
-            times_redeemed DESC;
+            times_redeemed DESC
     `;
 
     const department_active = `
@@ -184,38 +200,42 @@ exports.getAdmin = (req, res) => {
         JOIN 
             Department d ON s.department = d.departmentID
         WHERE 
-            MONTH(sp.completed_date) = MONTH(CURDATE()) 
-            AND YEAR(sp.completed_date) = YEAR(CURDATE())
+            sp.Status = 'Completed'
+            AND MONTH(CURDATE()) = MONTH(CURDATE()) 
+            AND YEAR(CURDATE()) = YEAR(CURDATE())
         GROUP BY 
             d.departmentID, d.name
         ORDER BY 
-            total_participations DESC;
+            total_participations DESC
     `;
 
-    const monthly_participant= `
+   const monthly_participant = `
     SELECT 
-    DATE_FORMAT(completed_date, '%Y-%m') AS month,
-    COUNT(*) AS completed_count
+        DATE_FORMAT(t.Date, '%Y-%m') AS month,
+        COUNT(sp.participantID) AS participant_count
     FROM 
-        staff_program
+        staff_program sp
+    JOIN 
+        Timeslot t ON sp.timeslotID = t.timeslotID
     WHERE 
-        completed_date IS NOT NULL
+        sp.Status = 'Completed'
     GROUP BY 
-        month
+        DATE_FORMAT(t.Date, '%Y-%m')
     ORDER BY 
         month;
-    `
+            `;
 
-    const person_details= `SELECT 
-  staff.*, 
-  department.name AS department_name  
-FROM 
-  staff 
-INNER JOIN 
-  department ON department.departmentID = staff.department
-ORDER BY 
-  status ASC, staffID ASC;
-`;
+    const person_details = `
+        SELECT 
+            staff.*, 
+            department.name AS department_name  
+        FROM 
+            staff 
+        INNER JOIN 
+            department ON department.departmentID = staff.department
+        ORDER BY 
+            status ASC, staffID ASC
+    `;
 
     db.query(staffQuery, (err, staffResult) => {
         if (err) {
@@ -265,7 +285,7 @@ ORDER BY
                                 if (err4) throw err4;
 
                                 const monthLabels = result4.map(row => row.month);
-                                const monthData = result4.map(row => row.completed_count);
+                                const monthData = result4.map(row => row.participant_count);
 
                                 db.query(person_details, (err,result)=>{
 
@@ -341,10 +361,30 @@ exports.getEditDetail = (req, res) => {
     `;
 
     const ongoingProgramsQuery = `
-        SELECT p.Title as title, sp.Status as status
+        SELECT 
+            p.Title as title, 
+            sp.Status as status,
+            t.Date as program_date,
+            t.Start_Time as start_time,
+            t.Duration as duration
         FROM staff_program sp
         INNER JOIN program p ON sp.programID = p.ProgramID
+        INNER JOIN timeslot t ON sp.timeslotID = t.timeslotID
         WHERE sp.staffID = ? AND sp.Status = 'Ongoing'
+    `;
+
+    const completedProgramsQuery = `
+    SELECT 
+        p.Title AS title, 
+        sp.Status AS status,
+        p.ProgramID AS programID,
+        EXISTS (
+            SELECT 1 FROM program_feedback pf 
+            WHERE pf.ProgramID = p.ProgramID AND pf.staffID = sp.staffID
+        ) AS hasFeedback
+    FROM staff_program sp
+    JOIN Program p ON sp.programID = p.ProgramID
+    WHERE sp.staffID = ? AND sp.Status = 'Completed'
     `;
 
     db.query(staffQuery, [staffID], (err, results) => {
@@ -365,11 +405,14 @@ exports.getEditDetail = (req, res) => {
                 return res.status(500).send("Internal Server Error");
             }
 
-            res.render('user/editDetail', {
-                staff: staffData,
-                ongoingPrograms: ongoingResults,
-                currentPath: req.path
-            });
+            db.query(completedProgramsQuery, [staffID], (err, completedPrograms) => {
+                // ...pass completedPrograms to your render
+                res.render('user/editDetail', {
+                  staff: staffData,
+                  completedPrograms,
+                  currentPath: req.path
+                });
+              });
         });
     });
 };
@@ -466,6 +509,75 @@ exports.editStaff = (req, res) => {
     });
 };
 
+exports.getEditStaff = (req, res) => {
+    const staffID = req.params.staffID;
+
+    // Get staff details and all departments for dropdown
+    const staffQuery = `
+        SELECT staff.*, department.name AS department_name
+        FROM staff
+        INNER JOIN department ON department.departmentID = staff.department
+        WHERE staff.staffID = ?
+    `;
+    const deptQuery = `SELECT * FROM department`;
+
+    db.query(staffQuery, [staffID], (err, staffResults) => {
+        if (err || staffResults.length === 0) {
+            req.flash('errorStaff', 'Staff not found');
+            return res.redirect('/admin/dashboard');
+        }
+        db.query(deptQuery, (err2, deptResults) => {
+            if (err2) {
+                req.flash('errorStaff', 'Failed to load departments');
+                return res.redirect('/admin/dashboard');
+            }
+            res.render('admin/editStaff', {
+                staff: staffResults[0],
+                departments: deptResults,
+                error: req.flash('errorStaff'),
+                success: req.flash('successStaff'),
+                currentPath: req.path
+            });
+        });
+    });
+};
+
+// POST: Update staff details (name, role, department, profile image)
+exports.postEditStaff = (req, res) => {
+    const staffID = req.params.staffID;
+    const { first_name, last_name, role, department, old_profile_image } = req.body;
+
+    // Handle profile image
+    let profile_image = old_profile_image;
+    if (req.file && req.file.filename) {
+        profile_image = req.file.filename;
+    }
+
+    // Validate department exists
+    const deptQuery = `SELECT departmentID FROM department WHERE departmentID = ?`;
+    db.query(deptQuery, [department], (err, deptResults) => {
+        if (err || deptResults.length === 0) {
+            req.flash('errorStaff', 'Invalid department');
+            return res.redirect(`/editStaff/${staffID}`);
+        }
+
+        const updateSql = `
+            UPDATE staff
+            SET first_name = ?, last_name = ?, role = ?, department = ?, profile_image = ?
+            WHERE staffID = ?
+        `;
+        db.query(updateSql, [first_name, last_name, role, department, profile_image, staffID], (err2) => {
+            if (err2) {
+                req.flash('errorStaff', 'Failed to update staff details');
+                return res.redirect(`/editStaff/${staffID}`);
+            }
+            req.flash('successStaff', 'Staff details updated successfully');
+            res.redirect('/admin/dashboard');
+        });
+    });
+};
+
+
 exports.editParticulars = (req, res) => {
     const staffID = req.session.staff?.staffID;
     const { field, value } = req.body;
@@ -482,12 +594,8 @@ exports.editParticulars = (req, res) => {
             req.flash('error', 'Failed to update details.');
             return res.redirect('/user/profile');
         }
-        // Update session value
         req.session.staff[field] = value;
         req.flash('success', 'Details updated successfully.');
         res.redirect('/user/profile');
     });
 };
-
-
-

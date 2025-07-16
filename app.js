@@ -5,8 +5,16 @@ const flash = require('connect-flash');
 const session = require('express-session');
 const app = express();
 const path = require('path');
+const cron = require('node-cron');
 
 const db = require('./db');
+const update = require('./realtimeUpdates');
+
+// Add this after your other requires and before app.listen:
+cron.schedule('0 0 * * *', () => {
+  update();
+  console.log('Auto-updated program statuses');
+});
 
 // Controllers
 const serjiaControl = require('./controllers/serjiaController');
@@ -22,7 +30,7 @@ const { validateReg, validateLogin, validatePasswordChange } = require('./middle
 // Multer config
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'public/images'); // Directory to save uploaded files
+        cb(null, 'public/images');
     },
     filename: (req, file, cb) => {
         cb(null, file.originalname);
@@ -30,6 +38,8 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+app.use(express.json());
 
 // Set up view engine
 app.set('view engine', 'ejs');
@@ -99,8 +109,9 @@ app.post('/status/:staffID', checkAuthentication, checkAdmin, serjiaControl.upda
 app.get('/user/profile', checkAuthentication, serjiaControl.getEditDetail);
 app.get('/user/change-password', checkAuthentication, serjiaControl.getChangePassword);
 app.post('/user/change-password', checkAuthentication, validatePasswordChange, serjiaControl.postChangePassword);
-app.post('/editStaff/:staffID', checkAdmin, upload.single('profile_image'), serjiaControl.editStaff);
 app.post('/user/edit-particulars', serjiaControl.editParticulars)
+app.get('/editStaff/:staffID', checkAuthentication, checkAdmin, serjiaControl.getEditStaff);
+app.post('/editStaff/:staffID', checkAuthentication, checkAdmin, upload.single('profile'), serjiaControl.postEditStaff);
 
 // Isabel's reward routes (admin only)
 app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);
@@ -120,12 +131,10 @@ app.post('/claimReward/:id', checkAuthentication, checkUser, isabelControl.claim
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
-app.get('/admin/leaderboard/add', checkAuthentication, checkAdmin, nikiController.getAddLeaderboardEntry);
-app.post('/admin/leaderboard/add', checkAuthentication, checkAdmin, nikiController.postAddLeaderboardEntry);
-app.get('/admin/leaderboard/edit/:id', checkAuthentication, checkAdmin, nikiController.getEditLeaderboardEntry);
-app.post('/admin/leaderboard/edit/:id', checkAuthentication, checkAdmin, nikiController.postEditLeaderboardEntry);
-app.post('/admin/leaderboard/delete/:id', checkAuthentication, checkAdmin, nikiController.deleteLeaderboardEntry);
 
+// Niki's feedback routes
+app.post('/submit-feedback', checkAuthentication, nikiController.submitFeedback);
+app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
 
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
@@ -138,20 +147,7 @@ app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_cod
 
 app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
 app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
-
-// Alysha's program routes
-app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
-app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
-
-app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
-
-app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);
-app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_code'), alyshaControl.postAddProgram);
-
-app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
-app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
-
-app.post('/join-program', checkAuthentication, checkUser, alyshaControl.joinProgram);
+app.post('/user/programs',checkAuthentication, alyshaControl.joinProgram);
 
 // Start server
 const PORT = process.env.PORT || 3000;

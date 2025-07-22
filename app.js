@@ -136,8 +136,8 @@ app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUse
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard)
 
-// Niki's feedback routes
-app.post('/submit-feedback', checkAuthentication, nikiController.submitFeedback);
+// // Niki's feedback routes
+// app.post('/submit-feedback', checkAuthentication, nikiController.submitFeedback); //Missing submit feedback in controller
 app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
 
 // Alysha's program routes

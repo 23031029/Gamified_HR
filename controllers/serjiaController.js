@@ -51,7 +51,6 @@ exports.getRegister = (req, res) => {
 exports.login = async (req, res) => {
   const { staffID, password } = req.body;
 
-  // First, check if the staff ID exists
   const findUserSql = `SELECT * FROM staff WHERE staffID = ?`;
   db.query(findUserSql, [staffID], async (err, users) => {
     if (err) {
@@ -59,19 +58,11 @@ exports.login = async (req, res) => {
       return res.status(500).send('Database error');
     }
 
-    if (users.length === 0) {
+    if (users.length === 0 || users[0].status === 'Deactive') {
       req.flash('errorLogin', 'User not found');
       return res.redirect('/');
     }
 
-    const user = users[0];
-
-    if (user.status === 'Deactive') {
-      req.flash('errorLogin', 'User not found');
-      return res.redirect('/');
-    }
-
-    // Now check password
     const sql = `SELECT * FROM staff WHERE staffID = ? AND password = SHA1(?) AND status != "Deactive"`;
     db.query(sql, [staffID, password], async (err, results) => {
       if (err) {
@@ -95,7 +86,6 @@ exports.login = async (req, res) => {
         } else if (req.session.staff.role === 'admin') {
           return res.redirect('/admin/dashboard');
         } else {
-          // fallback redirect if role is unexpected
           return res.redirect('/');
         }
       } else {
@@ -105,6 +95,7 @@ exports.login = async (req, res) => {
     });
   });
 };
+
 
 
 exports.register = (req, res) => {
@@ -397,11 +388,18 @@ exports.getEditDetail = (req, res) => {
     `;
 
     const completedProgramsQuery = `
-  SELECT p.Title as title, sp.Status as status
-  FROM staff_program sp
-  JOIN Program p ON sp.programID = p.ProgramID
-  WHERE sp.staffID = ? AND sp.Status = 'Completed'
-`;
+        SELECT 
+            p.Title AS title, 
+            sp.Status AS status,
+            p.ProgramID AS programID,
+            EXISTS (
+                SELECT 1 FROM program_feedback pf 
+                WHERE pf.ProgramID = p.ProgramID AND pf.staffID = sp.staffID
+            ) AS hasFeedback
+        FROM staff_program sp
+        JOIN Program p ON sp.programID = p.ProgramID
+        WHERE sp.staffID = ? AND sp.Status = 'Completed'
+    `;
 
     db.query(staffQuery, [staffID], (err, results) => {
         if (err) {
@@ -421,14 +419,19 @@ exports.getEditDetail = (req, res) => {
                 return res.status(500).send("Internal Server Error");
             }
 
-            db.query(completedProgramsQuery, [staffID], (err, completedPrograms) => {
-                // ...pass completedPrograms to your render
+            db.query(completedProgramsQuery, [staffID], (err3, completedPrograms) => {
+                if (err3) {
+                    console.error('Database error:', err3);
+                    return res.status(500).send("Internal Server Error");
+                }
+
                 res.render('user/editDetail', {
-                  staff: staffData,
-                  completedPrograms,
-                  currentPath: req.path
+                    staff: staffData,
+                    ongoingPrograms: ongoingResults,
+                    completedPrograms,
+                    currentPath: req.path
                 });
-              });
+            });
         });
     });
 };
@@ -561,43 +564,47 @@ exports.getEditStaff = (req, res) => {
 // POST: Update staff details (name, role, department, profile image, add new department if needed)
 exports.postEditStaff = (req, res) => {
     const staffID = req.params.staffID;
-    const { first_name, last_name, role, department, other_department, old_profile_image } = req.body;
+    const {
+        first_name,
+        last_name,
+        role,
+        department,
+        other_department,
+        old_profile_image
+    } = req.body;
 
-    // Handle profile image
-    let profile_image = old_profile_image;
-    if (req.file && req.file.filename) {
-        profile_image = req.file.filename;
-    }
+    // Profile image fallback
+    const profile_image = req.file?.filename || old_profile_image;
 
-    // If "other" is selected, add new department and use its ID
-    if (department === 'other' && other_department && other_department.trim() !== '') {
-        // Generate new departmentID (e.g., D005)
+    // If "other" department is selected
+    if (department === 'other' && other_department?.trim()) {
         const getLastDeptID = `SELECT departmentID FROM department ORDER BY departmentID DESC LIMIT 1`;
         db.query(getLastDeptID, (err, deptResults) => {
             if (err) {
-                req.flash('errorStaff', 'Failed to add new department');
+                console.error(err);
+                req.flash('errorStaff', 'Failed to retrieve last department ID');
                 return res.redirect(`/editStaff/${staffID}`);
             }
-            let newDeptNum = 1;
-            if (deptResults.length > 0) {
-                newDeptNum = parseInt(deptResults[0].departmentID.substring(1)) + 1;
-            }
+
+            const lastID = deptResults[0]?.departmentID || 'D000';
+            const newDeptNum = parseInt(lastID.substring(1)) + 1;
             const newDeptID = 'D' + String(newDeptNum).padStart(3, '0');
+
             const insertDept = `INSERT INTO department (departmentID, name) VALUES (?, ?)`;
             db.query(insertDept, [newDeptID, other_department.trim()], (err2) => {
                 if (err2) {
+                    console.error(err2);
                     req.flash('errorStaff', 'Failed to add new department');
                     return res.redirect(`/editStaff/${staffID}`);
                 }
-                // Now update staff with new departmentID
                 updateStaff(newDeptID);
             });
         });
     } else {
-        // Use selected department
         updateStaff(department);
     }
 
+    // Update staff helper function
     function updateStaff(departmentID) {
         const updateSql = `
             UPDATE staff
@@ -606,6 +613,7 @@ exports.postEditStaff = (req, res) => {
         `;
         db.query(updateSql, [first_name, last_name, role, departmentID, profile_image, staffID], (err2) => {
             if (err2) {
+                console.error(err2);
                 req.flash('errorStaff', 'Failed to update staff details');
                 return res.redirect(`/editStaff/${staffID}`);
             }

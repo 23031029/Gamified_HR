@@ -39,6 +39,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+app.use(express.json());
+
 // Set up view engine
 app.set('view engine', 'ejs');
 //  enable static files
@@ -132,13 +134,15 @@ app.get('/user/redeemHist', checkAuthentication, checkUser, isabelControl.redeem
 // Niki's user and admin leaderboard routes
 app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
-app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard);
+app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard)
 
+// Niki's feedback routes
+app.post('/submit-feedback', checkAuthentication, nikiController.submitFeedback);
+app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
 
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
 app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
-
 app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
 
 app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);

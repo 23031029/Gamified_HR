@@ -4,22 +4,19 @@ const db = require('../db');
 exports.getProgramsAdmin = (req, res) => {
     const query = `
         SELECT 
-            p.ProgramID, p.Title, p.Type, p.points_reward, p.Created_By, 
-            CONCAT(s.first_name, " ", s.last_name) AS name,
-            t.Date, 
-            t.Start_Time, 
-            t.Duration, 
-            ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time,
-            t.Slots_availablility, 
-            t.timeslotID
-        FROM Program p
-        LEFT JOIN Staff s ON s.staffID = p.Created_By
-        LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
-        WHERE 
-            (t.Date > CURDATE())
-            OR (t.Date = CURDATE() && t.Start_Time > CURTIME())
-            OR t.Date IS NULL -- Show programs with no timeslots
-        ORDER BY p.ProgramID ASC, t.Date ASC
+    p.ProgramID, p.Title, p.Type, p.points_reward, p.Created_By, 
+    CONCAT(s.first_name, " ", s.last_name) AS name,
+    t.Date, 
+    t.Start_Time, 
+    t.Duration, 
+    ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time,
+    t.Slots_availablility, 
+    t.timeslotID
+FROM Program p
+LEFT JOIN Staff s ON s.staffID = p.Created_By
+LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
+ORDER BY p.ProgramID ASC, t.Date ASC;
+
     `;
 
     db.query(query, (err, programs) => {

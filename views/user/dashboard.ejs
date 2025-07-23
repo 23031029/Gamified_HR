@@ -1,4 +1,4 @@
-<% const progressWidth = Math.min(points.balance / 1000 * 100, 100); %>
+<% const progressWidth = Math.min(points.balance / 3000 * 100, 100); %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -141,6 +141,13 @@
     .list-item small {
       color: #666;
     }
+
+    @keyframes growBar {
+      to {
+        width: var(--target);
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -192,6 +199,23 @@
           </div>
         <% }); %>
       </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+      <div style="width: 100%; background: #e0e0e0; border-radius: 20px; overflow: hidden; height: 25px;">
+        <div 
+          style="
+            height: 100%;
+            background: linear-gradient(90deg, #C6D537, #A3AEB1);
+            width: 0%;
+            animation: growBar 1s ease forwards;
+          "
+          data-target="<%= progressWidth %>%"
+        ></div>
+      </div>
+      <p style="font-size: 0.9em; margin-top: 5px; text-align:center;">
+        Progress: <%= points.balance %> / 3000 pts
+      </p>
     </div>
 
     <!-- Your Programs -->
@@ -266,5 +290,12 @@
     <% } } %>
 
   </div>
+
+  <script>
+    const progressBar = document.querySelector('div[data-target]');
+    const target = progressBar.getAttribute('data-target');
+    progressBar.style.setProperty('--target', target);
+  </script>
+
 </body>
 </html>

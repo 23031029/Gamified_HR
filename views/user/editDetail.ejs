@@ -350,21 +350,17 @@
                     <div>
                         <% completedPrograms.forEach(function(prog) { %>
                             <div class="program-item">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="program-title"><%= prog.title %></span>
-                                    <span class="program-badge"><%= prog.status %></span>
-                                </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="program-title"><%= prog.title %></span>
+                                <span class="program-badge"><%= prog.status %></span>
                             </div>
 
-                            <% if (!prog.hasFeedback) { %>
-                                <button 
-                                class="btn btn-sm btn-warning" 
-                                onclick="openFeedback('<%= prog.programID %>', '<%= prog.title %>')">
-                                Give Feedback
-                                </button>
-                            <% } else { %>
+                            <div class="mt-2">
+                                <% if (!prog.hasFeedback) { %>
+                                <button class="btn btn-sm btn-warning" onclick="openFeedback('<%= prog.programID %>', '<%= prog.title %>')">Give Feedback</button>
+                                <% } else { %>
                                 <span class="badge bg-success">Feedback submitted</span>
-                            <% } %>
+                                <% } %>
                             </div>
                         </div>
                         <% }) %>
@@ -401,6 +397,7 @@ let currentStep = 1;
 let selectedRating = 0;
 let selectedTags = [];
 let programIDSubmitting = "";
+let bonusPoints = 0;
 
 function openFeedback(programID, programTitle) {
   programIDSubmitting = programID;
@@ -443,7 +440,7 @@ function submitFeedback() {
   const comment = document.getElementById("commentBox").value.trim();
 
   // ⭐ BONUS LOGIC
-  let bonusPoints = 0;
+  bonusPoints = 0;
   if (selectedRating > 0) bonusPoints += 5;
   if (tags.length > 0) bonusPoints += 5;
   if (comment.length > 0) bonusPoints += 10;
@@ -463,6 +460,7 @@ function submitFeedback() {
   .then(data => {
     if (data.success) {
       showStep(4);
+      document.getElementById("earnedPoints").textContent = bonusPoints;
       const allProgramItems = document.querySelectorAll('.program-item');
       allProgramItems.forEach(item => {
         if (item.innerHTML.includes(`openFeedback('${programIDSubmitting}'`)) {
@@ -481,10 +479,6 @@ function submitFeedback() {
     }
   });
 }
-
-document.getElementById("earnedPoints").textContent = bonusPoints;
-
-
 </script>
 </body>
 </html>

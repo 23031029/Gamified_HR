@@ -137,7 +137,7 @@ app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getU
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard)
 
 // // Niki's feedback routes
-// app.post('/submit-feedback', checkAuthentication, nikiController.submitFeedback); //Missing submit feedback in controller
+app.post('/submit-feedback', nikiController.submitFeedback);
 app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
 
 // Alysha's program routes

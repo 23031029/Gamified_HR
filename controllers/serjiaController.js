@@ -175,7 +175,13 @@ exports.logout= (req, res)=>{
 exports.getAdmin = (req, res) => {
     const staffQuery = `SELECT COUNT(*) AS staffCount FROM staff WHERE status= "Active"`;
     const rewardQuery = "SELECT COUNT(*) AS rewardCount FROM reward";
-    const programQuery = "SELECT COUNT(*) as programCount FROM program";
+    const programQuery = `
+        SELECT COUNT(DISTINCT p.ProgramID) AS programCount
+        FROM Program p
+        JOIN Timeslot t ON p.ProgramID = t.ProgramID
+        WHERE CONCAT(t.Date, ' ', t.Start_Time) > NOW()
+    `;
+
 
     const popular_program = `
         SELECT 

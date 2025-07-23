@@ -4,7 +4,7 @@ const update = require('../realtimeUpdates');
 // =========================
 // USER DASHBOARD
 // =========================
-exports.getUserDashboard = (req, res) => {
+const getUserDashboard = (req, res) => {
   const staffID = req.session.staff.staffID;
 
   const userInfoQuery = `
@@ -44,13 +44,6 @@ exports.getUserDashboard = (req, res) => {
     ORDER BY re.Redeem_Date DESC
   `;
 
-  const totalEarnedQuery = `
-    SELECT SUM(p.points_reward) AS total_earned
-    FROM staff_program sp
-    JOIN Program p ON sp.programID = p.ProgramID
-    WHERE sp.staffID = ? AND sp.Status = 'Completed'
-  `;
-
   const totalSpentQuery = `
     SELECT SUM(r.points) AS total_spent 
     FROM Redeem re 
@@ -71,24 +64,24 @@ exports.getUserDashboard = (req, res) => {
         db.query(redeemedRewardsQuery, [staffID], (err, rewardResults) => {
           if (err) return res.status(500).send("Error fetching rewards");
 
-          db.query(totalEarnedQuery, [staffID], (err, earnedResult) => {
-            if (err) return res.status(500).send("Error fetching points earned");
+          db.query(totalSpentQuery, [staffID], (err, spentResult) => {
+            if (err) return res.status(500).send("Error fetching points spent");
 
-            db.query(totalSpentQuery, [staffID], (err, spentResult) => {
-              if (err) return res.status(500).send("Error fetching points spent");
+            const spent = Number(spentResult[0]?.total_spent) || 0;
+            const balance = Number(user.total_point) || 0;
+            const earned = balance + spent;
 
-              res.render('user/dashboard', {
-                user,
-                upcomingPrograms: upcomingResults,
-                ongoingPrograms: ongoingResults,
-                rewards: rewardResults,
-                points: {
-                  earned: earnedResult[0]?.total_earned || 0,
-                  spent: spentResult[0]?.total_spent || 0,
-                  balance: user.total_point || 0
-                },
-                currentPath: req.path
-              });
+            res.render('user/dashboard', {
+              user,
+              upcomingPrograms: upcomingResults,
+              ongoingPrograms: ongoingResults,
+              rewards: rewardResults,
+              points: {
+                earned,
+                spent,
+                balance
+              },
+              currentPath: req.path
             });
           });
         });
@@ -96,7 +89,6 @@ exports.getUserDashboard = (req, res) => {
     });
   });
 };
-
 
 // =========================
 // USER LEADERBOARD
@@ -216,6 +208,51 @@ exports.viewProgramFeedback = (req, res) => {
   });
 };
 
+exports.submitFeedback = (req, res) => {
+  const staffID = req.session.staff?.staffID;
+  const { programID, rating, tags, comment, bonusPoints } = req.body;
+
+  if (!staffID || !programID || !rating) {
+    return res.status(400).json({ success: false, message: "Missing fields" });
+  }
+
+  const insertQuery = `
+    INSERT INTO Program_Feedback (staffID, ProgramID, Rating, Comments, Submitted_Date)
+    VALUES (?, ?, ?, ?, CURDATE())
+  `;
+
+  db.query(insertQuery, [staffID, programID, rating, comment || ''], (err, result) => {
+    if (err) {
+      console.error("Feedback Insert Error:", err);
+      return res.status(500).json({ success: false });
+    }
+
+    const updateStatusQuery = `
+      UPDATE staff_program SET Status = 'Completed', feedbackSubmitted = 1 
+      WHERE staffID = ? AND programID = ?
+    `;
+
+    db.query(updateStatusQuery, [staffID, programID], (err2) => {
+      if (err2) {
+        console.error("Update Status Error:", err2);
+        return res.status(500).json({ success: false });
+      }
+
+      const updatePointsQuery = `
+        UPDATE Staff SET total_point = total_point + ? WHERE staffID = ?
+      `;
+
+      db.query(updatePointsQuery, [bonusPoints || 0, staffID], (err3) => {
+        if (err3) {
+          console.error("Update Points Error:", err3);
+          return res.status(500).json({ success: false });
+        }
+
+        return res.json({ success: true });
+      });
+    });
+  });
+};
 
 // =========================
 // HELPER FUNCTIONS
@@ -296,3 +333,7 @@ exports.getRedemptionHistory = (req, res) => {
     res.json({ success: true, redemptions: results });
   });
 };
+
+exports.getUserDashboard = getUserDashboard;
+
+//Missing submit feedback

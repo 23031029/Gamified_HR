@@ -338,9 +338,13 @@
             <div class="reward-actions">
               <a href="/rewards/read/<%= reward.RewardID %>">Learn More</a>
               <form action="/claimReward/<%= reward.RewardID %>" method="POST" onsubmit="return confirm('Claim <%= reward.name %> for <%= reward.points %> points?');">
-                <button type="submit" <% if (reward.stock <= 0) { %>disabled<% } %>>
+                <button 
+                  type="submit" 
+                  <% if (reward.stock <= 0 || reward.points > staff.total_point) { %>disabled<% } %>>
                   <% if (reward.stock <= 0) { %>
                     Out of Stock
+                  <% } else if (reward.points > staff.total_point) { %>
+                    Not Enough Points
                   <% } else { %>
                     Claim Reward
                   <% } %>

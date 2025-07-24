@@ -89,7 +89,7 @@ ORDER BY p.ProgramID ASC, t.Date ASC;
 exports.getProgramsUser = (req, res) => {
     const staffID = req.session.staff?.staffID;
 
-    const query = `
+    const programQuery = `
       SELECT 
         p.ProgramID, p.Title, p.Description, p.Type, p.points_reward, p.QR_code,
         t.Date, t.Start_Time, t.Duration, t.Slots_availablility, t.timeslotID
@@ -104,22 +104,27 @@ exports.getProgramsUser = (req, res) => {
       ORDER BY p.ProgramID ASC, t.Date ASC, t.Start_Time ASC
     `;
 
-    db.query(query, [staffID], (err, results) => {
+    const coworkersQuery = `
+      SELECT staffID, first_name, last_name, department.name AS department_name
+      FROM staff
+      JOIN department ON staff.department = department.departmentID
+      WHERE staffID != ?
+    `;
+
+    db.query(programQuery, [staffID], (err, results) => {
         if (err) {
             return res.render('user/programsUser', {
                 programs: [],
+                coworkers: [],
                 error: err,
                 messageP: req.flash('successP'),
                 currentPath: req.path
             });
         }
 
-        // Group timeslots by program
         const programsMap = new Map();
-        
         results.forEach(row => {
             const programId = row.ProgramID;
-            
             if (!programsMap.has(programId)) {
                 programsMap.set(programId, {
                     ProgramID: row.ProgramID,
@@ -143,17 +148,31 @@ exports.getProgramsUser = (req, res) => {
             }
         });
 
-        // Convert map to array
         const programs = Array.from(programsMap.values());
 
-        res.render('user/programsUser', {
-            programs,
-            error: null,
-            messageP: req.flash('successP'),
-            currentPath: req.path
+        // Get coworkers for invite dropdown
+        db.query(coworkersQuery, [staffID], (err2, coworkers) => {
+            if (err2) {
+                return res.render('user/programsUser', {
+                    programs,
+                    coworkers: [],
+                    error: err2,
+                    messageP: req.flash('successP'),
+                    currentPath: req.path
+                });
+            }
+
+            res.render('user/programsUser', {
+                programs,
+                coworkers,
+                error: null,
+                messageP: req.flash('successP'),
+                currentPath: req.path
+            });
         });
     });
 };
+
 // Render add program form
 exports.getAddProgram = (req, res) => {
   const query = `SELECT ProgramID FROM Program ORDER BY ProgramID DESC LIMIT 1`;

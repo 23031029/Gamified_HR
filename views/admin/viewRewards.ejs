@@ -4,76 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>View Rewards - Admin</title>
+  <link rel="stylesheet" type="text/css" href="/overall.css">
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f6f6f6;
-    }
-
-    .content-container {
-      padding: 50px 20px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    h2 {
-      text-align: center;
-      color: #565F63;
-      margin-bottom: 30px;
-    }
-
-    .add-reward-button {
-      display: inline-block;
-      margin-bottom: 20px;
-      padding: 10px 20px;
-      background-color: #565F63;
-      color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: background-color 0.3s ease;
-    }
-
-    .add-reward-button:hover {
-      background-color: #A3AEB1;
-      color: #565F63;
-    }
-
-    .rewards-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    }
-
-    .rewards-table th,
-    .rewards-table td {
-      padding: 16px;
-      text-align: center;
-      border-bottom: 1px solid #eee;
-      font-size: 16px;
-    }
-
-    .rewards-table th {
-      background-color: #E5E8EA;
-      font-weight: bold;
-      color: #333;
-    }
-
-    .rewards-table tr:hover {
-      background-color: #f9f9f9;
-    }
-
-    .rewards-table tr:last-child td {
-      border-bottom: none;
-    }
 
     .rewards-table img {
       max-width: 80px;
@@ -81,57 +13,86 @@
       border: 1px solid #ccc;
     }
 
-    .action-link {
-      color: #007bff;
-      text-decoration: none;
-      font-weight: 500;
-      padding: 6px 12px;
-      border: 1px solid #007bff;
-      border-radius: 6px;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
+        .addreward {
+    border: 1px solid #17a2b8;
+    border-radius: 20px;
+    width: 300px;
+    height: 50px;
+    background-color: #ffffffb9;
+    color: #17a2b8;
+    font-weight: bold;
+    transition: background 0.2s, color 0.2s;
+}
 
-    .action-link:hover {
-      background-color: #007bff;
-      color: white;
-    }
+.addreward:hover {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.reward-table td:last-child, 
+.reward-table th:last-child {
+  text-align: center;
+  vertical-align: middle;
+}
+
   </style>
 </head>
 <body>
   <%- include('../partials/navbar.ejs') %>
 
   <div class="content-container" id="content">
-    <h2>Rewards</h2>
-    <a href="/admin/rewards/add" class="add-reward-button">+ Add New Reward</a>
 
-    <table class="rewards-table">
-      <thead>
-        <tr>
-          <th>Image</th>
-          <th>Name</th>
-          <th>Points</th>
-          <th>Stock</th>
-          <th>Description</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% rewards.forEach(reward => { %>
-          <tr>
-            <td>
-              <img src="/images/<%= reward.image %>" alt="<%= reward.name %>">
-            </td>
-            <td><%= reward.name %></td>
-            <td><%= reward.points %></td>
-            <td><%= reward.stock %></td>
-            <td><%= reward.description %></td>
-            <td>
-              <a href="/rewards/edit/<%= reward.RewardID %>" class="action-link">Edit</a>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+    <div class="container mt-5">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">Reward Details</h5>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle reward-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>Points</th>
+                  <th>Stock</th>
+                  <th>Description</th>
+                  <th>Edit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% rewards.forEach(reward => { %>
+                  <tr>
+                    <td>
+                      <img src="/images/<%= reward.image %>" alt="<%= reward.name %>" style="max-width: 80px; border-radius: 8px; border: 1px solid #ccc;">
+                    </td>
+                    <td><%= reward.name %></td>
+                    <td><%= reward.points %></td>
+                    <td><%= reward.stock %></td>
+                    <td><%= reward.description %></td>
+                    <td>
+                      <a href="/rewards/edit/<%= reward.RewardID %>" class="btn btn-sm btn-primary">Edit</a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <div class="d-flex justify-content-center mt-3">
+                <a href="/admin/rewards/add">
+                  <button class="addreward">+ Add Reward</button>
+                </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
   </div>
 </body>
 </html>

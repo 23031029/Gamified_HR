@@ -3,64 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" type="text/css" href="/overall.css">
   <title>Edit Program</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f4f4f4;
+    .content-container {
+      display: flex;
+      justify-content: center;
+      padding: 50px 20px;
     }
-    .container {
+
+    .edit-form {
+      background-color: #eaeae7;
+      color: #565F63;
+      border-radius: 20px;
+      padding: 40px;
       max-width: 700px;
-      margin: auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
     }
-    h2 {
+
+    .edit-form h1 {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 30px;
     }
+
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
-    label {
-      font-weight: bold;
+
+    .form-group label {
+      font-size: 18px;
       display: block;
       margin-bottom: 5px;
     }
-    input, select, textarea {
+
+    .form-control {
       width: 100%;
       padding: 10px;
       border-radius: 5px;
       border: 1px solid #ccc;
+      font-size: 16px;
+      background-color: white;
     }
-    .btn {
-      padding: 10px 20px;
+
+    textarea.form-control {
+      resize: vertical;
+      height: 100px;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .edit-form button {
+      width: 300px;
+      height: 50px;
       border: none;
-      border-radius: 5px;
-      margin-right: 10px;
-      cursor: pointer;
-    }
-    .btn-primary {
-      background: #76B900;
+      border-radius: 10px;
+      background-color: #565F63;
       color: white;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-    .btn-secondary {
-      background: #ccc;
+
+    .edit-form button:hover {
+      background-color: #A3AEB1;
+      color: #565F63;
     }
+
+    .back-button {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 16px;
+      color: #565F63;
+      text-decoration: underline;
+    }
+
     .timeslot-group {
-      border: 1px solid #ddd;
+      background: rgba(255, 255, 255, 0.8);
       padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      background: #fafafa;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-bottom: 15px;
       position: relative;
     }
+
     .locked {
       opacity: 0.6;
     }
+
     .remove-btn {
       position: absolute;
       top: 10px;
@@ -77,83 +112,108 @@
       align-items: center;
       justify-content: center;
     }
+
+    .add-slot-btn {
+      border: 2px dotted;
+      background: none;
+      color: #565F63;
+      width: 300px;
+      height: 50px;
+      border-radius: 10px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      margin-bottom: 20px;
+    }
+
+    .add-slot-btn:hover {
+      background-color: #A3AEB1;
+      color: #565F63;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Edit Program</h2>
+  <%- include('../partials/navbar.ejs') %>
 
-    <% if (program) { %>
-      <form action="/programs/edit/<%= program.ProgramID %>" method="POST">
-        <div class="form-group">
-          <label>Program Title *</label>
-          <input type="text" name="title" value="<%= program.Title %>" required />
-        </div>
+  <div class="content-container">
+    <div class="edit-form">
+      <h1>Edit Program</h1>
 
-        <div class="form-group">
-          <label>Type *</label>
-          <select name="type" required>
-            <option value="">-- Select Type --</option>
-            <option value="Training" <%= program.Type === 'Training' ? 'selected' : '' %>>Training</option>
-            <option value="Health & Wellness" <%= program.Type === 'Health & Wellness' ? 'selected' : '' %>>Health & Wellness</option>
-          </select>
-        </div>
+      <% if (program) { %>
+        <form action="/programs/edit/<%= program.ProgramID %>" method="POST">
+          <div class="form-group">
+            <label>Program Title</label>
+            <input type="text" name="title" class="form-control" value="<%= program.Title %>" required />
+          </div>
 
-        <div class="form-group">
-          <label>Description *</label>
-          <textarea name="description" required><%= program.Description %></textarea>
-        </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select name="type" class="form-control" required>
+              <option value="">-- Select Type --</option>
+              <option value="Training" <%= program.Type === 'Training' ? 'selected' : '' %>>Training</option>
+              <option value="Health & Wellness" <%= program.Type === 'Health & Wellness' ? 'selected' : '' %>>Health & Wellness</option>
+            </select>
+          </div>
 
-        <div class="form-group">
-          <label>Points Reward *</label>
-          <input type="number" name="points_reward" value="<%= program.points_reward %>" min="1" max="1000" required />
-        </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" class="form-control" required><%= program.Description %></textarea>
+          </div>
 
-        <div class="form-group">
-          <label>Duration (mins) *</label>
-          <input type="number" name="duration" value="<%= timeslots[0]?.Duration || 1 %>" min="1" required />
-        </div>
+          <div class="form-group">
+            <label>Points Reward</label>
+            <input type="number" name="points_reward" class="form-control" value="<%= program.points_reward %>" min="1" max="1000" required />
+          </div>
 
-        <hr>
-        <h4>Timeslots</h4>
-        <div id="timeslots-container">
-          <% timeslots.forEach((ts, i) => {
-            const dateVal = ts.Date.toISOString().split('T')[0];
-            const timeVal = ts.Start_Time.substring(0,5);
-            const datetime = new Date(`${dateVal}T${timeVal}`);
-            const now = new Date();
-            const isPast = datetime <= now;
-          %>
-            <div class="timeslot-group <%= isPast ? 'locked' : '' %>">
-              <% if (!isPast) { %>
-                <button type="button" class="remove-btn" onclick="removeTimeslot(this)">×</button>
-              <% } %>
-              <input type="hidden" name="timeslotID" value="<%= ts.timeslotID %>">
-              <div class="form-group">
-                <label>Date</label>
-                <input type="date" name="timeslot_date" value="<%= dateVal %>" <%= isPast ? 'readonly' : '' %> required>
+          <div class="form-group">
+            <label>Duration (mins)</label>
+            <input type="number" name="duration" class="form-control" value="<%= timeslots[0]?.Duration || 1 %>" min="1" required />
+          </div>
+
+          <hr>
+          <h4>Timeslots</h4>
+          <div id="timeslots-container">
+            <% timeslots.forEach((ts, i) => {
+              const dateVal = ts.Date.toISOString().split('T')[0];
+              const timeVal = ts.Start_Time.substring(0,5);
+              const datetime = new Date(`${dateVal}T${timeVal}`);
+              const now = new Date();
+              const isPast = datetime <= now;
+            %>
+              <div class="timeslot-group <%= isPast ? 'locked' : '' %>">
+                <% if (!isPast) { %>
+                  <button type="button" class="remove-btn" onclick="removeTimeslot(this)">×</button>
+                <% } %>
+                <input type="hidden" name="timeslotID" value="<%= ts.timeslotID %>">
+                <div class="form-group">
+                  <label>Date</label>
+                  <input type="date" name="timeslot_date" class="form-control" value="<%= dateVal %>" <%= isPast ? 'readonly' : '' %> required>
+                </div>
+                <div class="form-group">
+                  <label>Start Time</label>
+                  <input type="time" name="timeslot_start" class="form-control" value="<%= timeVal %>" <%= isPast ? 'readonly' : '' %> required>
+                </div>
+                <div class="form-group">
+                  <label>Slots</label>
+                  <input type="number" name="timeslot_slots" class="form-control" value="<%= ts.Slots_availablility %>" min="1" required>
+                </div>
               </div>
-              <div class="form-group">
-                <label>Start Time</label>
-                <input type="time" name="timeslot_start" value="<%= timeVal %>" <%= isPast ? 'readonly' : '' %> required>
-              </div>
-              <div class="form-group">
-                <label>Slots</label>
-                <input type="number" name="timeslot_slots" value="<%= ts.Slots_availablility %>" min="1" required>
-              </div>
-            </div>
-          <% }) %>
-        </div>
+            <% }) %>
+          </div>
 
-        <button type="button" class="btn btn-secondary" onclick="addTimeslot()">+ Add Timeslot</button>
-        <br><br>
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a href="/admin/programs" class="btn btn-secondary">Cancel</a>
-      </form>
-    <% } else { %>
-      <p>Program not found.</p>
-      <a href="/admin/programs" class="btn btn-secondary">Back</a>
-    <% } %>
+          <button type="button" class="add-slot-btn" onclick="addTimeslot()">+ Add Timeslot</button>
+
+          <div class="button-container">
+            <button type="submit">Update</button>
+          </div>
+        </form>
+
+        <a href="/admin/programs" class="back-button">Back to Programs</a>
+      <% } else { %>
+        <p>Program not found.</p>
+        <a href="/admin/programs" class="back-button">← Back</a>
+      <% } %>
+    </div>
   </div>
 
   <script>
@@ -187,15 +247,15 @@
         <input type="hidden" name="timeslotID" value="">
         <div class="form-group">
           <label>Date</label>
-          <input type="date" name="timeslot_date" value="${defaultDate}" min="${defaultDate}" required>
+          <input type="date" name="timeslot_date" class="form-control" value="${defaultDate}" min="${defaultDate}" required>
         </div>
         <div class="form-group">
           <label>Start Time</label>
-          <input type="time" name="timeslot_start" required>
+          <input type="time" name="timeslot_start" class="form-control" required>
         </div>
         <div class="form-group">
           <label>Slots</label>
-          <input type="number" name="timeslot_slots" min="1" required>
+          <input type="number" name="timeslot_slots" class="form-control" min="1" required>
         </div>
       `;
       container.appendChild(div);

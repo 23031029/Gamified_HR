@@ -139,6 +139,11 @@ app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.ge
 // // Niki's feedback routes
 app.post('/submit-feedback', nikiController.submitFeedback);
 app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
+app.get('/admin/export-feedback', checkAuthentication, checkAdmin, nikiController.exportFeedbackData);
+app.get('/admin/export-dashboard', checkAuthentication, checkAdmin, nikiController.exportAdminDashboard);
+
+// // Niki's chatting routes
+app.post('/invite', checkAuthentication, checkUser, nikiController.sendInvite);
 
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);

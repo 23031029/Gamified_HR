@@ -262,6 +262,8 @@ exports.redeemHistory = (req, res) => {
             req.flash('error', 'Error retrieving redeem history.');
             return res.redirect('/user/rewards');
         }
+
+        results.reverse();
         res.render('user/redeemHist', { redeems: results });
     });
 };

@@ -136,14 +136,17 @@ app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUse
 app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard)
 
-// // Niki's feedback routes
+// Niki's feedback routes
 app.post('/submit-feedback', nikiController.submitFeedback);
 app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
 app.get('/admin/export-feedback', checkAuthentication, checkAdmin, nikiController.exportFeedbackData);
 app.get('/admin/export-dashboard', checkAuthentication, checkAdmin, nikiController.exportAdminDashboard);
 
-// // Niki's chatting routes
-app.post('/invite', checkAuthentication, checkUser, nikiController.sendInvite);
+// Niki's chat routes
+app.get('/chat', checkAuthentication, nikiController.getChatPage);
+app.get('/chat/:to', checkAuthentication, nikiController.getMessages);
+app.post('/chat/send', checkAuthentication, nikiController.sendMessage);
+app.get('/chat/unread-counts', checkAuthentication, nikiController.getUnreadCounts);
 
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);

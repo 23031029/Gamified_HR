@@ -147,6 +147,65 @@
     .add-entry-btn:hover {
       background-color: #3e4549;
     }
+
+    .history-row {
+      display: none;
+      background-color: #fafafa;
+    }
+
+    .history-container {
+      padding: 15px 30px;
+      border-top: 1px solid #ddd;
+      background: #fefefe;
+      border-radius: 8px;
+    }
+
+    .timeline {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .timeline li {
+      margin-bottom: 10px;
+      padding-left: 10px;
+      position: relative;
+      border-left: 3px solid #ccc;
+    }
+
+    .timeline li::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      background: #60A5FA;
+      border-radius: 50%;
+    }
+
+    .timeline .date {
+      font-weight: bold;
+      color: #333;
+      margin-right: 10px;
+      display: inline-block;
+      width: 100px;
+    }
+
+    .timeline .points-change {
+      font-weight: bold;
+      color: #4CAF50;
+      margin-right: 10px;
+    }
+
+    .timeline .desc {
+      color: #555;
+    }
+
+    .timeline .type {
+      font-size: 0.85em;
+      color: #999;
+    }
   </style>
 </head>
 <body>
@@ -183,9 +242,48 @@
             </td>
             <td><%= user.department_name %></td>
             <td class="points"><%= user.total_point %></td>
+            <td>
+              <button onclick="toggleHistory('<%= user.staffID %>')">📂</button>
+            </td>
+          </tr>
+
+          <tr id="history-<%= user.staffID %>" class="history-row">
+            <td colspan="6">
+              <div class="history-container">
+                <% if (user.history && user.history.length > 0) { %>
+                  <ul class="timeline">
+                    <% user.history.forEach(entry => { %>
+                      <li>
+                        <span class="date"><%= new Date(entry.date).toLocaleDateString() %></span>
+                        <span class="points-change"><%= entry.points > 0 ? '🏅 +' + entry.points : '🎁 ' + entry.points %> pts</span>
+                        <span class="desc"><%= entry.source %> <small class="type">(<%= entry.type %>)</small></span>
+                      </li>
+                    <% }) %>
+                  </ul>
+                <% } else { %>
+                  <p style="color: #888;">No point history available.</p>
+                <% } %>
+              </div>
+            </td>
           </tr>
         <% }) %>
       </tbody>
     </table>
+
+    <script>
+      function toggleHistory(id) {
+        const row = document.getElementById(`history-${id}`);
+        if (row.style.display === "none") {
+          row.style.display = "table-row";
+        } else {
+          row.style.display = "none";
+        }
+      }
+
+      function toggleHistory(id) {
+        const row = document.getElementById(`history-${id}`);
+        row.style.display = row.style.display === "table-row" ? "none" : "table-row";
+      }
+    </script>
 </body>
 </html>

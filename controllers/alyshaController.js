@@ -4,19 +4,18 @@ const db = require('../db');
 exports.getProgramsAdmin = (req, res) => {
     const query = `
         SELECT 
-    p.ProgramID, p.Title, p.Type, p.points_reward, p.Created_By, 
-    CONCAT(s.first_name, " ", s.last_name) AS name,
-    t.Date, 
-    t.Start_Time, 
-    t.Duration, 
-    ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time,
-    t.Slots_availablility, 
-    t.timeslotID
-FROM Program p
-LEFT JOIN Staff s ON s.staffID = p.Created_By
-LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
-ORDER BY p.ProgramID ASC, t.Date ASC;
-
+            p.ProgramID, p.Title, p.Type, p.points_reward, p.Created_By, 
+            CONCAT(s.first_name, " ", s.last_name) AS name,
+            t.Date, 
+            t.Start_Time, 
+            t.Duration, 
+            ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time,
+            t.Slots_availablility, 
+            t.timeslotID
+        FROM Program p
+        LEFT JOIN Staff s ON s.staffID = p.Created_By
+        LEFT JOIN Timeslot t ON t.ProgramID = p.ProgramID
+        ORDER BY p.ProgramID ASC, t.Date ASC;
     `;
 
     const feedbackStatsQuery = `
@@ -90,32 +89,24 @@ exports.getProgramsUser = (req, res) => {
     const staffID = req.session.staff?.staffID;
 
     const programQuery = `
-      SELECT 
-        p.ProgramID, p.Title, p.Description, p.Type, p.points_reward, p.QR_code,
-        t.Date, t.Start_Time, t.Duration, t.Slots_availablility, t.timeslotID
-      FROM Program p
-      JOIN Timeslot t ON t.ProgramID = p.ProgramID
-      WHERE 
-        (t.Date > CURDATE() OR (t.Date = CURDATE() AND t.Start_Time > CURTIME()))
-        AND NOT EXISTS (
-          SELECT 1 FROM staff_program sp 
-          WHERE sp.staffID = ? AND sp.timeslotID = t.timeslotID
-        )
-      ORDER BY p.ProgramID ASC, t.Date ASC, t.Start_Time ASC
-    `;
-
-    const coworkersQuery = `
-      SELECT staffID, first_name, last_name, department.name AS department_name
-      FROM staff
-      JOIN department ON staff.department = department.departmentID
-      WHERE staffID != ?
+        SELECT 
+            p.ProgramID, p.Title, p.Description, p.Type, p.points_reward, p.QR_code,
+            t.Date, t.Start_Time, t.Duration, t.Slots_availablility, t.timeslotID
+        FROM Program p
+        JOIN Timeslot t ON t.ProgramID = p.ProgramID
+        WHERE 
+            (t.Date > CURDATE() OR (t.Date = CURDATE() AND t.Start_Time > CURTIME()))
+            AND NOT EXISTS (
+                SELECT 1 FROM staff_program sp 
+                WHERE sp.staffID = ? AND sp.timeslotID = t.timeslotID
+            )
+        ORDER BY p.ProgramID ASC, t.Date ASC, t.Start_Time ASC
     `;
 
     db.query(programQuery, [staffID], (err, results) => {
         if (err) {
             return res.render('user/programsUser', {
                 programs: [],
-                coworkers: [],
                 error: err,
                 messageP: req.flash('successP'),
                 currentPath: req.path
@@ -150,25 +141,11 @@ exports.getProgramsUser = (req, res) => {
 
         const programs = Array.from(programsMap.values());
 
-        // Get coworkers for invite dropdown
-        db.query(coworkersQuery, [staffID], (err2, coworkers) => {
-            if (err2) {
-                return res.render('user/programsUser', {
-                    programs,
-                    coworkers: [],
-                    error: err2,
-                    messageP: req.flash('successP'),
-                    currentPath: req.path
-                });
-            }
-
-            res.render('user/programsUser', {
-                programs,
-                coworkers,
-                error: null,
-                messageP: req.flash('successP'),
-                currentPath: req.path
-            });
+        res.render('user/programsUser', {
+            programs,
+            error: null,
+            messageP: req.flash('successP'),
+            currentPath: req.path
         });
     });
 };

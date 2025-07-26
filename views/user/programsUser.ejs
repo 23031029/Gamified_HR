@@ -332,8 +332,6 @@
               <% } %>
               <a href="/programs/<%= program.ProgramID %>" class="btn btn-secondary">View Details</a>
             </div>
-            <!-- Invite Button -->
-            <button class="btn btn-secondary" onclick="openInviteModal('<%= program.ProgramID %>')">Invite</button>
           </div>
         <% }); %>
       </div>
@@ -402,46 +400,6 @@
         });
       });
     });
-  </script>
-  <!-- Invite Modal -->
-  <div id="inviteModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:10px; width:400px; max-width:90%;">
-      <h5>Invite a Colleague</h5>
-      <form id="inviteForm" method="POST" action="/invite">
-        <input type="hidden" name="programID" id="inviteProgramID">
-        <div class="mb-3">
-          <label class="form-label">Select Colleague</label>
-          <select class="form-select" name="receiverID" required>
-            <% coworkers.forEach(c => { %>
-              <option value="<%= c.staffID %>"><%= c.first_name %> <%= c.last_name %> (<%= c.department_name %>)</option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Message</label>
-          <select class="form-select" name="message" required>
-            <option value="Hey! Let’s attend this program together!">Hey! Let’s attend this program together!</option>
-            <option value="I thought this program might interest you!">I thought this program might interest you!</option>
-            <option value="Wanna join me in this program?">Wanna join me in this program?</option>
-          </select>
-        </div>
-        <div class="d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-secondary" onclick="closeInviteModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Send Invite</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    function openInviteModal(programID) {
-      document.getElementById('inviteModal').style.display = 'flex';
-      document.getElementById('inviteProgramID').value = programID;
-    }
-
-    function closeInviteModal() {
-      document.getElementById('inviteModal').style.display = 'none';
-    }
   </script>
 </body>
 </html>

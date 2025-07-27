@@ -183,7 +183,28 @@
     </style>
 </head>
 <body>
-    <!-- Feedback Modal Overlay -->
+
+<%
+  // Helper functions to format date and time nicely
+  function formatDate(dateString) {
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-SG', options);
+  }
+
+  function formatTime(timeString) {
+    if (!timeString) return '';
+    const [hour, minute] = timeString.split(':');
+    const date = new Date();
+    date.setHours(hour, minute);
+    return date.toLocaleTimeString('en-SG', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+%>
+
+<!-- Feedback Modal Overlay -->
 <div id="feedbackModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999;">
   <div id="feedbackContent" style="max-width:500px; margin:100px auto; background:#fff; padding:30px; border-radius:15px; position:relative;">
     
@@ -302,13 +323,20 @@
                             </form>
                         </td>
                     </tr>
-
+                    <tr>
+                        <th><i class="fas fa-lock"></i> Password</th>
+                        <td>
+                        <button class="btn btn-warning" onclick="window.location.href='/user/change-password'">
+                            Change Password
+                        </button>
+                        </td>
+                    </tr>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Company Details and Ongoing Programs -->
+     <!-- Company Details and Ongoing Programs -->
     <div class="row">
         <div class="col-md-6 mb-4">
             <div class="profile-section">
@@ -336,145 +364,225 @@
                 </table>
             </div>
         </div>
-         <div class="col-md-6 mb-4">
-            <div class="profile-section">
-                <h5 class="section-title">
-                    <i class="fas fa-check"></i>
-                    Completed Programs
-                </h5>
-                <% if (typeof completedPrograms !== 'undefined' && completedPrograms.length > 0) { %>
-                    <div>
-                        <% completedPrograms.forEach(function(prog) { %>
-                            <div class="program-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="program-title"><%= prog.title %></span>
-                                <span class="program-badge"><%= prog.status %></span>
-                            </div>
+<div class="col-md-6 mb-4">
+  <div class="profile-section">
+    <h5 class="section-title">
+      <i class="fas fa-check-double"></i>
+      Completed & Cancelled Programs
+    </h5>
 
-                            <div class="mt-2">
-                                <% if (!prog.hasFeedback) { %>
-                                <button class="btn btn-sm btn-warning" onclick="openFeedback('<%= prog.programID %>', '<%= prog.title %>')">Give Feedback</button>
-                                <% } else { %>
-                                <span class="badge bg-success">Feedback submitted</span>
-                                <% } %>
-                            </div>
-                        </div>
-                        <% }) %>
-                    </div>
-                <% } else { %>
-                    <div class="no-programs">
-                        <i class="fas fa-inbox fa-2x"></i>
-                        <p class="mb-0">No completed programs.</p>
-                    </div>
-                <% } %>
+<div class="row">
+  <!-- Completed Programs (Left Column) -->
+  <div class="col-12 col-md-6 mb-4">
+    <h6><i class="fas fa-check text-success"></i> Completed</h6>
+    <% if (completedPrograms && completedPrograms.length > 0) { %>
+      <div id="completed-programs-container">
+        <% completedPrograms.forEach(function(prog, index) { %>
+          <div class="program-item mb-3 p-3 border rounded <%= index >= 4 ? 'extra-program d-none' : '' %>" data-type="completed">
+            <div class="mb-2">
+              <span class="program-title d-block mb-1"><%= prog.title %></span>
+              <span><small><%= formatDate(prog.Date) %> (<%= formatTime(prog.Start_Time) %>)</small></span>
+              <span class="program-badge badge bg-success"><%= prog.status %></span>
             </div>
-        </div>
-    </div>
+            <div class="mt-2">
+              <% if (!prog.hasFeedback) { %>
+                <button class="btn btn-sm btn-warning" onclick="openFeedback('<%= prog.programID %>', '<%= prog.title %>')">Give Feedback</button>
+              <% } else { %>
+                <span class="badge bg-success">Feedback submitted</span>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+        
+        <% if (completedPrograms.length > 4) { %>
+          <div class="text-center">
+            <button class="btn btn-outline-primary btn-sm show-more-btn" onclick="togglePrograms('completed')">
+              <i class="fas fa-chevron-down me-1"></i>
+              Show More (<%= completedPrograms.length - 4 %> more)
+            </button>
+            <button class="btn btn-outline-primary btn-sm show-less-btn d-none" onclick="togglePrograms('completed')">
+              <i class="fas fa-chevron-up me-1"></i>
+              Show Less
+            </button>
+          </div>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="no-programs text-center p-4">
+        <i class="fas fa-inbox fa-2x text-muted"></i>
+        <p class="mb-0 mt-2 text-muted">No completed programs.</p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Cancelled Programs (Right Column) -->
+  <div class="col-12 col-md-6 mb-4">
+    <h6><i class="fas fa-times-circle text-danger"></i> Cancelled</h6>
+    <% if (cancelledPrograms && cancelledPrograms.length > 0) { %>
+      <div id="cancelled-programs-container">
+        <% cancelledPrograms.forEach(function(prog, index) { %>
+          <div class="program-item mb-3 p-3 border rounded <%= index >= 4 ? 'extra-program d-none' : '' %>" data-type="cancelled">
+            <div class="mb-2">
+              <span class="program-title d-block mb-1"><%= prog.title %></span>
+              <span><small><%= formatDate(prog.Date) %> (<%= formatTime(prog.Start_Time) %>)</small></span>
+              <span class="program-badge badge bg-danger"><%= prog.status %></span>
+            </div>
+          </div>
+        <% }); %>
+
+        <% if (cancelledPrograms.length > 4) { %>
+          <div class="text-center">
+            <button class="btn btn-outline-primary btn-sm show-more-btn" onclick="togglePrograms('cancelled')">
+              <i class="fas fa-chevron-down me-1"></i>
+              Show More (<%= cancelledPrograms.length - 4 %> more)
+            </button>
+            <button class="btn btn-outline-primary btn-sm show-less-btn d-none" onclick="togglePrograms('cancelled')">
+              <i class="fas fa-chevron-up me-1"></i>
+              Show Less
+            </button>
+          </div>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="no-programs text-center p-4">
+        <i class="fas fa-inbox fa-2x text-muted"></i>
+        <p class="mb-0 mt-2 text-muted">No cancelled programs.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+</div>
+</div>
 
 <script>
-function startEdit(field) {
-    // Hide all others if any
-    ['email', 'phone', 'address'].forEach(f => {
-        document.getElementById(f + 'View').classList.remove('d-none');
-        document.getElementById(f + 'Edit').classList.add('d-none');
-    });
-
-    // Show current field's edit form
+  function startEdit(field) {
     document.getElementById(field + 'View').classList.add('d-none');
     document.getElementById(field + 'Edit').classList.remove('d-none');
-}
+  }
 
-function cancelEdit(field) {
+  function cancelEdit(field) {
     document.getElementById(field + 'View').classList.remove('d-none');
     document.getElementById(field + 'Edit').classList.add('d-none');
-}
+  }
 
-let currentStep = 1;
-let selectedRating = 0;
-let selectedTags = [];
-let programIDSubmitting = "";
-let bonusPoints = 0;
+  // Show More / Show Less toggles for programs
+  function togglePrograms(type) {
+    const container = document.getElementById(type + '-programs-container');
+    const extraPrograms = container.querySelectorAll('.extra-program');
+    const showMoreBtn = container.querySelector('.show-more-btn');
+    const showLessBtn = container.querySelector('.show-less-btn');
 
-function openFeedback(programID, programTitle) {
-  programIDSubmitting = programID;
-  document.getElementById("feedbackModal").style.display = "block";
-  showStep(1);
-}
+    if (showMoreBtn.classList.contains('d-none')) {
+      // Currently showing less, so hide extras
+      extraPrograms.forEach(el => el.classList.add('d-none'));
+      showMoreBtn.classList.remove('d-none');
+      showLessBtn.classList.add('d-none');
+    } else {
+      // Show extras
+      extraPrograms.forEach(el => el.classList.remove('d-none'));
+      showMoreBtn.classList.add('d-none');
+      showLessBtn.classList.remove('d-none');
+    }
+  }
 
-function closeFeedback() {
-  document.getElementById("feedbackModal").style.display = "none";
-  selectedRating = 0;
-  selectedTags = [];
-  programIDSubmitting = "";
-  document.querySelectorAll('.star').forEach(star => star.style.color = '#ccc');
-  document.getElementById("nextBtn1").disabled = true;
-}
+  // Feedback modal logic
+  let currentStep = 1;
+  let selectedRating = 0;
+  let selectedTags = [];
+  let currentProgramID = '';
+  let currentProgramTitle = '';
 
-function showStep(step) {
-  currentStep = step;
-  document.querySelectorAll(".feedback-step").forEach(div => div.classList.add("d-none"));
-  document.getElementById("step" + step).classList.remove("d-none");
-}
+  function openFeedback(programID, programTitle) {
+    currentProgramID = programID;
+    currentProgramTitle = programTitle;
+    currentStep = 1;
+    selectedRating = 0;
+    selectedTags = [];
 
-function nextStep() {
-  if (currentStep === 1 && selectedRating === 0) return;
-  showStep(currentStep + 1);
-}
+    // Reset modal steps
+    document.querySelectorAll('.feedback-step').forEach(step => step.classList.add('d-none'));
+    document.getElementById('step1').classList.remove('d-none');
+    document.getElementById('nextBtn1').disabled = true;
+    document.getElementById('commentBox').value = '';
+    document.getElementById('earnedPoints').textContent = '0';
 
-document.querySelectorAll(".star").forEach(star => {
-  star.addEventListener("click", function () {
-    selectedRating = parseInt(this.dataset.value);
-    document.getElementById("nextBtn1").disabled = false;
-    document.querySelectorAll(".star").forEach(s => {
-      s.style.color = parseInt(s.dataset.value) <= selectedRating ? "#f7c600" : "#ccc";
+    // Reset stars
+    document.querySelectorAll('#starContainer .star').forEach(star => {
+      star.style.color = '#ccc';
+    });
+
+    document.getElementById('feedbackModal').style.display = 'block';
+  }
+
+  function closeFeedback() {
+    document.getElementById('feedbackModal').style.display = 'none';
+  }
+
+  // Star rating click
+  document.querySelectorAll('#starContainer .star').forEach(star => {
+    star.addEventListener('click', () => {
+      selectedRating = parseInt(star.getAttribute('data-value'));
+      highlightStars(selectedRating);
+      document.getElementById('nextBtn1').disabled = false;
     });
   });
-});
 
-function submitFeedback() {
-  const tags = Array.from(document.querySelectorAll(".tag-checkbox:checked")).map(cb => cb.value);
-  const comment = document.getElementById("commentBox").value.trim();
+  function highlightStars(count) {
+    document.querySelectorAll('#starContainer .star').forEach(star => {
+      let val = parseInt(star.getAttribute('data-value'));
+      star.style.color = val <= count ? '#ffc107' : '#ccc';
+    });
+  }
 
-  // ⭐ BONUS LOGIC
-  bonusPoints = 0;
-  if (selectedRating > 0) bonusPoints += 5;
-  if (tags.length > 0) bonusPoints += 5;
-  if (comment.length > 0) bonusPoints += 10;
+  function nextStep() {
+    if (currentStep === 1) {
+      // Move to step 2
+      document.getElementById('step1').classList.add('d-none');
+      document.getElementById('step2').classList.remove('d-none');
+      currentStep = 2;
+    } else if (currentStep === 2) {
+      // Collect selected tags
+      selectedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => cb.value);
 
-  fetch("/submit-feedback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      programID: programIDSubmitting,
-      rating: selectedRating,
-      tags: tags.join(","),
-      comment,
-      bonusPoints // ✅ this will update their points in DB
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      showStep(4);
-      document.getElementById("earnedPoints").textContent = bonusPoints;
-      const allProgramItems = document.querySelectorAll('.program-item');
-      allProgramItems.forEach(item => {
-        if (item.innerHTML.includes(`openFeedback('${programIDSubmitting}'`)) {
-          const button = item.querySelector('button.btn-warning');
-          if (button) {
-            button.remove();
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-success';
-            badge.innerText = 'Feedback submitted';
-            item.querySelector('.d-flex.justify-content-between').appendChild(badge);
-          }
-        }
-      });
-    } else {
-      alert("Error submitting feedback.");
+      // Move to step 3
+      document.getElementById('step2').classList.add('d-none');
+      document.getElementById('step3').classList.remove('d-none');
+      currentStep = 3;
     }
-  });
-}
+  }
+
+  async function submitFeedback() {
+    const comment = document.getElementById('commentBox').value;
+
+    // Calculate points earned
+    let points = 5; // rating mandatory
+    if (selectedTags.length > 0) points += 5;
+    if (comment.trim() !== '') points += 10;
+
+    // Show thank you message and points earned
+    document.getElementById('step3').classList.add('d-none');
+    const step4 = document.getElementById('step4');
+    step4.classList.remove('d-none');
+    document.getElementById('earnedPoints').textContent = points;
+
+    // Send data to server (using fetch)
+    try {
+      const response = await fetch('/user/submit-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          programID: currentProgramID,
+          rating: selectedRating,
+          tags: selectedTags,
+          comment: comment
+        })
+      });
+      if (!response.ok) throw new Error('Network error');
+    } catch (err) {
+      alert('Failed to submit feedback. Please try again.');
+    }
+  }
 </script>
+
 </body>
 </html>

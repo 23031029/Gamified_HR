@@ -67,40 +67,51 @@ CREATE TABLE Redeem (
     RedemptionID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     staffID VARCHAR(10) NOT NULL,
     RewardID VARCHAR(20) NOT NULL,
-    Redeem_Date DATE NOT NULL,
+    Redeem_Date DATETIME NOT NULL,
     FOREIGN KEY (staffID) REFERENCES Staff(staffID),
     FOREIGN KEY (RewardID) REFERENCES Reward(RewardID)
 );
  
 INSERT INTO Redeem (RedemptionID, staffID, RewardID, Redeem_Date) VALUES
-(1, 'S002', 'R001', CURDATE()),
-(2, 'S003', 'R004', DATE_SUB(CURDATE(), INTERVAL 10 DAY)),
-(3, 'S001', 'R002', DATE_SUB(CURDATE(), INTERVAL 30 DAY)),
-(4, 'S004', 'R003', DATE_SUB(CURDATE(), INTERVAL 5 DAY)),
-(5, 'S001', 'R001', CURDATE()),
-(6, 'S002', 'R003', DATE_SUB(CURDATE(), INTERVAL 15 DAY)),
-(7, 'S003', 'R002', CURDATE()),
-(8, 'S004', 'R004', DATE_SUB(CURDATE(), INTERVAL 1 DAY));
+(1, 'S002', 'R001', DATE_SUB(CONCAT(CURDATE(), ' 09:15:00'), INTERVAL 0 DAY)),
+(2, 'S003', 'R004', DATE_SUB(CONCAT(CURDATE(), ' 14:45:00'), INTERVAL 10 DAY)),
+(3, 'S001', 'R002', DATE_SUB(CONCAT(CURDATE(), ' 11:30:00'), INTERVAL 30 DAY)),
+(4, 'S004', 'R003', DATE_SUB(CONCAT(CURDATE(), ' 16:20:00'), INTERVAL 5 DAY)),
+(5, 'S001', 'R001', DATE_SUB(CONCAT(CURDATE(), ' 08:05:00'), INTERVAL 0 DAY)),
+(6, 'S002', 'R003', DATE_SUB(CONCAT(CURDATE(), ' 19:00:00'), INTERVAL 15 DAY)),
+(7, 'S003', 'R002', DATE_SUB(CONCAT(CURDATE(), ' 12:10:00'), INTERVAL 0 DAY)),
+(8, 'S004', 'R004', DATE_SUB(CONCAT(CURDATE(), ' 17:55:00'), INTERVAL 1 DAY));
 
+
+-- Table: Program_type
+CREATE TABLE Program_type(
+typeID INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+name varchar(100) NOT NULL
+);
+INSERT INTO Program_type (typeID, name) VALUES
+(1, "Training"),
+(2, "Health & Wellness"),
+(3, "Workshop");
  
 -- Table: Program
 CREATE TABLE Program (
     ProgramID VARCHAR(10) NOT NULL PRIMARY KEY,
+    TypeID Int(10) NOT NULL,
     Title VARCHAR(100) NOT NULL,
     Description TEXT NOT NULL,
-    Type VARCHAR(300) NOT NULL,
     Created_By VARCHAR(10) NOT NULL,
     points_reward INT NOT NULL,
-    QR_code TEXT,
-    FOREIGN KEY (Created_By) REFERENCES Staff(staffID)
+    status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    FOREIGN KEY (Created_By) REFERENCES Staff(staffID),
+    FOREIGN KEY (TypeID) REFERENCES Program_type(typeID)
 );
  
-INSERT INTO Program (ProgramID, Title, Description, Type, Created_By, points_reward, QR_code) VALUES
-('P001', 'Wellness Challenge', 'Complete daily step goals', 'Health & Wellness', 'S001', 100, NULL),
-('P002', 'Training 101', 'Onboarding training for new hires', 'Training', 'S001', 150, NULL),
-('P003', 'Leadership Workshop', 'Enhance leadership skills', 'Training', 'S001', 200, NULL),
-('P004', 'Yoga & Mindfulness', 'Weekly Yoga sessions', 'Health & Wellness', 'S001', 120, NULL),
-('P005', 'Cybersecurity Basics', 'Training on cybersecurity fundamentals', 'Training', 'S004', 180, NULL);
+INSERT INTO Program (ProgramID, Title, Description, TypeID, Created_By, points_reward) VALUES
+('P001', 'Wellness Challenge', 'Complete daily step goals',2 , 'S001', 100),
+('P002', 'Training 101', 'Onboarding training for new hires', 1 , 'S001', 150),
+('P003', 'Leadership Workshop', 'Enhance leadership skills', 1, 'S001', 200),
+('P004', 'Yoga & Mindfulness', 'Weekly Yoga sessions', 2, 'S001', 120),
+('P005', 'Cybersecurity Basics', 'Training on cybersecurity fundamentals', 1, 'S004', 180);
  
 CREATE TABLE Timeslot (
     timeslotID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -111,6 +122,7 @@ CREATE TABLE Timeslot (
     Slots_availablility INT(5) NOT NULL,
     FOREIGN KEY (ProgramID) REFERENCES Program(ProgramID)
 );
+
  
  
 -- P001: Wellness Challenge
@@ -144,7 +156,7 @@ INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility
 INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) VALUES
 ('P005', '2025-07-14', '11:00:00', 90, 18), -- original
 ('P005', '2025-07-09', '16:00:00', 90, 12), -- same day, different time
-('P005', '2025-07-21', '11:00:00', 90, 20); -- same time, different date
+('P005', '2025-07-27', '21:00:00', 90, 20); -- same time, different date
  
  
 -- Updated Table: staff_program
@@ -182,7 +194,8 @@ INSERT INTO staff_program (staffID, programID, timeslotID, `Status`) VALUES
  
 ('S006', 'P005', 13, 'Completed'),    -- first Cyber slot
 ('S005', 'P005', 14, 'Ongoing'),      -- same day, different time
-('S003', 'P005', 15, 'Registered');   -- next week's same time
+('S003', 'P005', 15, 'Registered'),  -- next week's same time
+('S002', 'P005', 16, "Ongoing");
  
 -- Table: Program_Feedback
 CREATE TABLE Program_Feedback (
@@ -206,3 +219,14 @@ INSERT INTO Program_Feedback (FeedbackID, staffID, ProgramID, Rating, Comments, 
 (6, 'S003', 'P004', 4.7, 'Great instructor and well structured.', '2024-08-29'),
 (7, 'S004', 'P005', 4.0, 'Useful content for cybersecurity basics.', '2024-08-18'),
 (8, 'S001', 'P005', 4.5, 'Enjoyed the lessons, learned a lot.', '2024-08-22');
+
+CREATE TABLE Messages (
+  messageID INT AUTO_INCREMENT PRIMARY KEY,
+  senderID VARCHAR(10) NOT NULL,
+  receiverID VARCHAR(10) NOT NULL,
+  content TEXT NOT NULL,
+  sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_read BOOLEAN DEFAULT 0,
+  FOREIGN KEY (senderID) REFERENCES Staff(staffID),
+  FOREIGN KEY (receiverID) REFERENCES Staff(staffID)
+);

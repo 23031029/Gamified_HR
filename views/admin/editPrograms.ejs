@@ -12,7 +12,7 @@
       padding: 50px 20px;
     }
 
-    .edit-form {
+    .register {
       background-color: #eaeae7;
       color: #565F63;
       border-radius: 20px;
@@ -22,9 +22,9 @@
       box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
     }
 
-    .edit-form h1 {
+    h2 {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .form-group {
@@ -37,50 +37,46 @@
       margin-bottom: 5px;
     }
 
-    .form-control {
+    input, select, textarea {
       width: 100%;
       padding: 10px;
       border-radius: 5px;
       border: 1px solid #ccc;
       font-size: 16px;
-      background-color: white;
     }
 
-    textarea.form-control {
+    textarea {
       resize: vertical;
       height: 100px;
     }
 
     .button-container {
       display: flex;
+      gap: 10px;
       justify-content: center;
       margin-top: 30px;
     }
 
-    .edit-form button {
-      width: 300px;
-      height: 50px;
+    .btn {
+      padding: 10px 20px;
       border: none;
       border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn-primary {
       background-color: #565F63;
       color: white;
-      font-size: 20px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
     }
 
-    .edit-form button:hover {
-      background-color: #A3AEB1;
-      color: #565F63;
+    .btn-secondary {
+      background-color: #ccc;
+      color: black;
     }
 
-    .back-button {
-      display: block;
-      text-align: center;
-      margin-top: 20px;
-      font-size: 16px;
-      color: #565F63;
-      text-decoration: underline;
+    .btn:hover {
+      opacity: 0.9;
     }
 
     .timeslot-group {
@@ -113,22 +109,26 @@
       justify-content: center;
     }
 
-    .add-slot-btn {
-      border: 2px dotted;
-      background: none;
-      color: #565F63;
-      width: 300px;
-      height: 50px;
-      border-radius: 10px;
-      font-size: 20px;
-      cursor: pointer;
-      transition: background-color 0.3s ease, color 0.3s ease;
-      margin-bottom: 20px;
+    .back-button {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+      color: #007bff;
+      text-decoration: none;
+      font-size: 16px;
     }
 
-    .add-slot-btn:hover {
-      background-color: #A3AEB1;
-      color: #565F63;
+    .back-button:hover {
+      text-decoration: underline;
+    }
+
+    .duration-info {
+      background: #f0f8ff;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      color: #2c5aa0;
     }
   </style>
 </head>
@@ -136,79 +136,102 @@
   <%- include('../partials/navbar.ejs') %>
 
   <div class="content-container">
-    <div class="edit-form">
-      <h1>Edit Program</h1>
+    <div class="register">
+      <h2>Edit Program</h2>
 
       <% if (program) { %>
         <form action="/programs/edit/<%= program.ProgramID %>" method="POST">
           <div class="form-group">
-            <label>Program Title</label>
-            <input type="text" name="title" class="form-control" value="<%= program.Title %>" required />
+            <label>Program Title *</label>
+            <input type="text" name="title" value="<%= program.Title %>" required />
           </div>
 
           <div class="form-group">
-            <label>Type</label>
-            <select name="type" class="form-control" required>
+            <label>Type *</label>
+            <select name="typeID" id="typeSelect" required onchange="toggleOtherDept(this)">
               <option value="">-- Select Type --</option>
-              <option value="Training" <%= program.Type === 'Training' ? 'selected' : '' %>>Training</option>
-              <option value="Health & Wellness" <%= program.Type === 'Health & Wellness' ? 'selected' : '' %>>Health & Wellness</option>
+              <% types.forEach(function(type) { %>
+                <option value="<%= type.typeID %>" <%= program.typeID == type.typeID ? 'selected' : '' %>><%= type.name %></option>
+              <% }) %>
+              <option value="other" <%= !types.some(t => t.typeID == program.typeID) ? 'selected' : '' %>>Other</option>
             </select>
+            <input
+              type="text"
+              class="form-control mt-2"
+              name="other_type"
+              id="otherTypeInput"
+              placeholder="Enter new program type"
+              style="display:<%= !types.some(t => t.typeID == program.typeID) ? 'block' : 'none' %>;"
+              value="<%= !types.some(t => t.typeID == program.typeID) ? program.Type : '' %>"
+            />
           </div>
 
           <div class="form-group">
-            <label>Description</label>
-            <textarea name="description" class="form-control" required><%= program.Description %></textarea>
+            <label>Description *</label>
+            <textarea name="description" required><%= program.Description %></textarea>
           </div>
 
           <div class="form-group">
-            <label>Points Reward</label>
-            <input type="number" name="points_reward" class="form-control" value="<%= program.points_reward %>" min="1" max="1000" required />
+            <label>Points Reward *</label>
+            <input type="number" name="points_reward" value="<%= program.points_reward %>" min="1" max="1000" required />
           </div>
 
           <div class="form-group">
-            <label>Duration (mins)</label>
-            <input type="number" name="duration" class="form-control" value="<%= timeslots[0]?.Duration || 1 %>" min="1" required />
+            <label>Duration (mins) *</label>
+            <input type="number" name="duration" id="programDuration" value="<%= timeslots[0]?.Duration || 60 %>" min="1" required />
+            <small style="color: #666; font-size: 12px;">This duration will apply to all timeslots</small>
           </div>
 
           <hr>
           <h4>Timeslots</h4>
+          <div class="duration-info">
+            <strong>Note:</strong> All timeslots will use the same duration (<span id="durationDisplay"><%= timeslots[0]?.Duration || 60 %></span> minutes) as specified above.
+          </div>
+          
           <div id="timeslots-container">
             <% timeslots.forEach((ts, i) => {
               const dateVal = ts.Date.toISOString().split('T')[0];
-              const timeVal = ts.Start_Time.substring(0,5);
-              const datetime = new Date(`${dateVal}T${timeVal}`);
-              const now = new Date();
-              const isPast = datetime <= now;
+              const timeVal = ts.Start_Time.substring(0, 5);
+
+              // Disable past check for testing
+              const isPast = false;
             %>
               <div class="timeslot-group <%= isPast ? 'locked' : '' %>">
                 <% if (!isPast) { %>
-                  <button type="button" class="remove-btn" onclick="removeTimeslot(this)">×</button>
+                  <button type="button" class="remove-btn" onclick="removeTimeslot(this)">x</button>
                 <% } %>
-                <input type="hidden" name="timeslotID" value="<%= ts.timeslotID %>">
+
+                <input type="hidden" name="timeslotID[]" value="<%= ts.timeslotID %>">
+                
                 <div class="form-group">
                   <label>Date</label>
-                  <input type="date" name="timeslot_date" class="form-control" value="<%= dateVal %>" <%= isPast ? 'readonly' : '' %> required>
+                  <input type="date" name="timeslot_date[]" value="<%= dateVal %>" required>
                 </div>
+
                 <div class="form-group">
                   <label>Start Time</label>
-                  <input type="time" name="timeslot_start" class="form-control" value="<%= timeVal %>" <%= isPast ? 'readonly' : '' %> required>
+                  <input type="time" name="timeslot_start[]" value="<%= timeVal %>" required>
                 </div>
+
                 <div class="form-group">
-                  <label>Slots</label>
-                  <input type="number" name="timeslot_slots" class="form-control" value="<%= ts.Slots_availablility %>" min="1" required>
+                  <label>Available Slots</label>
+                  <input type="number" name="timeslot_slots[]" value="<%= ts.Slots_availablility %>" min="1" required>
+                </div>
+
+                <div style="font-size: 14px; color: #666; margin-top: 10px;">
+                  Duration: <span class="duration-text"><%= ts.Duration %></span> minutes (shared)
                 </div>
               </div>
             <% }) %>
           </div>
 
-          <button type="button" class="add-slot-btn" onclick="addTimeslot()">+ Add Timeslot</button>
+          <button type="button" class="btn btn-secondary" onclick="addTimeslot()">+ Add Timeslot</button>
 
           <div class="button-container">
-            <button type="submit">Update</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="/admin/programs" class="btn btn-secondary">Cancel</a>
           </div>
         </form>
-
-        <a href="/admin/programs" class="back-button">Back to Programs</a>
       <% } else { %>
         <p>Program not found.</p>
         <a href="/admin/programs" class="back-button">← Back</a>
@@ -217,19 +240,29 @@
   </div>
 
   <script>
+    document.getElementById('programDuration').addEventListener('input', function() {
+      const duration = this.value || 60;
+      document.getElementById('durationDisplay').textContent = duration;
+      const durationTexts = document.querySelectorAll('.duration-text');
+      durationTexts.forEach(text => {
+        text.textContent = duration;
+      });
+    });
+
     function removeTimeslot(button) {
       const group = button.closest('.timeslot-group');
       if (!group) return;
 
-      const date = group.querySelector('input[name="timeslot_date"]').value;
-      const time = group.querySelector('input[name="timeslot_start"]').value;
-      const slotDateTime = new Date(`${date}T${time}`);
-      const now = new Date();
+      // Disable past check for testing
+      // const date = group.querySelector('input[name="timeslot_date[]"]').value;
+      // const time = group.querySelector('input[name="timeslot_start[]"]').value;
+      // const slotDateTime = new Date(`${date}T${time}`);
+      // const now = new Date();
 
-      if (slotDateTime <= now) {
-        alert("You cannot delete current or past timeslots.");
-        return;
-      }
+      // if (slotDateTime <= now) {
+      //   alert("You cannot delete current or past timeslots.");
+      //   return;
+      // }
 
       group.remove();
     }
@@ -239,28 +272,51 @@
       const today = new Date();
       today.setDate(today.getDate() + 1);
       const defaultDate = today.toISOString().split('T')[0];
+      const currentDuration = document.getElementById('programDuration').value || 60;
 
       const div = document.createElement('div');
       div.className = 'timeslot-group';
       div.innerHTML = `
         <button type="button" class="remove-btn" onclick="removeTimeslot(this)">×</button>
-        <input type="hidden" name="timeslotID" value="">
+        <input type="hidden" name="timeslotID[]" value="">
         <div class="form-group">
           <label>Date</label>
-          <input type="date" name="timeslot_date" class="form-control" value="${defaultDate}" min="${defaultDate}" required>
+          <input type="date" name="timeslot_date[]" value="${defaultDate}" required>
         </div>
         <div class="form-group">
           <label>Start Time</label>
-          <input type="time" name="timeslot_start" class="form-control" required>
+          <input type="time" name="timeslot_start[]" required>
         </div>
         <div class="form-group">
-          <label>Slots</label>
-          <input type="number" name="timeslot_slots" class="form-control" min="1" required>
+          <label>Available Slots</label>
+          <input type="number" name="timeslot_slots[]" min="1" required>
+        </div>
+        <div style="font-size: 14px; color: #666; margin-top: 10px;">
+          Duration: <span class="duration-text">${currentDuration}</span> minutes (shared)
         </div>
       `;
       container.appendChild(div);
       div.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+
+    function toggleOtherDept(select) {
+      const otherInput = document.getElementById('otherTypeInput');
+      if (select.value === 'other') {
+        otherInput.style.display = 'block';
+        otherInput.required = true;
+      } else {
+        otherInput.style.display = 'none';
+        otherInput.required = false;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const select = document.getElementById('typeSelect');
+      if (select.value === 'other') {
+        document.getElementById('otherTypeInput').style.display = 'block';
+        document.getElementById('otherTypeInput').required = true;
+      }
+    });
   </script>
 </body>
 </html>

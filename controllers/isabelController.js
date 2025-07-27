@@ -17,8 +17,18 @@ exports.viewRewards = (req, res) => {
  
 // user view rewards
 exports.userRewards = (req, res) => {
-    const sql = 'SELECT * FROM Reward';
-    db.query(sql, (error, results) => {
+    const staffID = req.session.staff?.staffID;
+    const sql = `SELECT *
+            FROM Reward
+            ORDER BY
+            points <= (
+                SELECT total_point
+                FROM Staff
+                WHERE staffID = ?
+            ) DESC,
+            points ASC;
+            `;
+    db.query(sql,[staffID], (error, results) => {
         if (error) {
             return res.status(500).send('Error retrieving rewards');
         }
@@ -109,31 +119,98 @@ exports.editRewardForm = (req, res) => {
     });
 };
  
-// Process reward edit
-exports.editReward = (req, res) => {
-    const RewardID = req.params.id;
-    const { name, description, points, stock } = req.body;
-    let sql, params;
- 
-    if (req.file) {
-        // If a new image is uploaded
-        const image = req.file.filename;
-        sql = 'UPDATE Reward SET name = ?, description = ?, points = ?, stock = ?, image = ? WHERE RewardID = ?';
-        params = [name, description, points, stock, image, RewardID];
-    } else {
-        // No new image uploaded
-        sql = 'UPDATE Reward SET name = ?, description = ?, points = ?, stock = ? WHERE RewardID = ?';
-        params = [name, description, points, stock, RewardID];
+// Process program edit
+exports.postEditProgram = (req, res) => {
+  const programId = req.params.id;
+  const { title, type, description, points_reward } = req.body;
+
+  if (!title || !type || !description || !points_reward) {
+    req.flash('errorP', 'All fields are required.');
+    return res.redirect(`/programs/edit/${programId}`);
+  }
+
+  const sql = 'UPDATE Program SET Title = ?, Type = ?, Description = ?, points_reward = ? WHERE ProgramID = ?';
+  const params = [title, type, description, points_reward, programId];
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      console.error('Error updating program:', err);
+      req.flash('errorP', 'Failed to update program.');
+      return res.redirect(`/programs/edit/${programId}`);
     }
- 
-    db.query(sql, params, (error, results) => {
-        if (error) {
-            return res.status(500).send('Error updating reward');
+
+    const {
+      timeslotID = [],
+      timeslot_date = [],
+      timeslot_start = [],
+      timeslot_duration = [],
+      timeslot_slots = []
+    } = req.body;
+
+    const tsIDs = Array.isArray(timeslotID) ? timeslotID : [timeslotID];
+    const tsDates = Array.isArray(timeslot_date) ? timeslot_date : [timeslot_date];
+    const tsStarts = Array.isArray(timeslot_start) ? timeslot_start : [timeslot_start];
+    const tsDurations = Array.isArray(timeslot_duration) ? timeslot_duration : [timeslot_duration];
+    const tsSlots = Array.isArray(timeslot_slots) ? timeslot_slots : [timeslot_slots];
+
+    let i = 0;
+
+    function processNextTimeslot() {
+      if (i >= tsDates.length) {
+        req.flash('successP', 'Program and timeslots updated successfully!');
+        return res.redirect('/admin/programs');
+      }
+
+      if (tsDates[i] && tsStarts[i] && tsDurations[i] && tsSlots[i]) {
+        const date = tsDates[i];
+        const start = tsStarts[i];
+        const duration = parseInt(tsDurations[i]);
+        const slots = parseInt(tsSlots[i]);
+
+        if (tsIDs[i]) {
+          const updateTsSql = `
+            UPDATE Timeslot 
+            SET Date = ?, Start_Time = ?, Duration = ?, Slots_availablility = ?
+            WHERE timeslotID = ?
+          `;
+          const updateTsParams = [date, start, duration, slots, tsIDs[i]];
+
+          db.query(updateTsSql, updateTsParams, (err) => {
+            if (err) {
+              console.error('Error updating timeslot:', err);
+              req.flash('errorP', 'Program updated, but failed to update some timeslots.');
+              return res.redirect(`/programs/edit/${programId}`);
+            }
+            i++;
+            processNextTimeslot();
+          });
+        } else {
+          const insertTsSql = `
+            INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility)
+            VALUES (?, ?, ?, ?, ?)
+          `;
+          const insertTsParams = [programId, date, start, duration, slots];
+
+          db.query(insertTsSql, insertTsParams, (err) => {
+            if (err) {
+              console.error('Error inserting timeslot:', err);
+              req.flash('errorP', 'Program updated, but failed to add some new timeslots.');
+              return res.redirect(`/programs/edit/${programId}`);
+            }
+            i++;
+            processNextTimeslot();
+          });
         }
-        res.redirect('/admin/rewards');
-    });
+      } else {
+        i++;
+        processNextTimeslot();
+      }
+    }
+
+    processNextTimeslot();
+  });
 };
- 
+
 // View a single reward's detail page
 exports.viewSingleReward = (req, res) => {
     const RewardID = req.params.id;
@@ -262,8 +339,6 @@ exports.redeemHistory = (req, res) => {
             req.flash('error', 'Error retrieving redeem history.');
             return res.redirect('/user/rewards');
         }
-
-        results.reverse();
         res.render('user/redeemHist', { redeems: results });
     });
 };

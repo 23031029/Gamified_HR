@@ -2,166 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Edit Staff - CASUGOL Admin</title>
-  <link rel="stylesheet" type="text/css" href="/overall.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/overall.css" />
   <style>
-    body {
-      background-color: #f5f6fa;
+    .edit-box {
+      max-width: 550px;
+      margin: 60px auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 36px 32px;
     }
 
-    .content-container {
-      display: flex;
-      justify-content: center;
-      padding: 50px 20px;
-    }
-
-    .edit-form {
-      background-color: #eaeae7;
-      color: #565F63;
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 600px;
-      width: 100%;
-      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-    }
-
-    .edit-form h1 {
+    h2 {
       text-align: center;
+      color: #343a40;
       margin-bottom: 30px;
     }
 
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-group label {
-      font-size: 18px;
-      display: block;
-      margin-bottom: 5px;
+    .form-label {
+      font-weight: 600;
+      color: #495057;
     }
 
     .form-control,
     .form-select {
-      width: 100%;
-      height: 40px;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-      background-color: white;
+      border-radius: 8px;
     }
 
-    .form-control[type="file"] {
-      padding: 6px;
-    }
-
-    .form-control:focus {
-      border-color: #007bff;
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-    }
-
-    .button-container {
-      display: flex;
-      justify-content: center;
-      margin-top: 30px;
-    }
-
-    .edit-form button {
-      width: 300px;
-      height: 50px;
+    .btn-primary {
+      background-color: #004080;
       border: none;
-      border-radius: 10px;
-      background-color: #565F63;
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
     }
 
-    .edit-form button:hover {
-      background-color: #A3AEB1;
-      color: #565F63;
+    .btn-secondary {
+      background-color: #6c757d;
+      border: none;
     }
 
-    .back-button {
-      display: block;
-      text-align: center;
-      margin-top: 20px;
-      font-size: 16px;
-      color: #565F63;
-      text-decoration: underline;
-      cursor: pointer;
+    .btn:hover {
+      opacity: 0.95;
     }
 
-    .profile-preview {
-      width: 100px;
-      height: 100px;
+    img.profile-preview {
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid #dee2e6;
-      display: block;
-      margin-bottom: 10px;
-    }
-
-    .alert {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    small {
-      display: block;
-      margin-bottom: 10px;
-      font-size: 14px;
-      color: #666;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-
-  <div class="content-container">
-    <div class="edit-form">
-      <h1>Edit Staff Details</h1>
+  <div class="container">
+    <div class="edit-box">
+      <h2>Edit Staff Details</h2>
 
       <% if (error && error.length > 0) { %>
-        <div class="alert alert-danger"><%= error %></div>
+        <div class="alert alert-danger text-center"><%= error %></div>
       <% } %>
       <% if (success && success.length > 0) { %>
-        <div class="alert alert-success"><%= success %></div>
+        <div class="alert alert-success text-center"><%= success %></div>
       <% } %>
 
       <form action="/editStaff/<%= staff.staffID %>" method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-          <label>Staff ID</label>
+        <div class="mb-3">
+          <label class="form-label">Staff ID</label>
           <input type="text" class="form-control" value="<%= staff.staffID %>" disabled />
         </div>
 
-        <div class="form-group">
-          <label>First Name</label>
+        <div class="mb-3">
+          <label class="form-label">First Name</label>
           <input type="text" class="form-control" name="first_name" value="<%= staff.first_name %>" required />
         </div>
 
-        <div class="form-group">
-          <label>Last Name</label>
+        <div class="mb-3">
+          <label class="form-label">Last Name</label>
           <input type="text" class="form-control" name="last_name" value="<%= staff.last_name %>" required />
         </div>
 
-        <div class="form-group">
-          <label>Role</label>
+        <div class="mb-3">
+          <label class="form-label">Role</label>
           <select class="form-select" name="role" required>
             <option value="admin" <%= staff.role === 'admin' ? 'selected' : '' %>>Admin</option>
             <option value="user" <%= staff.role === 'user' ? 'selected' : '' %>>User</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label>Department</label>
-          <select class="form-select" name="department" id="departmentSelect" onchange="toggleOtherDept(this)" required>
+        <div class="mb-3">
+          <label class="form-label">Department</label>
+          <select class="form-select" name="department" id="departmentSelect" required onchange="toggleOtherDept(this)">
             <% departments.forEach(function(dept) { %>
-              <option value="<%= dept.departmentID %>" <%= staff.department === dept.departmentID ? 'selected' : '' %>><%= dept.name %></option>
+              <option value="<%= dept.departmentID %>" <%= staff.department === dept.departmentID ? 'selected' : '' %>>
+                <%= dept.name %>
+              </option>
             <% }) %>
-            <option value="other" <%= staff.department === 'other' ? 'selected' : '' %>>Other</option>
+            <option value="other">Other</option>
           </select>
           <input
             type="text"
@@ -169,31 +108,30 @@
             name="other_department"
             id="otherDepartmentInput"
             placeholder="Enter new department"
-            style="display: none;"
+            style="display:none;"
           />
         </div>
 
-        <div class="form-group">
-          <label>Current Profile Image</label>
+        <div class="mb-3 text-center">
+          <label class="form-label">Current Profile Image</label><br />
           <img src="/images/<%= staff.profile_image %>" alt="Profile Image" class="profile-preview" />
         </div>
 
-        <div class="form-group">
-          <label>Change Profile Image</label>
-          <small>Leave blank to keep current image.</small>
+        <div class="mb-3">
+          <label class="form-label">Change Profile Image</label>
           <input type="file" class="form-control" name="profile" />
           <input type="hidden" name="old_profile_image" value="<%= staff.profile_image %>" />
         </div>
 
-        <div class="button-container">
-          <button type="submit">Save Changes</button>
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a href="/admin/dashboard" class="btn btn-secondary">Cancel</a>
         </div>
       </form>
-
-      <a href="/admin/dashboard" class="back-button">Back to Dashboard</a>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     function toggleOtherDept(select) {
       const otherInput = document.getElementById('otherDepartmentInput');
@@ -206,12 +144,12 @@
       }
     }
 
+    // If "Other" is selected by default (edit mode)
     window.addEventListener('DOMContentLoaded', () => {
       const select = document.getElementById('departmentSelect');
       if (select.value === 'other') {
-        const otherInput = document.getElementById('otherDepartmentInput');
-        otherInput.style.display = 'block';
-        otherInput.required = true;
+        document.getElementById('otherDepartmentInput').style.display = 'block';
+        document.getElementById('otherDepartmentInput').required = true;
       }
     });
   </script>

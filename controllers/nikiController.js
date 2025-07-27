@@ -1,12 +1,16 @@
 const db = require('../db');
 const update = require('../realtimeUpdates');
-const ExcelJS = require("exceljs");
 
 // =========================
 // USER DASHBOARD
 // =========================
 const getUserDashboard = (req, res) => {
-  const staffID = req.session.staff.staffID;
+  const staffID = req.session.staff?.staffID;
+  if (!staffID) {
+    return res.redirect('/login'); // or some auth fallback
+  }
+
+  const pointsEarned = req.query.pointsEarned || null;
 
   const userInfoQuery = `
     SELECT s.*, d.name AS department_name,
@@ -17,21 +21,23 @@ const getUserDashboard = (req, res) => {
   `;
 
   const registeredProgramsQuery = `
-    SELECT sp.*, p.Title, p.Type, t.Date, t.Start_Time, t.Duration, 
+    SELECT sp.*, p.Title, pt.name AS Type, t.Date, t.Start_Time, t.Duration, 
            ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time, 
            p.points_reward, sp.Status
     FROM staff_program sp
     JOIN Program p ON sp.programID = p.ProgramID
+    JOIN Program_type pt ON p.TypeID = pt.typeID
     JOIN Timeslot t ON sp.timeslotID = t.timeslotID
     WHERE sp.staffID = ? AND sp.Status = 'Registered'
   `;
 
   const upcomingProgramsQuery = `
-    SELECT sp.*, p.Title, p.Type, t.Date, t.Start_Time, t.Duration, 
+    SELECT sp.*, p.Title, pt.name AS Type, t.Date, t.Start_Time, t.Duration, 
            ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time, 
            p.points_reward, sp.Status
     FROM staff_program sp
     JOIN Program p ON sp.programID = p.ProgramID
+    JOIN Program_type pt ON p.TypeID = pt.typeID
     JOIN Timeslot t ON sp.timeslotID = t.timeslotID
     WHERE sp.staffID = ? AND sp.Status = "Upcoming"
     ORDER BY t.Date ASC, t.Start_Time ASC
@@ -70,7 +76,13 @@ const getUserDashboard = (req, res) => {
   `;
 
   db.query(userInfoQuery, [staffID], (err, userResults) => {
-    if (err) return res.status(500).send("Error fetching user info");
+    if (err) {
+      console.error('Error fetching user info:', err);
+      return res.status(500).send("Error fetching user info");
+    }
+    if (userResults.length === 0) {
+      return res.status(404).send("User not found");
+    }
     const user = userResults[0];
 
     db.query(upcomingProgramsQuery, [staffID], (err, upcomingResults) => {
@@ -112,6 +124,7 @@ const getUserDashboard = (req, res) => {
     }); // ← closed upcomingProgramsQuery
   }); // ← closed userInfoQuery
 };
+
 
 // =========================
 // USER LEADERBOARD
@@ -641,6 +654,7 @@ exports.viewInvites = (req, res) => {
 // =========================
 // HELPER FUNCTIONS
 // =========================
+
 
 exports.getAllPrograms = (req, res) => {
   const sql = `

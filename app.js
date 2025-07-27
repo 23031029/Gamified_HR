@@ -10,11 +10,10 @@ const cron = require('node-cron');
 const db = require('./db');
 const update = require('./realtimeUpdates');
 
-// Add this after your other requires and before app.listen:
 cron.schedule('0 0 * * *', () => {
   update();
-  console.log('Auto-updated program statuses');
 });
+
 
 // Controllers
 const serjiaControl = require('./controllers/serjiaController');
@@ -114,9 +113,9 @@ app.post('/user/change-password', checkAuthentication, validatePasswordChange, s
 app.post('/user/edit-particulars', serjiaControl.editParticulars)
 app.get('/editStaff/:staffID', checkAuthentication, checkAdmin, serjiaControl.getEditStaff);
 app.post('/editStaff/:staffID', checkAuthentication, checkAdmin, upload.single('profile'), serjiaControl.postEditStaff);
-app.get('/admin/generate', serjiaControl.getGenerateQR);
-app.get('/user/scan', serjiaControl.getScanQR);
-app.get('/user/attend', serjiaControl.markAttendance);
+app.get('/qr/:timeslotID', alyshaControl.generateQRCode);
+app.get('/user/scan', alyshaControl.getScanQR);
+app.get('/user/attend', alyshaControl.markAttendance);
 
 // Isabel's reward routes (admin only)
 app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);
@@ -124,7 +123,7 @@ app.get('/admin/rewards/read/:id', checkAuthentication, checkAdmin, isabelContro
 app.get('/admin/rewards/add', checkAuthentication, checkAdmin, isabelControl.addRewardForm);
 app.post('/rewards/add', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.addReward);
 app.get('/rewards/edit/:id', checkAuthentication, checkAdmin, isabelControl.editRewardForm);
-app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.editReward);
+app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.editRewardForm);
 
 // User reward routes (user only)
 app.get('/user/rewards', checkAuthentication, checkUser, isabelControl.userRewards);
@@ -141,8 +140,6 @@ app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.ge
 // Niki's feedback routes
 app.post('/submit-feedback', nikiController.submitFeedback);
 app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
-app.get('/admin/export-feedback', checkAuthentication, checkAdmin, nikiController.exportFeedbackData);
-app.get('/admin/export-dashboard', checkAuthentication, checkAdmin, nikiController.exportAdminDashboard);
 
 // Niki's chat routes
 app.get('/chat', checkAuthentication, nikiController.getChatPage);
@@ -157,14 +154,15 @@ app.get('/user/invites', checkAuthentication, checkUser, nikiController.viewInvi
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
 app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
-app.post('/programs/delete/:id', checkAuthentication, checkAdmin, alyshaControl.deleteProgram);
 
 app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);
-app.post('/programs/add', checkAuthentication, checkAdmin, upload.single('qr_code'), alyshaControl.postAddProgram);
+app.post('/programs/add', checkAuthentication, checkAdmin, alyshaControl.postAddProgram);
 
 app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
 app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
 app.post('/user/programs',checkAuthentication, alyshaControl.joinProgram);
+app.post('/programs/toggle/:id', alyshaControl.toggleProgramStatus);
+app.post('/cancel/:participantID', checkAuthentication, alyshaControl.cancelProgram);
 
 // Start server
 const PORT = process.env.PORT || 3000;

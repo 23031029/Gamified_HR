@@ -1,0 +1,23 @@
+      
+      /* Body UX */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        
+      }
+
+      body {
+        background: linear-gradient(135deg, #EAEAE7 0%, #F5F5F2 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        /* min-height: 100vh;
+        margin-top: 110px; */
+        margin: 0;
+        padding-top: 100px;
+      }
+
+    .content-container {
+      display: flex;
+      justify-content: center;
+      padding: 50px 20px;
+    }

@@ -4,248 +4,248 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CASUGOL - Programs</title>
-
-  <!-- Flatpickr CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
+  <link rel="stylesheet" type="text/css" href="/overall.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f5f5f5;
-      min-height: 100vh;
-    }
-
-    .header {
-      background: linear-gradient(135deg, #B8D42F, #76B900);
+   .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 20px 0;
+      padding: 3rem 0;
       text-align: center;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     .header h1 {
       font-size: 2.5rem;
-      font-weight: bold;
-      letter-spacing: 2px;
+      font-weight: 300;
+      letter-spacing: -0.5px;
     }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 30px 20px;
+      padding: 2rem 1rem;
     }
 
     .programs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 25px;
-      margin-top: 20px;
+      gap: 2rem;
+      margin-top: 2rem;
     }
 
     .program-card {
       background: white;
-      border-radius: 15px;
-      padding: 25px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
       transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
+      border: 1px solid #e2e8f0;
     }
 
     .program-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    .program-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #B8D42F, #76B900);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
     }
 
     .program-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 15px;
+      margin-bottom: 1.5rem;
     }
 
     .program-title {
-      font-size: 1.3rem;
-      font-weight: bold;
-      color: #333;
-      margin-bottom: 5px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #1a202c;
     }
 
     .program-type {
-      background: #c8facc;
-      color: #2e4a2b;
-      padding: 5px 12px;
+      background: #e6fffa;
+      color: #047857;
+      padding: 0.25rem 0.75rem;
       border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-transform: capitalize;
+      font-size: 0.75rem;
+      font-weight: 500;
+      display: inline-block;
     }
 
     .program-description {
-      color: #666;
-      margin-bottom: 20px;
-      line-height: 1.5;
+      color: #4a5568;
+      margin: 1rem 0;
+      font-size: 0.9rem;
     }
 
     .points-reward {
-      background: linear-gradient(135deg, #fff9c4, #ffeaa7);
-      color: #333;
-      padding: 10px;
-      border-radius: 10px;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      padding: 0.75rem;
+      border-radius: 8px;
       text-align: center;
-      font-weight: bold;
-      margin-bottom: 15px;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+      color: #744210;
     }
 
-    .timeslots-section {
-      margin-bottom: 20px;
-    }
-
-    .timeslots-title {
-      font-size: 1rem;
-      font-weight: bold;
-      color: #333;
-      margin-bottom: 10px;
+    .timeslots-section h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #2d3748;
     }
 
     .timeslots-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 8px;
-      margin-bottom: 15px;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1rem;
     }
 
     .timeslot-item {
-      background: #f8f9fa;
-      padding: 8px;
-      border-radius: 8px;
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.75rem;
       text-align: center;
-      font-size: 0.85rem;
-      border: 1px solid #e9ecef;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
     }
 
     .timeslot-item:hover {
-      background: #e9ecef;
-      transform: translateY(-1px);
+      background: #edf2f7;
+      border-color: #cbd5e0;
     }
 
     .timeslot-item.selected {
-      background: linear-gradient(135deg, #B8D42F, #76B900);
+      background: #5d6fc0;
       color: white;
-      border-color: #76B900;
+      border-color: #667eea;
     }
 
-    .timeslot-date {
-      font-weight: bold;
-      color: #333;
+    .selected-info {
+      background: #f0fff4;
+      border: 1px solid #c6f6d5;
+      padding: 0.75rem;
+      border-radius: 6px;
       font-size: 0.8rem;
-    }
-
-    .timeslot-time {
-      color: #666;
-      font-size: 0.75rem;
-      margin-top: 2px;
-    }
-
-    .timeslot-slots {
-      color: #666;
-      font-size: 0.7rem;
-      margin-top: 2px;
+      color: #276749;
+      display: none;
+      margin-bottom: 1rem;
     }
 
     .program-actions {
       display: flex;
-      gap: 10px;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .btn {
-      padding: 10px 20px;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 0.85rem;
       border: none;
-      border-radius: 20px;
       cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s ease;
       text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s ease;
       text-align: center;
-      flex: 1;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #B8D42F, #76B900);
+      background: #667eea;
       color: white;
     }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(184, 212, 47, 0.4);
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
 
     .btn-secondary {
-      background-color: #c9a8e8 !important;
-      color: #000000;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      border: none;
+      background: #f7fafc;
+      color: #4a5568;
+      border: 1px solid #e2e8f0;
     }
 
     .btn-secondary:hover {
-      background: linear-gradient(135deg, #d9c2f0, #c9a8e8, #b89dd9);
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(201, 168, 232, 0.4);
+      background: #edf2f7;
     }
 
     .btn:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
-      transform: none !important;
     }
 
     .no-programs {
       text-align: center;
-      color: #666;
-      font-size: 1.2rem;
-      margin-top: 50px;
+      font-size: 1.1rem;
+      color: #718096;
+      margin-top: 4rem;
     }
 
-    .no-timeslots {
-      text-align: center;
-      color: #666;
-      font-size: 0.9rem;
-      padding: 20px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-
-    .selected-slot-info {
-      background: #e8f5e8;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      font-size: 0.9rem;
-      color: #2e4a2b;
+    /* Modal Styles */
+    .modal {
       display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal h5 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: #1a202c;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: #4a5568;
+    }
+
+    .form-group select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: white;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
     }
 
     @media (max-width: 768px) {
+      .header h1 {
+        font-size: 2rem;
+      }
+      
       .programs-grid {
         grid-template-columns: 1fr;
       }
@@ -268,66 +268,122 @@
 </head>
 <body>
   <%- include('../partials/navbar.ejs') %>
-
   <script>
-    <% if (typeof error !== 'undefined' && error) { %>
-      alert("<%= typeof error === 'string' ? error.replace(/"/g, '\\"') : (error.message || 'An error occurred.') %>");
-    <% } %>
-    <% if (typeof messageP !== 'undefined' && messageP && messageP.length) { %>
-      alert("<%= Array.isArray(messageP) ? messageP[0].replace(/"/g, '\\"') : messageP.replace(/"/g, '\\"') %>");
-    <% } %>
+      <% if (error) { %> 
+        alert('Error: ' + <%- JSON.stringify(error) %>); 
+      <% } %>
+      <% if (messageP) { %> 
+        alert('Success: ' + <%- JSON.stringify(messageP) %>); 
+      <% } %>
   </script>
 
+  <% if (error) { %>
+    <div class="flash-message error-message" style="
+      position: fixed; 
+      top: 20px; 
+      right: 20px; 
+      background: #fee; 
+      border: 1px solid #fcc; 
+      color: #c33; 
+      padding: 15px 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      max-width: 400px;
+    ">
+      <strong>Error:</strong> <%= error %>
+      <button onclick="this.parentElement.remove()" style="
+        float: right; 
+        background: none; 
+        border: none; 
+        font-size: 18px; 
+        cursor: pointer; 
+        margin-left: 10px;
+      ">&times;</button>
+    </div>
+  <% } %>
+
+  <% if (messageP) { %>
+    <div class="flash-message success-message" style="
+      position: fixed; 
+      top: 20px; 
+      right: 20px; 
+      background: #efe; 
+      border: 1px solid #cfc; 
+      color: #363; 
+      padding: 15px 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      max-width: 400px;
+    ">
+      <strong>Success:</strong> <%= messageP %>
+      <button onclick="this.parentElement.remove()" style="
+        float: right; 
+        background: none; 
+        border: none; 
+        font-size: 18px; 
+        cursor: pointer; 
+        margin-left: 10px;
+      ">&times;</button>
+    </div>
+  <% } %>
+
+
   <div class="container">
-    <% if (programs && programs.length > 0) { %>
+    <% if (programs.length === 0) { %>
+      <div class="no-programs">No programs available at the moment.</div>
+    <% } else { %>
       <div class="programs-grid">
         <% programs.forEach(program => { %>
           <div class="program-card" id="program-<%= program.ProgramID %>">
             <div class="program-header">
-              <div>
-                <div class="program-title"><%= program.Title %></div>
-                <div class="program-type"><%= program.Type %></div>
-              </div>
+              <div class="program-title"><%= program.Title %></div>
+              <div class="program-type"><%= program.Type %></div>
             </div>
             <div class="program-description"><%= program.Description %></div>
-            <div class="points-reward">🏆 <%= program.points_reward %> Points Reward</div>
-            
+            <div class="points-reward">🏆 <%= program.points_reward %> Points</div>
+
             <div class="timeslots-section">
-              <% if (program.timeslots && program.timeslots.length > 0) { %>
-                <div class="timeslots-title">Available Time Slots:</div>
-                <div class="timeslots-grid" id="timeslots-<%= program.ProgramID %>">
+              <% if (program.timeslots.length === 0) { %>
+                <h4>No time slots available</h4>
+              <% } else { %>
+                <h4>Available Time Slots:</h4>
+                <div class="timeslots-grid" id="timeslots-<%= program.programID %>">
                   <% program.timeslots.forEach(slot => { %>
-                    <div class="timeslot-item" 
-                         data-program-id="<%= program.ProgramID %>" 
+                    <div class="timeslot-item"
+                         data-program-id="<%= program.programID %>"
                          data-timeslot-id="<%= slot.timeslotID %>"
                          data-date="<%= slot.Date %>"
-                         data-time="<%= slot.Start_Time %>"
-                         data-duration="<%= slot.Duration %>"
+                         data-time="<%
+                            const time = slot.Start_Time.split(":");
+                            let hr = parseInt(time[0]);
+                            const min = time[1];
+                            const pmam = hr >= 12 ? "PM" : "AM";
+                            hr= hr % 12 || 12;
+                          %>
+                          <%= hr %>:<%= min %> <%= pmam %>"
+                         data-duration="<%= slot.Duration  %>"
                          data-slots="<%= slot.Slots_availablility %>">
-                      <div class="timeslot-date">
-                        <%= new Date(slot.Date).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        }) %>
-                      </div>
-                      <div class="timeslot-time">
-                        <%= slot.Start_Time ? slot.Start_Time.substring(0,5) : '-' %>
-                      </div>
-                      <div class="timeslot-slots">
-                        <%= slot.Slots_availablility %> slots
-                      </div>
+                      <div><%= new Date(slot.Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></div>
+                      <div><%
+                            const timePart = slot.Start_Time.split(":");
+                            let hours = parseInt(timePart[0]);
+                            const minute = timePart[1];
+                            const ampm = hours >= 12 ? "PM" : "AM";
+                            hours = hours % 12 || 12;
+                          %>
+                          <%= hours %>:<%= minute %> <%= ampm %></div>
+                      <div><%= slot.Slots_availablility %> slots</div>
                     </div>
                   <% }); %>
                 </div>
-                
-                <div class="selected-slot-info" id="selected-info-<%= program.ProgramID %>">
-                  <strong>Selected:</strong> <span id="selected-text-<%= program.ProgramID %>"></span>
+                <div class="selected-info" id="selected-info-<%= program.programID %>">
+                  <strong>Selected:</strong> <span id="selected-text-<%= program.programID %>"></span>
                 </div>
-              <% } else { %>
-                <div class="no-timeslots">No time slots available for this program.</div>
               <% } %>
             </div>
-            
+
             <div class="program-actions">
             <button class="btn btn-secondary invite-btn" 
                     disabled 
@@ -349,8 +405,6 @@
           </div>
         <% }); %>
       </div>
-    <% } else { %>
-      <div class="no-programs"><p>No programs available at the moment.</p></div>
     <% } %>
   </div>
   <!-- Invite Modal -->

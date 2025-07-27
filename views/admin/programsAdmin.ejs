@@ -4,28 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CASUGOL - Admin Programs</title>
+  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+   <link rel="stylesheet" type="text/css" href="/overall.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-    }
-    .header {
-      background: linear-gradient(135deg, #B8D42F, #76B900);
-      color: white;
-      padding: 20px 0;
-      text-align: center;
-    }
-    .container {
-      max-width: 900px;
-      margin: 30px auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 30px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    }
     .btn {
       display: inline-block;
       padding: 8px 18px;
@@ -38,6 +22,7 @@
       transition: background-color 0.3s ease;
       user-select: none;
     }
+
     .btn-edit {
       background: #76B900;
       color: white;
@@ -45,6 +30,7 @@
     .btn-edit:hover {
       background: #5da300;
     }
+
     .btn-delete {
       background: #dc3545;
       color: white;
@@ -52,23 +38,33 @@
     .btn-delete:hover {
       background: #a71d2a;
     }
-    .programs-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      table-layout: fixed;
+
+    .btn-qr {
+      background: #17a2b8;
+      color: white;
+      font-size: 0.85rem;
+      padding: 6px 12px;
     }
-    .programs-table th,
-    .programs-table td {
-      padding: 12px 10px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-      vertical-align: top;
-      word-wrap: break-word;
+    .btn-qr:hover {
+      background: #138496;
     }
-    .programs-table th {
-      background: #f8f9fa;
+
+    .btn-add {
+      border: 1px solid #17a2b8;
+      border-radius: 20px;
+      width: 300px;
+      height: 50px;
+      background-color: #ffffffb9;
+      color: #17a2b8;
+      font-weight: bold;
+      transition: background 0.2s, color 0.2s;
     }
+
+    .btn-add:hover {
+      background-color: #17a2b8;
+      color: #fff;
+    }
+
     .success-message,
     .error-message {
       padding: 15px;
@@ -77,156 +73,551 @@
       font-weight: 600;
       text-align: center;
     }
+
     .success-message {
       background: #d4edda;
       color: #155724;
       border: 1px solid #c3e6cb;
     }
+
     .error-message {
       background: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
-    .no-programs {
-      text-align: center;
-      color: #888;
-      margin: 40px 0;
-      font-style: italic;
-    }
+
     .text-warning {
       color: #f7c600;
     }
+
     .text-muted {
       color: #ccc;
     }
+
+    .table-hover tbody tr:hover {
+      background-color: #eaf6ff !important;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+
+    /* Status styling */
+    .status-active {
+      color: #28a745;
+      font-weight: bold;
+    }
+
+    .status-inactive {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .status-dropdown {
+      width: auto;
+      display: inline;
+      font-size: 0.9rem;
+      padding: 4px 8px;
+    }
+
+    /* QR Code Modal Styles */
+    .qr-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+
+    .qr-modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: none;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .qr-close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .qr-close:hover,
+    .qr-close:focus {
+      color: black;
+      text-decoration: none;
+    }
+
+    .qr-code-container {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 2px dashed #dee2e6;
+    }
+
+    .qr-code-image {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+    }
+
+    .qr-program-info {
+      background: #e7f3ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .qr-program-info h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+
+    .qr-program-info p {
+      margin: 5px 0;
+      color: #666;
+    }
+
+    .btn-print {
+      background: #28a745;
+      color: white;
+      margin: 10px 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    .btn-print:hover {
+      background: #218838;
+    }
+
+    .btn-close-modal {
+      background: #6c757d;
+      color: white;
+      margin: 10px 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    .btn-close-modal:hover {
+      background: #5a6268;
+    }
+
+    .loading {
+      display: none;
+      color: #666;
+      font-style: italic;
+    }
+
+    /* FIXED PRINT STYLES - This is the key fix */
+    @media print {
+      /* Hide everything first */
+      * {
+        visibility: hidden !important;
+      }
+      
+      /* Only show the modal content we want to print */
+      .qr-modal,
+      .qr-modal *,
+      .qr-modal-content,
+      .qr-modal-content *,
+      .qr-program-info,
+      .qr-program-info *,
+      .qr-code-container,
+      .qr-code-container *,
+      .qr-code-image,
+      .print-timestamp,
+      .print-timestamp * {
+        visibility: visible !important;
+      }
+      
+      /* Reset modal positioning for print */
+      .qr-modal {
+        position: static !important;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      
+      .qr-modal-content {
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        width: 100% !important;
+        max-width: none !important;
+        border-radius: 0 !important;
+        background: white !important;
+      }
+      
+      /* Hide buttons and close icon */
+      .qr-close,
+      .btn-print,
+      .btn-close-modal,
+      button {
+        display: none !important;
+        visibility: hidden !important;
+      }
+      
+      /* Optimize QR code for print */
+      .qr-code-image {
+        max-width: 300px !important;
+        height: auto !important;
+        display: block !important;
+        margin: 0 auto !important;
+      }
+      
+      /* Optimize program info for print */
+      .qr-program-info {
+        background: #f0f0f0 !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid !important;
+      }
+      
+      .qr-code-container {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid !important;
+      }
+      
+      /* Force single page */
+      @page {
+        size: A4;
+        margin: 1cm;
+      }
+      
+      .qr-modal-content {
+        page-break-inside: avoid !important;
+        page-break-before: auto !important;
+        page-break-after: auto !important;
+      }
+    }
+
     @media (max-width: 700px) {
       .container {
         padding: 15px;
       }
-      .programs-table th,
-      .programs-table td {
-        padding: 8px 6px;
-        font-size: 0.95rem;
-      }
-      .btn {
-        font-size: 0.9rem;
-        padding: 6px 12px;
+      
+      .qr-modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 15px;
       }
     }
   </style>
 </head>
+
 <body>
   <%- include('../partials/navbar.ejs') %>
 
-  <header class="header">
-    <h1>CASUGOL - Admin Programs</h1>
-  </header>
-
-  <main class="container">
-    <a href="/programs/add" class="btn btn-edit" style="margin-bottom: 20px;">+ Add New Program</a>
-
-    <% if (messageP) { %>
-      <div class="<%= messageType === 'error' ? 'error-message' : 'success-message' %>">
-        <%= messageP %>
-      </div>
-    <% } %>
-
-    <% if (programs && programs.length > 0) { %>
-      <table class="programs-table" aria-label="Admin Programs Table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Date</th>
-            <th>Start - End Time</th>
-            <th>Duration (min)</th>
-            <th>Points</th>
-            <th>Slots</th>
-            <th>Created By</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        <% programs.forEach(program => {
-          const timeslots = program.timeslots && program.timeslots.length > 0
-            ? program.timeslots
-            : [{ date: '-', startTime: '-', endTime: '-', slots: '-' }];
-
-          timeslots.forEach((slot, idx) => { %>
-            <tr>
-              <% if (idx === 0) { %>
-                <td rowspan="<%= timeslots.length %>"><%= program.Title %></td>
-                <td rowspan="<%= timeslots.length %>"><%= program.Type %></td>
-              <% } %>
-
-              <td><%= slot.date %></td>
-              <td><%= slot.startTime %> - <%= slot.endTime %></td>
-
-              <% if (idx === 0) { %>
-                <td rowspan="<%= timeslots.length %>"><%= program.Duration %></td>
-                <td rowspan="<%= timeslots.length %>"><%= program.points_reward %></td>
-              <% } %>
-
-              <td><%= slot.slots || '-' %></td>
-
-              <% if (idx === 0) { %>
-                <td rowspan="<%= timeslots.length %>"><%= program.name %> (<%= program.Created_By %>)</td>
-                <td rowspan="<%= timeslots.length %>">
-                  <a href="/programs/edit/<%= program.ProgramID %>" class="btn btn-edit" aria-label="Edit <%= program.Title %>">Edit</a>
-                  <form action="/programs/delete/<%= program.ProgramID %>" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this program?');" aria-label="Delete <%= program.Title %>">Delete</button>
-                  </form>
-                </td>
-              <% } %>
-            </tr>
-        <% }) }) %>
-        </tbody>
-      </table>
-    <% } else { %>
-      <p class="no-programs">No programs found.</p>
-    <% } %>
-  </main>
-
-  <h2 style="text-align: center; margin-top: 50px;">Feedback Dashboard</h2>
-  <div style="
-    max-width: 1000px;
-    margin: 30px auto;
-    background: #fff;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  ">
-    <% if (feedbackStats.length === 0) { %>
-      <p style="text-align: center; color: #777;">No feedback available yet.</p>
-    <% } else { %>
-      <% feedbackStats.forEach(item => { %>
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 15px 0;">
-          <div>
-            <div style="font-size: 1.1rem; font-weight: bold; color: #333;"><%= item.Title %></div>
-            <div style="margin-top: 6px; color: #555;">
-              <strong>Average Rating:</strong>
-              <% for (let i = 1; i <= 5; i++) { %>
-                <i class="fa fa-star <%= i <= Math.round(item.avg_rating) ? 'text-warning' : 'text-muted' %>"></i>
-              <% } %>
-              <span style="font-size: 0.9rem;">(<%= item.avg_rating.toFixed(1) %>)</span>
+  <main class="container mt-5">
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title mb-0">Program List</h5>
             </div>
-            <div style="color: #666;">
-              <strong>Comments:</strong> <%= item.comment_count %>
+
+            <% if (messageP) { %>
+              <div class="<%= messageType === 'error' ? 'error-message' : 'success-message' %>">
+                <%= messageP %>
+              </div>
+            <% } %>
+
+            <form method="GET" action="/admin/programs" class="mb-3" style="max-width:220px;">
+              <select name="status" class="form-control" onchange="this.form.submit()">
+                <option value="" <%= !status ? 'selected' : '' %>>All Programs</option>
+                <option value="Active" <%= status === 'Active' ? 'selected' : '' %>>Active</option>
+                <option value="Inactive" <%= status === 'Inactive' ? 'selected' : '' %>>Inactive</option>
+              </select>
+            </form>
+
+            <div class="table-responsive">
+              <% if (programs && programs.length > 0) { %>
+                <table class="table table-bordered table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Title</th>
+                      <th>Type</th>
+                      <th>Date</th>
+                      <th>Start - End Time</th>
+                      <th>Duration (min)</th>
+                      <th>Points</th>
+                      <th>Slots</th>
+                      <th>Created By</th>
+                      <th>Avg Rating</th>
+                      <th>Feedback Summary</th>
+                      <th>Edit</th>
+                      <th>QR Code</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% programs.forEach(program => {
+                      const timeslots = program.timeslots?.length ? program.timeslots : [{ date: '-', startTime: '-', endTime: '-', slots: '-', timeslotID: null }];
+                      const feedbackStat = feedbackStats.find(fs => fs.ProgramID === program.ProgramID);
+
+                      timeslots.forEach((slot, idx) => { %>
+                        <tr>
+                          <% if (idx === 0) { %>
+                            <td rowspan="<%= timeslots.length %>"><%= program.Title %></td>
+                            <td rowspan="<%= timeslots.length %>"><%= program.Type %></td>
+                          <% } %>
+
+                          <td><%= slot.date %></td>
+                          <td><%= slot.startTime %> - <%= slot.endTime %></td>
+
+                          <% if (idx === 0) { %>
+                            <td rowspan="<%= timeslots.length %>"><%= program.Duration %></td>
+                            <td rowspan="<%= timeslots.length %>"><%= program.points_reward %></td>
+                          <% } %>
+
+                          <td><%= slot.slots || '-' %></td>
+
+                          <% if (idx === 0) { %>
+                            <td rowspan="<%= timeslots.length %>"><%= program.name %> (<%= program.Created_By %>)</td>
+                            <td rowspan="<%= timeslots.length %>">
+                              <% if (feedbackStat) { %>
+                                <% for (let i = 1; i <= 5; i++) { %>
+                                  <i class="fa fa-star <%= i <= Math.round(feedbackStat.avg_rating) ? 'text-warning' : 'text-muted' %>"></i>
+                                <% } %>
+                                <span style="font-size: 0.9rem;">(<%= feedbackStat.avg_rating.toFixed(1) %>)</span>
+                              <% } else { %>
+                                <span class="text-muted">No ratings</span>
+                              <% } %>
+                            </td>
+                            <td rowspan="<%= timeslots.length %>">
+                              <% if (feedbackStat && feedbackStat.comment_count > 0) { %>
+                                <a href="/admin/program/<%= program.ProgramID %>/feedback" class="btn btn-edit" style="font-size: 0.85rem; padding: 6px 12px;">
+                                  Feedback Summary
+                                </a>
+                              <% } else { %>
+                                <span class="text-muted">No feedback</span>
+                              <% } %>
+                            </td>
+                            <td rowspan="<%= timeslots.length %>">
+                                <a href="/programs/edit/<%= program.ProgramID %>" class="btn btn-sm btn-primary">Edit</a>
+                            </td>
+                          <% } %>
+
+                          <!-- QR Code column for each timeslot -->
+                          <td>
+                            <% if (slot.timeslotID) { %>
+                              <button class="btn btn-qr" onclick="showQRCode('<%= slot.timeslotID %>', '<%= program.Title %>', '<%= slot.date %>', '<%= slot.startTime %>', '<%= program.Type %>', '<%= program.points_reward %>')">
+                                <i class="fa fa-qrcode"></i> View QR
+                              </button>
+                            <% } else { %>
+                              <span class="text-muted">No timeslot</span>
+                            <% } %>
+                          </td>
+
+                          <% if (idx === 0) { %>
+                            <td rowspan="<%= timeslots.length %>">
+                              <form method="POST" action="/programs/toggle/<%= program.ProgramID %>" style="display:inline; margin-top: 8px;">
+                                <select name="action" class="form-control status-dropdown" onchange="this.form.submit()">
+                                  <option disabled selected><%-program.status%></option>
+                                  <% if (program.status === 'Active') { %>
+                                    <option value="deactivate">Deactivate</option>
+                                  <% } else { %>
+                                    <option value="activate">Activate</option>
+                                  <% } %>
+                                </select>
+                                <noscript><button type="submit" class="btn btn-sm btn-warning">Go</button></noscript>
+                              </form>
+                            </td>
+                          <% } %>
+                        </tr>
+                    <% }) }) %>
+                  </tbody>
+                </table>
+              <% } else { %>
+                <p class="text-center text-muted my-4">No programs found.</p>
+              <% } %>
+
+              <div class="d-flex justify-content-center mt-3">
+                <a href="/programs/add">
+                  <button class="btn-add">+ Add Program</button>
+                </a>
+              </div>
             </div>
-          </div>
-          <div>
-            <a href="/admin/program/<%= item.ProgramID %>/feedback" class="btn btn-edit" style="font-size: 0.85rem; padding: 6px 12px;">
-              View Comments
-            </a>
           </div>
         </div>
-      <% }); %>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="/admin/export-feedback" class="btn btn-edit">
-          <i class="fa fa-file-excel"></i> Export All Feedback Data
-        </a>
       </div>
-    <% } %>
+    </div>
+  </main>
+
+  <!-- QR Code Modal -->
+  <div id="qrModal" class="qr-modal">
+    <div class="qr-modal-content">
+      <span class="qr-close" onclick="closeQRModal()">&times;</span>
+      
+      <div id="qrProgramInfo" class="qr-program-info">
+        <!-- Program info will be populated here -->
+      </div>
+      
+      <div class="qr-code-container">
+        <div class="loading" id="qrLoading">
+          <i class="fa fa-spinner fa-spin"></i> Generating QR Code...
+        </div>
+        <img id="qrCodeImage" class="qr-code-image" style="display: none;" alt="QR Code">
+      </div>
+      
+      <div class="print-timestamp" style="display: none;">
+        <!-- Timestamp will be added here for printing -->
+      </div>
+      
+      <div>
+        <button class="btn btn-print" onclick="printQRCode()">
+          <i class="fa fa-print"></i> Print QR Code
+        </button>
+        <button class="btn btn-close-modal" onclick="closeQRModal()">
+          <i class="fa fa-times"></i> Close
+        </button>
+      </div>
+    </div>
   </div>
+
+  <script>
+    // SINGLE showQRCode function - removed duplicates
+    async function showQRCode(timeslotID, title, date, startTime, type, points) {
+      const modal = document.getElementById('qrModal');
+      const qrImage = document.getElementById('qrCodeImage');
+      const qrLoading = document.getElementById('qrLoading');
+      const programInfo = document.getElementById('qrProgramInfo');
+      
+      // Validate inputs
+      if (!timeslotID) {
+        alert('Invalid timeslot ID');
+        return;
+      }
+      
+      // Show modal
+      modal.style.display = 'block';
+      
+      // Hide image and show loading
+      qrImage.style.display = 'none';
+      qrLoading.style.display = 'block';
+      qrLoading.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Generating QR Code...';
+      qrLoading.style.color = '#666';
+      
+      // Update program info
+      programInfo.innerHTML = `
+        <h4><i class="fa fa-calendar-alt"></i> ${title}</h4>
+        <p><strong>Type:</strong> ${type}</p>
+        <p><strong>Date:</strong> ${date}</p>
+        <p><strong>Time:</strong> ${startTime}</p>
+        <p><strong>Points Reward:</strong> ${points}</p>
+        <p><strong>Timeslot ID:</strong> ${timeslotID}</p>
+      `;
+      
+      try {
+        const attendanceUrl = `${window.location.origin}/user/attend?timeslotID=${timeslotID}`;
+        // Try server-side generation first
+        try {
+          const response = await fetch(`/admin/qr/${timeslotID}`);
+          const data = await response.json();
+          
+          if (data.success && data.qrCode) {
+            qrImage.src = data.qrCode;
+            qrImage.onload = function() {
+              qrLoading.style.display = 'none';
+              qrImage.style.display = 'block';
+            };
+            return;
+          }
+        } catch (serverError) {
+          console.log('Server-side QR generation not available, using client-side');
+        }
+        
+        // Client-side generation fallback
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&format=png&data=${encodeURIComponent(attendanceUrl)}`;
+        
+        qrImage.onload = function() {
+          qrLoading.style.display = 'none';
+          qrImage.style.display = 'block';
+        };
+        
+        qrImage.onerror = function() {
+          // Try alternative QR service
+          const alternativeQrUrl = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(attendanceUrl)}`;
+          
+          qrImage.onerror = function() {
+            qrLoading.innerHTML = `
+              <i class="fa fa-exclamation-triangle"></i> 
+              Unable to generate QR code.<br>
+              <small>Attendance URL: <br><a href="${attendanceUrl}" target="_blank">${attendanceUrl}</a></small>
+            `;
+            qrLoading.style.color = '#dc3545';
+          };
+          
+          qrImage.src = alternativeQrUrl;
+        };
+        
+        qrImage.src = qrUrl;
+        
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+        qrLoading.innerHTML = `
+          <i class="fa fa-exclamation-triangle"></i> 
+          Error generating QR code<br>
+          <small>Please try again later</small>
+        `;
+        qrLoading.style.color = '#dc3545';
+      }
+    }
+    
+    // Function to close QR code modal
+    function closeQRModal() {
+      document.getElementById('qrModal').style.display = 'none';
+    }
+    
+    // FIXED print function
+    function printQRCode() {
+      // Add print timestamp
+      const timestampDiv = document.querySelector('.print-timestamp');
+      timestampDiv.innerHTML = `<p style="font-size: 12px; color: #666; margin-top: 15px;">Generated: ${new Date().toLocaleString()}</p>`;
+      timestampDiv.style.display = 'block';
+      
+      // Print only the modal content
+      window.print();
+      
+      // Hide timestamp after printing
+      setTimeout(() => {
+        timestampDiv.style.display = 'none';
+      }, 1000);
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('qrModal');
+      if (event.target === modal) {
+        closeQRModal();
+      }
+    }
+    
+    // Handle escape key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeQRModal();
+      }
+    });
+  </script>
 </body>
 </html>

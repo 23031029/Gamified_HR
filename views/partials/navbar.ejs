@@ -385,7 +385,19 @@
       .nav-item:nth-child(2) { animation-delay: 0.2s; }
       .nav-item:nth-child(3) { animation-delay: 0.3s; }
       .nav-item:nth-child(4) { animation-delay: 0.4s; }
-      .nav-item:nth-child(5) { animation-delay: 0.5s; }
+
+      #chatDot {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 12px;
+        height: 12px;
+        background: red;
+        border-radius: 50%;
+        display: none;
+        z-index: 10000;
+        border: 2px solid white;
+      }
     </style>
   </head>
   <body>
@@ -427,7 +439,7 @@
           <li class="nav-item">
             <a href="/admin/leaderboard" class="nav-link<%= currentPath === '/admin/leaderboard' ? ' active' : '' %>">
               <i class="fas fa-trophy"></i>
-              Leaderboard
+              Admin Leaderboard
             </a>
           </li>
           <li class="nav-item">
@@ -465,6 +477,12 @@
             <a href="/user/programs" class="nav-link<%= currentPath === '/user/programs' ? ' active' : '' %>">
               <i class="fas fa-calendar-alt"></i>
               Program
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/user/invites" class="nav-link<%= currentPath === '/user/invites' ? ' active' : '' %>">
+              <i class="fas fa-envelope-open-text"></i>
+              Invites
             </a>
           </li>
         <% } %>
@@ -559,18 +577,25 @@
           });
         });
       });
+    </script>
+    <script>
+      function checkUnreadMessages() {
+        fetch('/chat/unread-counts')
+          .then(response => response.json())
+          .then(data => {
+            const hasUnread = Object.values(data).some(count => count > 0);
+            const chatDot = document.getElementById('chatDot');
+            if (chatDot) {
+              chatDot.style.display = hasUnread ? 'block' : 'none';
+            }
+          })
+          .catch(err => console.error('Unread check failed', err));
+      }
 
-        function checkUnreadGlobally() {
-          fetch('/chat/unread-counts')
-            .then(res => res.json())
-            .then(counts => {
-              const hasUnread = Object.values(counts).some(count => count > 0);
-              document.getElementById('chatDot').style.display = hasUnread ? 'block' : 'none';
-            });
-        }
-
-        setInterval(checkUnreadGlobally, 5000); // Check every 5s
-        checkUnreadGlobally(); // Initial check
+      document.addEventListener('DOMContentLoaded', () => {
+        checkUnreadMessages(); // Check on page load
+        setInterval(checkUnreadMessages, 5000); // Check every 5 seconds
+      });
     </script>
   </body>
 </html>

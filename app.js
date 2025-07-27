@@ -36,6 +36,8 @@ const storage = multer.diskStorage({
     }
 });
 
+app.use('/images', express.static('public/images'));
+
 const upload = multer({ storage: storage });
 
 app.use(express.json());
@@ -144,6 +146,10 @@ app.get('/chat', checkAuthentication, nikiController.getChatPage);
 app.get('/chat/:to', checkAuthentication, nikiController.getMessages);
 app.post('/chat/send', checkAuthentication, nikiController.sendMessage);
 app.get('/chat/unread-counts', checkAuthentication, nikiController.getUnreadCounts);
+
+// Niki's invite routes
+app.post('/invite', checkAuthentication, nikiController.sendProgramInvite);
+app.get('/user/invites', checkAuthentication, checkUser, nikiController.viewInvites);
 
 // Alysha's program routes
 app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);

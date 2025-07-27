@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <meta charset="UTF-8">
   <title>Leaderboard</title>
   <link rel="stylesheet" type="text/css" href="/overall.css">
@@ -117,6 +119,16 @@
     .history-row {
       display: none;
     }
+
+    .gold-row, .silver-row, .bronze-row {
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+      50% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+      100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+    }
+
   </style>
 </head>
 <body>
@@ -154,34 +166,6 @@
             </td>
             <td><%= user.department_name %></td>
             <td class="points"><%= user.total_point %></td>
-            <% if (user.staffID === staffID) { %>
-              <td><button onclick="toggleHistory('<%= user.staffID %>')">📂</button></td>
-            <% } else { %>
-              <td></td>
-            <% } %>
-            </tr>
-
-            <% if (user.staffID === staffID) { %>
-            <tr id="history-<%= user.staffID %>" class="history-row">
-              <td colspan="6">
-                <div class="history-container">
-                  <% if (user.history && user.history.length > 0) { %>
-                    <ul class="timeline">
-                      <% user.history.forEach(entry => { %>
-                        <li>
-                          <span class="date"><%= new Date(entry.date).toLocaleDateString() %></span>
-                          <span class="points-change"><%= entry.points > 0 ? '🏅 +' + entry.points : '🎁 ' + entry.points %> pts</span>
-                          <span class="desc"><%= entry.source %> <small class="type">(<%= entry.type %>)</small></span>
-                        </li>
-                      <% }) %>
-                    </ul>
-                  <% } else { %>
-                    <p style="color: #888;">No point history available.</p>
-                  <% } %>
-                </div>
-              </td>
-            </tr>
-          <% } %>
         <% }) %>
       </tbody>
     </table>
@@ -197,6 +181,33 @@
       }
     }
   </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const currentUserID = "<%= staffID %>";
+      const topThreeIDs = [
+        "<%= leaderboard[0]?.staffID || '' %>",
+        "<%= leaderboard[1]?.staffID || '' %>",
+        "<%= leaderboard[2]?.staffID || '' %>"
+      ];
+
+      if (topThreeIDs.includes(currentUserID)) {
+        confetti({
+          particleCount: 120,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+
+        setTimeout(() => {
+          confetti({
+            particleCount: 80,
+            spread: 80,
+            origin: { y: 0.4 }
+          });
+        }, 500);
+      }
+    });
+  </script>
+
 </body>
 </html>
 

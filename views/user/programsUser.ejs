@@ -250,13 +250,19 @@
         grid-template-columns: 1fr;
       }
       
-      .program-actions {
-        flex-direction: column;
+      .timeslots-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
       }
-      
-      .btn {
-        width: 100%;
-      }
+    }
+
+    .highlighted-program {
+      animation: pulseHighlight 1.5s ease-in-out 3;
+    }
+
+    @keyframes pulseHighlight {
+      0% { box-shadow: 0 0 0px rgba(255, 193, 7, 0.7); }
+      50% { box-shadow: 0 0 20px rgba(255, 193, 7, 1); }
+      100% { box-shadow: 0 0 0px rgba(255, 193, 7, 0.7); }
     }
   </style>
 </head>
@@ -330,7 +336,7 @@
     <% } else { %>
       <div class="programs-grid">
         <% programs.forEach(program => { %>
-          <div class="program-card">
+          <div class="program-card" id="program-<%= program.ProgramID %>">
             <div class="program-header">
               <div class="program-title"><%= program.Title %></div>
               <div class="program-type"><%= program.Type %></div>
@@ -379,94 +385,180 @@
             </div>
 
             <div class="program-actions">
-              <form action="/user/programs" method="POST" id="join-form-<%= program.programID %>">
-                <input type="hidden" name="programID" value="<%= program.programID %>">
-                <input type="hidden" name="timeslotID" id="selected-timeslot-<%= program.programID %>">
-                <button type="submit" class="btn btn-primary" id="join-btn-<%= program.programID %>" disabled>
-                  <%= program.timeslots.length > 0 ? 'Select Time Slot' : 'Program Ended' %>
-                </button>
-              </form>
-              <a href="/programs/<%= program.programID %>" class="btn btn-secondary">View Details</a>
-              <button class="btn btn-secondary" onclick="openInviteModal('<%= program.programID %>')">Invite</button>
+            <button class="btn btn-secondary invite-btn" 
+                    disabled 
+                    onclick="openInviteModal('<%= program.ProgramID %>')">
+              Invite a Colleague
+            </button>
+              <% if (program.timeslots && program.timeslots.length > 0) { %>
+                <form action="/user/programs" method="POST" style="display:inline;" id="join-form-<%= program.ProgramID %>">
+                  <input type="hidden" name="programID" value="<%= program.ProgramID %>">
+                  <input type="hidden" name="timeslotID" value="" id="selected-timeslot-<%= program.ProgramID %>">
+                  <button type="submit" class="btn btn-primary" id="join-btn-<%= program.ProgramID %>" disabled>
+                    Select Time Slot
+                  </button>
+                </form>
+              <% } else { %>
+                <button class="btn btn-secondary" disabled>Program Ended</button>
+              <% } %>
             </div>
           </div>
         <% }); %>
       </div>
     <% } %>
   </div>
-
   <!-- Invite Modal -->
-  <div id="inviteModal" class="modal">
-    <div class="modal-content">
-      <h5>Invite a Colleague</h5>
-      <form id="inviteForm" method="POST" action="/invite">
-        <input type="hidden" name="programID" id="inviteProgramID">
-        <div class="form-group">
-          <label>Select Colleague</label>
-          <select name="receiverID" required>
-            <% coworkers.forEach(cw => { %>
-              <option value="<%= cw.staffID %>"><%= cw.name %> (<%= cw.department_name %>)</option>
-            <% }); %>
-          </select>
+  <div class="modal fade" id="inviteModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form id="inviteForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Invite a Colleague</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="form-group">
-          <label>Message</label>
-          <select name="message" required>
-            <option value="Hey! Let's attend this program together!">Hey! Let's attend this program together!</option>
-            <option value="I thought this program might interest you!">I thought this program might interest you!</option>
-            <option value="Wanna join me in this program?">Wanna join me in this program?</option>
-          </select>
+        <div class="modal-body">
+          <div class="form-check" style="max-height: 300px; overflow-y: auto;">
+            <% allStaff.forEach(user => { %>
+              <% if (user.staffID !== staff.staffID && user.role !== 'admin') { %>
+                <div>
+                  <input class="form-check-input" type="checkbox" name="invitees" value="<%= user.staffID %>" id="invite-<%= user.staffID %>">
+                  <label class="form-check-label" for="invite-<%= user.staffID %>">
+                    <%= user.first_name %> <%= user.last_name %>
+                  </label>
+                </div>
+              <% } %>
+            <% }) %>
+          </div>
+          <input type="hidden" id="inviteProgramID">
         </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeInviteModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Send Invite</button>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Send Invite</button>
         </div>
       </form>
     </div>
   </div>
 
   <script>
-    function openInviteModal(programID) {
-      document.getElementById('inviteModal').style.display = 'flex';
-      document.getElementById('inviteProgramID').value = programID;
-    }
+    document.addEventListener('DOMContentLoaded', function() {
+      // Handle timeslot selection
+      const timeslotItems = document.querySelectorAll('.timeslot-item');
 
-    function closeInviteModal() {
-      document.getElementById('inviteModal').style.display = 'none';
-    }
-
-    document.getElementById('inviteModal').addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeInviteModal();
-      }
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-      const items = document.querySelectorAll('.timeslot-item');
-      items.forEach(item => {
+      timeslotItems.forEach(item => {
         item.addEventListener('click', function () {
-          const pid = this.dataset.programId;
-          const tid = this.dataset.timeslotId;
+          const programId = this.dataset.programId;
+          const timeslotId = this.dataset.timeslotId;
           const date = this.dataset.date;
           const time = this.dataset.time;
           const duration = this.dataset.duration;
           const slots = this.dataset.slots;
 
-          document.querySelectorAll(`#timeslots-${pid} .timeslot-item`).forEach(el => el.classList.remove('selected'));
+          // Remove selection from other timeslots
+          document.querySelectorAll(`#timeslots-${programId} .timeslot-item`).forEach(slot => {
+            slot.classList.remove('selected');
+          });
+
+          // Add selection
           this.classList.add('selected');
 
-          document.getElementById(`selected-timeslot-${pid}`).value = tid;
-          document.getElementById(`selected-text-${pid}`).textContent = `${new Date(date).toDateString()} at ${time} (${duration} mins)`;
-          document.getElementById(`selected-info-${pid}`).style.display = 'block';
+          // Update hidden field
+          document.getElementById(`selected-timeslot-${programId}`).value = timeslotId;
 
-          const btn = document.getElementById(`join-btn-${pid}`);
-          btn.disabled = false;
-          btn.textContent = "Register Now";
+          // Update display
+          const selectedInfo = document.getElementById(`selected-info-${programId}`);
+          const selectedText = document.getElementById(`selected-text-${programId}`);
+          const formattedDate = new Date(date).toLocaleDateString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+          const formattedTime = time.substring(0, 5);
+          selectedText.textContent = `${formattedDate} at ${formattedTime} (${duration} mins, ${slots} slots available)`;
+          selectedInfo.style.display = 'block';
+
+          // ✅ Enable join button
+          const joinBtn = document.getElementById(`join-btn-${programId}`);
+          joinBtn.disabled = false;
+          joinBtn.textContent = 'Register Now';
+
+          // ✅ Enable invite button
+          const inviteBtn = document.querySelector(`#program-${programId} .invite-btn`);
+          if (inviteBtn) inviteBtn.disabled = false;
+        });
+      });
+
+      // Handle form submission
+      document.querySelectorAll('form[id^="join-form-"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          const programId = this.querySelector('input[name="programID"]').value;
+          const timeslotId = this.querySelector('input[name="timeslotID"]').value;
+          
+          if (!timeslotId) {
+            e.preventDefault();
+            alert('Please select a time slot first.');
+            return;
+          }
         });
       });
     });
   </script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    function openInviteModal(programID) {
+      const selectedTimeslot = document.querySelector(`.timeslot-item.selected[data-program-id="${programID}"]`);
+
+      if (!selectedTimeslot) {
+        alert("Please select a time slot first before inviting.");
+        return;
+      }
+
+      document.getElementById('inviteProgramID').value = programID;
+      new bootstrap.Modal(document.getElementById('inviteModal')).show();
+    }
+
+    document.getElementById('inviteForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const programID = document.getElementById('inviteProgramID').value;
+      const checkboxes = document.querySelectorAll('input[name="invitees"]:checked');
+      const inviteeIDs = Array.from(checkboxes).map(cb => cb.value);
+
+      if (inviteeIDs.length === 0) {
+        alert('Please select at least one colleague to invite.');
+        return;
+      }
+
+      fetch('/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ programID, inviteeIDs })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert(`Invited ${inviteeIDs.length} colleague(s)!`);
+        } else {
+          alert("Invite failed: " + data.message);
+        }
+      });
+    });
+  </script>
+
+  <script>
+    // Highlight invited program if URL has ?highlight=...
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const highlightID = urlParams.get('highlight');
+
+      if (highlightID) {
+        const targetCard = document.getElementById(`program-${highlightID}`);
+        if (targetCard) {
+          targetCard.classList.add('highlighted-program');
+          // Scroll into view if not visible
+          targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    });
+  </script>
 </body>
 </html>

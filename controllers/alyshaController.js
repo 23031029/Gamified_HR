@@ -449,29 +449,28 @@ exports.getProgramsUser = (req, res) => {
 
         const programs = Array.from(programsMap.values());
 
-        // Get coworkers for invite dropdown
-        db.query(coworkersQuery, [staffID], (err2, coworkers) => {
-            if (err2) {
-                return res.render('user/programsUser', {
-                    programs,
-                    coworkers: [],
-                    error: 'Error loading coworkers',
-                    messageP: null,
-                    currentPath: req.path
-                });
-            }
+        const staffQuery = `SELECT staffID, first_name, last_name FROM Staff WHERE staffID != ?`;
 
-            // Fix: Properly get flash messages
-            const successMessage = req.flash('successP');
-            const errorMessage = req.flash('errorP');
-
-            res.render('user/programsUser', {
-                programs,
-                coworkers,
-                error: errorMessage.length > 0 ? errorMessage[0] : null,
-                messageP: successMessage.length > 0 ? successMessage[0] : null,
-                currentPath: req.path
+        db.query(staffQuery, [staffID], (err2, staffResults) => {
+          if (err2) {
+            return res.render('user/programsUser', {
+              programs,
+              allStaff: [],
+              staff: req.session.staff,
+              error: err2,
+              messageP: req.flash('successP'),
+              currentPath: req.path
             });
+          }
+
+          res.render('user/programsUser', {
+            programs,
+            allStaff: staffResults,
+            staff: req.session.staff,
+            error: null,
+            messageP: req.flash('successP'),
+            currentPath: req.path
+          });
         });
     });
 };

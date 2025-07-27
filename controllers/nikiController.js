@@ -145,18 +145,46 @@ exports.getUserLeaderboard = (req, res) => {
 
   query += ' ORDER BY total_point DESC';
 
-  db.query(query, params, (err, results) => {
+  db.query(query, params, (err, leaderboard) => {
     if (err) return res.status(500).send('Error loading leaderboard');
 
-    res.render('user/leaderboard', {
-      leaderboard: results,
-      staffID,
-      filter,
-      currentPath: req.path
+    // Only fetch history for current user
+    const historyQuery = `
+      SELECT r.name AS source, r.points * -1 AS points, re.Redeem_Date AS date, 'Redeem' AS type
+      FROM Redeem re
+      JOIN Reward r ON re.RewardID = r.RewardID
+      WHERE re.staffID = ?
+      
+      UNION
+
+      SELECT p.Title AS source, p.points_reward AS points, t.Date AS date, 'Program' AS type
+      FROM staff_program sp
+      JOIN Program p ON sp.programID = p.ProgramID
+      JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+      WHERE sp.Status = 'Completed' AND sp.staffID = ?
+
+      ORDER BY date DESC
+    `;
+
+    db.query(historyQuery, [staffID, staffID], (err2, history) => {
+      if (err2) return res.status(500).send('Error loading point history');
+
+      // Attach history only to the current user
+      leaderboard.forEach(user => {
+        if (user.staffID === staffID) {
+          user.history = history;
+        }
+      });
+
+      res.render('user/leaderboard', {
+        leaderboard,
+        staffID,
+        filter,
+        currentPath: req.path
+      });
     });
   });
 };
-
 
 // =========================
 // ADMIN LEADERBOARD
@@ -165,7 +193,7 @@ exports.getAdminLeaderboard = (req, res) => {
   const staffID = req.session.staff.staffID;
   const filter = req.query.filter || 'all';
 
-  let query = `
+  let leaderboardQuery = `
     SELECT staffID, CONCAT(first_name, ' ', last_name) AS name, profile_image, department.name AS department_name, total_point
     FROM staff
     JOIN department ON staff.department = department.departmentID
@@ -173,24 +201,67 @@ exports.getAdminLeaderboard = (req, res) => {
   const params = [];
 
   if (filter === 'department') {
-    query += ' WHERE department.departmentID = (SELECT department FROM staff WHERE staffID = ?)';
+    leaderboardQuery += ' WHERE department.departmentID = (SELECT department FROM staff WHERE staffID = ?)';
     params.push(staffID);
   }
 
-  query += ' ORDER BY total_point DESC';
+  leaderboardQuery += ' ORDER BY total_point DESC';
 
-  db.query(query, params, (err, results) => {
+  db.query(leaderboardQuery, params, async (err, leaderboard) => {
     if (err) return res.status(500).send('Error loading leaderboard');
 
+    const getPointHistory = (staffID) => {
+      return new Promise((resolve, reject) => {
+        const sql = `
+          SELECT 
+            sp.staffID,
+            t.Date AS date,
+            p.Title AS source,
+            p.points_reward AS points,
+            'Program' AS type
+          FROM staff_program sp
+          JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+          JOIN Program p ON sp.programID = p.ProgramID
+          WHERE sp.staffID = ? AND sp.Status = 'Completed'
+
+          UNION
+
+          SELECT 
+            r.staffID,
+            re.Redeem_Date AS date,
+            rw.name AS source,
+            -rw.points AS points,
+            'Redeem' AS type
+          FROM Redeem re
+          JOIN Reward rw ON re.RewardID = rw.RewardID
+          JOIN Staff r ON re.staffID = r.staffID
+          WHERE re.staffID = ?
+          
+          ORDER BY date DESC
+        `;
+        db.query(sql, [staffID, staffID], (err2, result) => {
+          if (err2) return reject(err2);
+          resolve(result);
+        });
+      });
+    };
+
+    // Map each leaderboard user to their point history
+    const leaderboardWithHistory = await Promise.all(
+      leaderboard.map(async (user) => {
+        const history = await getPointHistory(user.staffID);
+        return { ...user, history };
+      })
+    );
+
     res.render('admin/leaderboard', {
-      leaderboard: results,
+      leaderboard: leaderboardWithHistory,
       staffID,
       filter,
       currentPath: req.path
     });
   });
 };
-
 
 exports.viewProgramFeedback = (req, res) => {
   const { programID } = req.params;
@@ -288,33 +359,231 @@ exports.submitFeedback = (req, res) => {
   });
 };
 
-// =========================
-// CHATTING FUNCTION
-// =========================
+exports.exportFeedbackData = (req, res) => {
+  const { programID } = req.query; // for optional filtering
 
-exports.sendInvite = (req, res) => {
-  const senderID = req.session.staff?.staffID;
-  const { receiverID, programID, message } = req.body;
+  let query = `
+    SELECT pf.FeedbackID, 
+           CONCAT(s.first_name, ' ', s.last_name) AS StaffName,
+           p.Title AS ProgramTitle,
+           pf.Rating, 
+           pf.Comments, 
+           pf.Submitted_Date
+    FROM Program_Feedback pf
+    JOIN Staff s ON pf.staffID = s.staffID
+    JOIN Program p ON pf.ProgramID = p.ProgramID
+  `;
+  const params = [];
 
-  if (!senderID || !receiverID || !programID || !message) {
-    req.flash('errorP', 'Missing invite fields');
-    return res.redirect('/user/programs');
+  if (programID) {
+    query += ` WHERE pf.ProgramID = ?`;
+    params.push(programID);
   }
 
-  const sql = `
-    INSERT INTO Invitations (senderID, receiverID, programID, message)
-    VALUES (?, ?, ?, ?)
-  `;
+  query += ` ORDER BY pf.Submitted_Date DESC`;
 
-  db.query(sql, [senderID, receiverID, programID, message], (err) => {
+  db.query(query, async (err, results) => {
     if (err) {
-      console.error("Invite Insert Error:", err);
-      req.flash('errorP', 'Could not send invite');
-      return res.redirect('/user/programs');
+      console.error("Error exporting feedback:", err);
+      return res.status(500).send("Error generating Excel file");
     }
 
-    req.flash('messageP', 'Invite sent successfully!');
-    res.redirect('/user/programs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Program Feedback");
+
+    worksheet.columns = [
+      { header: "Feedback ID", key: "FeedbackID", width: 12 },
+      { header: "Staff Name", key: "StaffName", width: 25 },
+      { header: "Program Title", key: "ProgramTitle", width: 25 },
+      { header: "Rating", key: "Rating", width: 10 },
+      { header: "Comments", key: "Comments", width: 40 },
+      { header: "Submitted Date", key: "Submitted_Date", width: 15 },
+    ];
+
+    worksheet.addRows(results);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${programID ? 'feedback_' + programID : 'all_feedback'}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  });
+};
+
+exports.exportAdminDashboard = async (req, res) => {
+  const ExcelJS = require("exceljs");
+  const workbook = new ExcelJS.Workbook();
+
+  try {
+    // 1. STAFF SHEET
+    const staffSheet = workbook.addWorksheet("Staff Details");
+    const staffSql = `SELECT s.staffID, CONCAT(s.first_name, ' ', s.last_name) AS Name, s.email, s.gender, s.role, d.name AS Department, s.date_join, s.status, s.total_point FROM staff s JOIN department d ON s.department = d.departmentID`;
+    const [staffRows] = await db.promise().query(staffSql);
+    staffSheet.columns = [
+      { header: "Staff ID", key: "staffID", width: 10 },
+      { header: "Name", key: "Name", width: 20 },
+      { header: "Email", key: "email", width: 25 },
+      { header: "Gender", key: "gender", width: 10 },
+      { header: "Role", key: "role", width: 10 },
+      { header: "Department", key: "Department", width: 20 },
+      { header: "Date Joined", key: "date_join", width: 15 },
+      { header: "Status", key: "status", width: 10 },
+      { header: "Total Points", key: "total_point", width: 12 },
+    ];
+    staffSheet.addRows(staffRows);
+
+    // 2. POPULAR PROGRAMS SHEET
+    const programSheet = workbook.addWorksheet("Popular Programs");
+    const [programRows] = await db.promise().query(`
+      SELECT p.Title AS Program, ROUND(AVG(f.Rating), 2) AS AvgRating
+      FROM Program p
+      JOIN Program_Feedback f ON p.ProgramID = f.ProgramID
+      GROUP BY p.Title
+      ORDER BY AvgRating DESC
+    `);
+    programSheet.columns = [
+      { header: "Program Title", key: "Program", width: 30 },
+      { header: "Average Rating", key: "AvgRating", width: 15 },
+    ];
+    programSheet.addRows(programRows);
+
+    // 3. REDEEMED REWARDS SHEET
+    const rewardsSheet = workbook.addWorksheet("Redeemed Rewards");
+    const [rewardRows] = await db.promise().query(`
+      SELECT r.name AS Reward, COUNT(*) AS RedeemedCount
+      FROM Redeem re
+      JOIN Reward r ON re.RewardID = r.RewardID
+      GROUP BY r.name
+      ORDER BY RedeemedCount DESC
+    `);
+    rewardsSheet.columns = [
+      { header: "Reward Name", key: "Reward", width: 30 },
+      { header: "Redeemed Count", key: "RedeemedCount", width: 15 },
+    ];
+    rewardsSheet.addRows(rewardRows);
+
+    // 4. ACTIVE DEPARTMENTS SHEET
+    const activeDeptSheet = workbook.addWorksheet("Active Departments");
+    const [activeDeptRows] = await db.promise().query(`
+      SELECT d.name AS Department, COUNT(*) AS ParticipationCount
+      FROM staff_program sp
+      JOIN staff s ON sp.staffID = s.staffID
+      JOIN department d ON s.department = d.departmentID
+      JOIN timeslot t ON sp.timeslotID = t.timeslotID
+      WHERE MONTH(t.Date) = MONTH(CURDATE())
+        AND YEAR(t.Date) = YEAR(CURDATE())
+      GROUP BY d.name
+      ORDER BY ParticipationCount DESC
+    `);
+    activeDeptSheet.columns = [
+      { header: "Department", key: "Department", width: 25 },
+      { header: "Participation Count", key: "ParticipationCount", width: 20 },
+    ];
+    activeDeptSheet.addRows(activeDeptRows);
+
+    // 5. PARTICIPANT TRENDS SHEET
+    const trendsSheet = workbook.addWorksheet("Monthly Participation");
+    const [trendRows] = await db.promise().query(`
+      SELECT DATE_FORMAT(t.Date, '%Y-%m') AS Month, COUNT(*) AS Participants
+      FROM staff_program sp
+      JOIN timeslot t ON sp.timeslotID = t.timeslotID
+      WHERE sp.Status = 'Completed'
+      GROUP BY Month
+      ORDER BY Month
+    `);
+    trendsSheet.columns = [
+      { header: "Month", key: "Month", width: 15 },
+      { header: "No. of Participants", key: "Participants", width: 20 },
+    ];
+    trendsSheet.addRows(trendRows);
+
+    // Send the file
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", "attachment; filename=admin_dashboard_data.xlsx");
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (err) {
+    console.error("Export Error:", err);
+    res.status(500).send("Error generating Excel file");
+  }
+};
+
+// =========================
+// CHAT FEATURE
+// =========================
+
+exports.getChatPage = (req, res) => {
+  const staffID = req.session.staff.staffID;
+
+  const staffQuery = `SELECT staffID, CONCAT(first_name, ' ', last_name) AS name FROM Staff WHERE staffID != ?`;
+  db.query(staffQuery, [staffID], (err, staffList) => {
+    if (err) return res.status(500).send("Error loading staff list");
+
+    res.render('user/chat', { staffList, currentPath: req.path });
+  });
+};
+
+exports.getMessages = (req, res) => {
+  const { to } = req.params;
+  const from = req.session.staff.staffID;
+
+  const query = `
+    SELECT * FROM Messages
+    WHERE (senderID = ? AND receiverID = ?)
+       OR (senderID = ? AND receiverID = ?)
+    ORDER BY sent_at ASC
+  `;
+
+  db.query(query, [from, to, to, from], (err, results) => {
+    if (err) return res.status(500).json({ success: false });
+
+    // 🟢 Mark incoming messages as read
+    const markAsReadQuery = `
+      UPDATE Messages
+      SET is_read = 1
+      WHERE senderID = ? AND receiverID = ? AND is_read = 0
+    `;
+    db.query(markAsReadQuery, [to, from], () => {});
+
+    res.json(results);
+  });
+};
+
+exports.sendMessage = (req, res) => {
+  const { receiverID, content } = req.body;
+  const senderID = req.session.staff.staffID;
+
+  const query = `INSERT INTO Messages (senderID, receiverID, content) VALUES (?, ?, ?)`;
+  db.query(query, [senderID, receiverID, content], (err) => {
+    if (err) return res.status(500).json({ success: false });
+    res.json({ success: true });
+  });
+};
+
+exports.getUnreadCounts = (req, res) => {
+  const staffID = req.session.staff.staffID;
+
+  const query = `
+    SELECT senderID, COUNT(*) AS unreadCount
+    FROM Messages
+    WHERE receiverID = ? AND is_read = 0
+    GROUP BY senderID
+  `;
+
+  db.query(query, [staffID], (err, rows) => {
+    if (err) return res.json({});
+    const counts = {};
+    rows.forEach(row => {
+      counts[row.senderID] = row.unreadCount;
+    });
+    res.json(counts);
   });
 };
 

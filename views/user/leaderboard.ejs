@@ -113,6 +113,10 @@
       0% { transform: scale(0.95); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
+
+    .history-row {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -150,11 +154,49 @@
             </td>
             <td><%= user.department_name %></td>
             <td class="points"><%= user.total_point %></td>
-          </tr>
+            <% if (user.staffID === staffID) { %>
+              <td><button onclick="toggleHistory('<%= user.staffID %>')">📂</button></td>
+            <% } else { %>
+              <td></td>
+            <% } %>
+            </tr>
+
+            <% if (user.staffID === staffID) { %>
+            <tr id="history-<%= user.staffID %>" class="history-row">
+              <td colspan="6">
+                <div class="history-container">
+                  <% if (user.history && user.history.length > 0) { %>
+                    <ul class="timeline">
+                      <% user.history.forEach(entry => { %>
+                        <li>
+                          <span class="date"><%= new Date(entry.date).toLocaleDateString() %></span>
+                          <span class="points-change"><%= entry.points > 0 ? '🏅 +' + entry.points : '🎁 ' + entry.points %> pts</span>
+                          <span class="desc"><%= entry.source %> <small class="type">(<%= entry.type %>)</small></span>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } else { %>
+                    <p style="color: #888;">No point history available.</p>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% } %>
         <% }) %>
       </tbody>
     </table>
   </div>
+
+  <script>
+    function toggleHistory(id) {
+      const row = document.getElementById(`history-${id}`);
+      if (row.style.display === "none" || row.style.display === "") {
+        row.style.display = "table-row";
+      } else {
+        row.style.display = "none";
+      }
+    }
+  </script>
 </body>
 </html>
 

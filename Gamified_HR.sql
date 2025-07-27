@@ -131,7 +131,8 @@ INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility
 INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) VALUES
 ('P003', '2025-07-12', '14:00:00', 120, 10), -- original
 ('P003', '2025-07-12', '09:00:00', 120, 12), -- same day, earlier time
-('P003', '2025-07-19', '14:00:00', 120, 10); -- same time, different date
+('P003', '2025-07-19', '14:00:00', 120, 10), -- same time, different date
+('P003', '2025-07-28', '10:00:00', 90, 10);
 
 -- P004: Yoga & Mindfulness
 INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) VALUES
@@ -153,6 +154,7 @@ CREATE TABLE staff_program (
     programID VARCHAR(10) NOT NULL,
     timeslotID INT NOT NULL,
     `Status` CHAR(30) NOT NULL,
+    feedbackSubmitted BOOLEAN DEFAULT 0,
     FOREIGN KEY (staffID) REFERENCES Staff(staffID),
     FOREIGN KEY (programID) REFERENCES Program(ProgramID),
     FOREIGN KEY (timeslotID) REFERENCES Timeslot(timeslotID)
@@ -205,3 +207,27 @@ INSERT INTO Program_Feedback (FeedbackID, staffID, ProgramID, Rating, Comments, 
 (7, 'S004', 'P005', 4.0, 'Useful content for cybersecurity basics.', '2024-08-18'),
 (8, 'S001', 'P005', 4.5, 'Enjoyed the lessons, learned a lot.', '2024-08-22');
  
+CREATE TABLE Messages (
+  messageID INT AUTO_INCREMENT PRIMARY KEY,
+  senderID VARCHAR(10) NOT NULL,
+  receiverID VARCHAR(10) NOT NULL,
+  content TEXT NOT NULL,
+  sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_read BOOLEAN DEFAULT 0,
+  FOREIGN KEY (senderID) REFERENCES Staff(staffID),
+  FOREIGN KEY (receiverID) REFERENCES Staff(staffID)
+);
+
+CREATE TABLE Program_Invite (
+  InviteID INT AUTO_INCREMENT PRIMARY KEY,
+  InviterID VARCHAR(10) NOT NULL,
+  InviteeID VARCHAR(10) NOT NULL,
+  ProgramID VARCHAR(10) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_invite (InviterID, InviteeID, ProgramID),
+  FOREIGN KEY (InviterID) REFERENCES Staff(staffID),
+  FOREIGN KEY (InviteeID) REFERENCES Staff(staffID),
+  FOREIGN KEY (ProgramID) REFERENCES Program(ProgramID)
+);
+
+

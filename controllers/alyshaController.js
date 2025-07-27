@@ -141,11 +141,28 @@ exports.getProgramsUser = (req, res) => {
 
         const programs = Array.from(programsMap.values());
 
-        res.render('user/programsUser', {
+        const staffQuery = `SELECT staffID, first_name, last_name FROM Staff WHERE staffID != ?`;
+
+        db.query(staffQuery, [staffID], (err2, staffResults) => {
+          if (err2) {
+            return res.render('user/programsUser', {
+              programs,
+              allStaff: [],
+              staff: req.session.staff,
+              error: err2,
+              messageP: req.flash('successP'),
+              currentPath: req.path
+            });
+          }
+
+          res.render('user/programsUser', {
             programs,
+            allStaff: staffResults,
+            staff: req.session.staff,
             error: null,
             messageP: req.flash('successP'),
             currentPath: req.path
+          });
         });
     });
 };

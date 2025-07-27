@@ -52,6 +52,23 @@ const getUserDashboard = (req, res) => {
     WHERE re.staffID = ?
   `;
 
+  const pointHistoryQuery = `
+    SELECT r.name AS source, r.points * -1 AS points, re.Redeem_Date AS date, 'Spent' AS type
+    FROM Redeem re
+    JOIN Reward r ON re.RewardID = r.RewardID
+    WHERE re.staffID = ?
+
+    UNION
+
+    SELECT p.Title AS source, p.points_reward AS points, t.Date AS date, 'Earned' AS type
+    FROM staff_program sp
+    JOIN Program p ON sp.programID = p.ProgramID
+    JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+    WHERE sp.Status = 'Completed' AND sp.staffID = ?
+
+    ORDER BY date DESC
+  `;
+
   db.query(userInfoQuery, [staffID], (err, userResults) => {
     if (err) return res.status(500).send("Error fetching user info");
     const user = userResults[0];
@@ -68,27 +85,32 @@ const getUserDashboard = (req, res) => {
           db.query(totalSpentQuery, [staffID], (err, spentResult) => {
             if (err) return res.status(500).send("Error fetching points spent");
 
-            const spent = Number(spentResult[0]?.total_spent) || 0;
-            const balance = Number(user.total_point) || 0;
-            const earned = balance + spent;
+            db.query(pointHistoryQuery, [staffID, staffID], (err, pointHistory) => {
+              if (err) return res.status(500).send("Error fetching point history");
 
-            res.render('user/dashboard', {
-              user,
-              upcomingPrograms: upcomingResults,
-              ongoingPrograms: ongoingResults,
-              rewards: rewardResults,
-              points: {
-                earned,
-                spent,
-                balance
-              },
-              currentPath: req.path
-            });
-          });
-        });
-      });
-    });
-  });
+              const spent = Number(spentResult[0]?.total_spent) || 0;
+              const balance = Number(user.total_point) || 0;
+              const earned = balance + spent;
+
+              res.render('user/dashboard', {
+                user,
+                upcomingPrograms: upcomingResults,
+                ongoingPrograms: ongoingResults,
+                rewards: rewardResults,
+                points: {
+                  earned,
+                  spent,
+                  balance
+                },
+                pointHistory,
+                currentPath: req.path
+              });
+            }); // ← closed pointHistoryQuery
+          }); // ← closed totalSpentQuery
+        }); // ← closed redeemedRewardsQuery
+      }); // ← closed registeredProgramsQuery
+    }); // ← closed upcomingProgramsQuery
+  }); // ← closed userInfoQuery
 };
 
 // =========================
@@ -489,7 +511,11 @@ exports.exportAdminDashboard = async (req, res) => {
 exports.getChatPage = (req, res) => {
   const staffID = req.session.staff.staffID;
 
-  const staffQuery = `SELECT staffID, CONCAT(first_name, ' ', last_name) AS name FROM Staff WHERE staffID != ?`;
+  const staffQuery = `
+    SELECT staffID, CONCAT(first_name, ' ', last_name) AS name, profile_image
+    FROM Staff
+    WHERE staffID != ?
+  `;
   db.query(staffQuery, [staffID], (err, staffList) => {
     if (err) return res.status(500).send("Error loading staff list");
 
@@ -535,22 +561,80 @@ exports.sendMessage = (req, res) => {
 };
 
 exports.getUnreadCounts = (req, res) => {
-  const staffID = req.session.staff.staffID;
+  const currentUser = req.session.staff?.staffID;
 
-  const query = `
-    SELECT senderID, COUNT(*) AS unreadCount
+  if (!currentUser) return res.status(401).json({ error: 'Not logged in' });
+
+  const sql = `
+    SELECT senderID, COUNT(*) as unreadCount
     FROM Messages
     WHERE receiverID = ? AND is_read = 0
     GROUP BY senderID
   `;
 
-  db.query(query, [staffID], (err, rows) => {
-    if (err) return res.json({});
+  db.query(sql, [currentUser], (err, results) => {
+    if (err) return res.status(500).json({ error: 'DB error' });
+
     const counts = {};
-    rows.forEach(row => {
+    results.forEach(row => {
       counts[row.senderID] = row.unreadCount;
     });
-    res.json(counts);
+
+    res.json(counts); // example: { S002: 3, S004: 1 }
+  });
+};
+
+
+// =========================
+// INVITE FEATURE
+// =========================
+
+exports.sendProgramInvite = (req, res) => {
+  const inviterID = req.session.staff.staffID;
+  const { inviteeIDs, programID } = req.body;
+
+  let invitees = Array.isArray(inviteeIDs) ? inviteeIDs : [inviteeIDs];
+
+  invitees = invitees.filter(id => id !== inviterID);
+
+  if (invitees.length === 0) {
+    return res.json({ success: false, message: "No valid invitees selected." });
+  }
+
+  const values = invitees.map(id => [inviterID, id, programID]);
+
+  const query = `INSERT IGNORE INTO Program_Invite (InviterID, InviteeID, ProgramID) VALUES ?`;
+
+  db.query(query, [values], (err, result) => {
+    if (err) return res.json({ success: false, message: "Database error" });
+    res.json({ success: true, invitedCount: result.affectedRows });
+  });
+};
+
+exports.viewInvites = (req, res) => {
+  const staffID = req.session.staff.staffID;
+
+  const query = `
+    SELECT pi.*, 
+           p.Title, 
+           CONCAT(s.first_name, ' ', s.last_name) AS inviter_name
+    FROM Program_Invite pi
+    JOIN Program p ON pi.ProgramID = p.ProgramID
+    JOIN Staff s ON pi.InviterID = s.staffID
+    WHERE pi.InviteeID = ?
+    ORDER BY pi.created_at DESC
+  `;
+
+  db.query(query, [staffID], (err, invites) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Error loading invites");
+    }
+
+    res.render('user/invites', {
+      invites,
+      currentPath: req.path
+    });
   });
 };
 

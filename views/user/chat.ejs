@@ -66,38 +66,58 @@
         margin-left: 6px;
         vertical-align: middle;
     }
+    .red-dot {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 12px;
+      height: 12px;
+      background-color: red;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
   </style>
 </head>
 <body>
   <%- include('../partials/navbar.ejs') %>
 
   <div class="container chat-container">
-    <div class="chat-header">💬 Direct Message</div>
+    <div class="chat-header">💬 CASUGOL Chat</div>
 
-    <select id="receiverSelect" class="form-select">
+    <div class="d-flex flex-wrap gap-3 mb-4" id="userCards">
       <% staffList.forEach(user => { %>
-        <option value="<%= user.staffID %>" data-userid="<%= user.staffID %>">
-          <%= user.name %>
-        </option>
+        <div class="card user-card p-2 text-center" data-userid="<%= user.staffID %>" style="width: 100px; cursor: pointer;">
+          <div class="position-relative d-inline-block">
+            <img src="/images/<%= user.profile_image || 'default.png' %>" 
+                onerror="this.src='/images/default.png'"
+                alt="Profile"
+                class="rounded-circle mb-2" 
+                style="width: 60px; height: 60px; object-fit: cover;">
+            <span class="red-dot d-none"></span> <!-- hidden by default -->
+          </div>
+          <div style="font-size: 0.85rem;"><%= user.name %></div>
+        </div>
       <% }) %>
-    </select>
+    </div>
 
-    <div id="chatBox"></div>
+    <div id="chatSection" style="display: none;">
+      <div id="chatBox"></div>
 
-    <form id="sendForm" class="chat-form">
-      <input type="text" id="messageInput" class="form-control" placeholder="Type your message..." required />
-      <button type="submit" class="btn btn-success">Send</button>
-    </form>
-  </div>
+      <form id="sendForm" class="chat-form">
+        <input type="text" id="messageInput" class="form-control" placeholder="Type your message..." required />
+        <button type="submit" class="btn btn-success">Send</button>
+      </form>
+    </div>
 
   <script>
-    const receiverSelect = document.getElementById('receiverSelect');
+    let selectedUserId = null;
     const chatBox = document.getElementById('chatBox');
     const messageInput = document.getElementById('messageInput');
 
+    // Load messages from server
     function loadMessages() {
-      const to = receiverSelect.value;
-      fetch(`/chat/${to}`)
+      if (!selectedUserId) return;
+      fetch(`/chat/${selectedUserId}`)
         .then(res => res.json())
         .then(messages => {
           chatBox.innerHTML = messages.map(m =>
@@ -107,36 +127,59 @@
         });
     }
 
+    // Update unread message badges
     function updateUnreadCounts() {
       fetch('/chat/unread-counts')
         .then(res => res.json())
         .then(counts => {
-            Array.from(receiverSelect.options).forEach(option => {
-            const userId = option.value;
-            const name = option.textContent.replace(/\s*\(\d+\)$/, ''); // Clean previous badge
+          document.querySelectorAll('.user-card').forEach(card => {
+            const userId = card.dataset.userid;
             const count = counts[userId] || 0;
 
+            const badge = card.querySelector('.unread-badge');
+            const dot = card.querySelector('.red-dot');
+
+            if (badge) badge.remove();
+            if (dot) dot.classList.add('d-none');
+
             if (count > 0) {
-                option.textContent = `${name} (${count})`; // or use 🟥 or 🔴
-            } else {
-                option.textContent = name;
+              // Badge (optional number)
+              const newBadge = document.createElement('span');
+              newBadge.className = 'unread-badge';
+              newBadge.textContent = count;
+              card.querySelector('div:last-child').appendChild(newBadge);
+
+              // Show red dot on image
+              if (dot) dot.classList.remove('d-none');
             }
-            });
+          });
         });
     }
 
-    receiverSelect.addEventListener('change', () => {
-      loadMessages();
-      updateUnreadCounts();
+    // Handle card click
+    document.querySelectorAll('.user-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selectedUserId = card.dataset.userid;
+        document.getElementById('chatSection').style.display = 'block';
+        loadMessages();
+        updateUnreadCounts();
+
+        // Highlight selected card
+        document.querySelectorAll('.user-card').forEach(c => c.classList.remove('border', 'border-primary'));
+        card.classList.add('border', 'border-primary');
+      });
     });
 
+    // Send message
     document.getElementById('sendForm').addEventListener('submit', e => {
       e.preventDefault();
+      if (!selectedUserId) return;
+
       fetch('/chat/send', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          receiverID: receiverSelect.value,
+          receiverID: selectedUserId,
           content: messageInput.value
         })
       }).then(() => {
@@ -145,13 +188,14 @@
       });
     });
 
+    // Polling every 3s
     setInterval(() => {
       loadMessages();
       updateUnreadCounts();
     }, 3000);
 
-    loadMessages();
     updateUnreadCounts();
   </script>
+
 </body>
 </html>

@@ -148,6 +148,118 @@
       }
     }
 
+    .progress-container {
+      margin: 20px 0;
+    }
+
+    .progress-bar {
+      height: 25px;
+      background-color: #e0e0e0;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #C6D537, #A3AEB1);
+      width: 0%;
+      transition: width 1s ease-in-out;
+    }
+
+    .milestone-dot {
+      position: absolute;
+      top: -40px;
+      transform: translateX(-50%);
+      text-align: center;
+      font-size: 11px;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: max-content;
+      min-width: 30px;
+      pointer-events: none;
+    }
+
+    .milestone-dot::before {
+      content: '';
+      display: block;
+      width: 12px;
+      height: 12px;
+      margin-bottom: 4px;
+      border-radius: 50%;
+      background-color: #bbb;
+      border: 2px solid #fff;
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+      transition: background-color 0.3s ease;
+    }
+
+    .milestone-dot.reached::before {
+      background-color: #4CAF50;
+    }
+
+    .milestone-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #666;
+      padding: 0 5px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #C6D537, #A3AEB1);
+      width: 0%;
+      transition: width 1s ease-in-out;
+    }
+
+    .points-box.balance {
+      background: #c8d83d;
+      color: #222;
+      cursor: pointer;
+      transition: background-color 0.3s ease, opacity 0.3s ease;
+    }
+
+    .points-box.balance:hover {
+      opacity: 0.85;
+    }
+
+    .collapsible {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s ease, opacity 0.4s ease;
+      opacity: 0;
+    }
+
+    .collapsible.open {
+      max-height: 800px; /* large enough to show full content */
+      opacity: 1;
+    }
+
+    @keyframes glow-shine {
+      0% {
+        box-shadow: 0 0 0px rgba(198, 213, 55, 0.0);
+        background-color: #c8d83d;
+      }
+      30% {
+        box-shadow: 0 0 20px rgba(198, 213, 55, 0.6);
+        background-color: #d9e863;
+      }
+      70% {
+        box-shadow: 0 0 20px rgba(198, 213, 55, 0.8);
+        background-color: #e9f48c;
+      }
+      100% {
+        box-shadow: 0 0 0px rgba(198, 213, 55, 0.0);
+        background-color: #c8d83d;
+      }
+    }
+
+    .glow-animate {
+      animation: glow-shine 3s ease-in-out;
+    }
+    
   </style>
 </head>
 <body>
@@ -155,68 +267,82 @@
 
   <div class="container">
 
-    <!-- Points Summary -->
+    <!-- Current Points -->
+    <div class="points-box balance toggle-history-box" style="width: 100%; max-width: 400px; margin: 0 auto 20px;">
+      <h2 style="font-size: 32px;"> <%= points.balance %> pts</h2>
+      <p>Current Points</p>
+      <small style="font-size: 12px; opacity: 0.5;">Click to view history</small>
+    </div>
+
+    <!-- Point History Table -->
+    <div class="card collapsible" id="points-history-card">
+      <div class="section-header">Points History</div>
+      <% if (pointHistory && pointHistory.length > 0) { %>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Date</th>
+              <th style="text-align: left;">Type</th>
+              <th style="text-align: left;">Source</th>
+              <th style="text-align: right;">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% pointHistory.forEach(entry => { %>
+              <tr>
+                <td><%= new Date(entry.date).toLocaleDateString() %></td>
+                <td><%= entry.type %></td>
+                <td><%= entry.source %></td>
+                <td style="text-align: right; color: <%= entry.points > 0 ? 'green' : 'red' %>;">
+                  <%= entry.points > 0 ? '+' : '' %><%= entry.points %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>No history available.</p>
+      <% } %>
+    </div>
+
+
+    <!-- Milestone Tracker (Simplified) -->
+     <%
+      const milestones = [
+        { value: 500, bonus: 10 },
+        { value: 1000, bonus: 20 },
+        { value: 1500, bonus: 30 },
+        { value: 2000, bonus: 40 },
+        { value: 2500, bonus: 50 },
+        { value: 3000, bonus: 60 }
+      ];
+    %>
+    <% 
+      const currentPoints = points.balance;
+      const progressPercentage = Math.min(currentPoints / 3000 * 100, 100).toFixed(1);
+    %>
     <div class="card">
-      <div class="points-row">
-        <div class="points-box earned">
-          <h2><%= points.earned %></h2>
-          <p>Total Points Earned</p>
+      <div class="section-header">Milestone Progress</div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: <%= progressPercentage %>%;"></div>
         </div>
-        <div class="points-box spent">
-          <h2><%= points.spent %></h2>
-          <p>Total Points Spent</p>
+        <div class="milestone-labels">
+          <span>0</span>
+          <span>500</span>
+          <span>1000</span>
+          <span>1500</span>
+          <span>2000</span>
+          <span>2500</span>
+          <span>3000</span>
         </div>
-        <div class="points-box balance">
-          <h2><%= points.balance %></h2>
-          <p>Current Balance</p>
-        </div>
+        <p style="text-align:center; margin-top: 10px;">
+          Progress: <%= currentPoints %> / 3000 pts (<%= progressPercentage %>%)
+        </p>
       </div>
     </div>
 
-    <!-- Milestone Tracker -->
-    <% const currentPoints = points.balance; %>
-    <% const streaks = [
-      { threshold: 50, reward: 5 },
-      { threshold: 1000, reward: 10 },
-      { threshold: 1500, reward: 15 },
-      { threshold: 2000, reward: 20 },
-      { threshold: 2500, reward: 25 },
-      { threshold: 3000, reward: 30 }
-    ]; %>
 
-    <div class="card streak-box">
-      <div class="section-header">Milestone Tracker</div>
-      <div class="streak-track">
-        <% streaks.forEach(streak => { %>
-          <div class="streak-item">
-            <div class="circle <%= currentPoints >= streak.threshold ? 'checked' : '' %>">
-              <%= currentPoints >= streak.threshold ? '✓' : '' %>
-            </div>
-            <div class="streak-text">
-              <strong>+<%= streak.reward %>pts</strong><br />
-              <%= streak.threshold %>pts
-            </div>
-          </div>
-        <% }); %>
-      </div>
-    </div>
-
-    <div style="margin: 20px 0;">
-      <div style="width: 100%; background: #e0e0e0; border-radius: 20px; overflow: hidden; height: 25px;">
-        <div 
-          style="
-            height: 100%;
-            background: linear-gradient(90deg, #C6D537, #A3AEB1);
-            width: 0%;
-            animation: growBar 1s ease forwards;
-          "
-          data-target="<%= progressWidth %>%"
-        ></div>
-      </div>
-      <p style="font-size: 0.9em; margin-top: 5px; text-align:center;">
-        Progress: <%= points.balance %> / 3000 pts
-      </p>
-    </div>
 
     <!-- Your Programs -->
     <div class="card">
@@ -271,31 +397,46 @@
         </div>
       </div>
     </div>
-
-    <!-- Reward Suggestions -->
-    <% if (rewards && rewards.length) { 
-      const nearby = rewards.filter(r => r.points <= currentPoints + 100 && r.points > currentPoints);
-      if (nearby.length) { %>
-      <div class="card">
-        <div class="section-header">You're close to these rewards!</div>
-        <div class="reward-suggestions">
-          <% nearby.forEach(r => { %>
-            <div class="list-item">
-              <h4><%= r.name %></h4>
-              <small><%= r.points %> pts | <%= r.description %></small>
-            </div>
-          <% }); %>
-        </div>
-      </div>
-    <% } } %>
-
   </div>
 
   <script>
-    const progressBar = document.querySelector('div[data-target]');
-    const target = progressBar.getAttribute('data-target');
-    progressBar.style.setProperty('--target', target);
-  </script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const progressFill = document.querySelector('.progress-fill');
+      const rawPercentage = <%= progressPercentage %>;
+      const rawBalance = <%= points.balance %>;
+      const toggleBox = document.querySelector('.toggle-history-box');
+      const historyCard = document.getElementById('points-history-card');
+      const pointsBox = document.querySelector('.points-box.balance');
+      pointsBox.classList.add('glow-animate');
 
+      setTimeout(() => pointsBox.classList.remove('glow-animate'), 3000);
+
+      // Animate progress
+      progressFill.style.width = rawPercentage + "%";
+
+      // Toggle animation for point history
+      toggleBox.addEventListener('click', () => {
+        historyCard.classList.toggle('open');
+      });
+
+      // Milestone alert logic
+      const milestones = [
+        { threshold: 500, bonus: 10 },
+        { threshold: 1000, bonus: 20 },
+        { threshold: 1500, bonus: 30 },
+        { threshold: 2000, bonus: 40 },
+        { threshold: 2500, bonus: 50 },
+        { threshold: 3000, bonus: 60 }
+      ];
+
+      milestones.forEach(m => {
+        const key = `milestone-${m.threshold}-notified`;
+        if (rawBalance >= m.threshold && !localStorage.getItem(key)) {
+          alert(`🎉 Milestone reached!\nYou received ${m.bonus} bonus points.`);
+          localStorage.setItem(key, "true");
+        }
+      });
+    });
+  </script>
 </body>
 </html>

@@ -212,12 +212,31 @@
       font-size: 0.85em;
       color: #999;
     }
+
+    .leaderboard-table tbody tr {
+      cursor: pointer;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #777;
+      margin-bottom: 15px;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
   </style>
 </head>
 <body>
   <%- include('../partials/navbar.ejs') %>
   <div class="container">
     <div class="title">🏆 Leaderboard</div>
+    <div class="note">📌 Click on a row to view point history</div>
 
     <div class="filter">
       <a href="/admin/leaderboard?filter=all" class="<%= filter === 'all' ? 'active' : '' %>">All</a>
@@ -238,7 +257,9 @@
         <% leaderboard.forEach((user, index) => {
             const isCurrentUser = user.staffID === staffID;
         %>
-          <tr class="<%= index === 0 ? 'gold-row animate' : index === 1 ? 'silver-row animate' : index === 2 ? 'bronze-row animate' : '' %>">
+          <tr 
+            onclick="toggleHistory('<%= user.staffID %>')" 
+            class="<%= index === 0 ? 'gold-row animate' : index === 1 ? 'silver-row animate' : index === 2 ? 'bronze-row animate' : '' %>">
             <td class="rank">
               <%= index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1 %>
             </td>
@@ -248,9 +269,6 @@
             </td>
             <td><%= user.department_name %></td>
             <td class="points"><%= user.total_point %></td>
-            <td>
-              <button onclick="toggleHistory('<%= user.staffID %>')">📂</button>
-            </td>
           </tr>
 
           <tr id="history-<%= user.staffID %>" class="history-row">

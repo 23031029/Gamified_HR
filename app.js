@@ -121,6 +121,8 @@ app.post('/editStaff/:staffID', checkAuthentication, checkAdmin, upload.single('
 app.get('/qr/:timeslotID', alyshaControl.generateQRCode);
 app.get('/user/scan', alyshaControl.getScanQR);
 app.get('/user/attend', alyshaControl.markAttendance);
+app.get('/admin/export-dashboard', checkAuthentication, checkAdmin, serjiaControl.exportDashboard);
+app.get('/admin/export-dashboard-excel', checkAuthentication, checkAdmin, serjiaControl.exportDashboardExcel);
 
 // Isabel's reward routes (admin only)
 app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);
@@ -128,7 +130,7 @@ app.get('/admin/rewards/read/:id', checkAuthentication, checkAdmin, isabelContro
 app.get('/admin/rewards/add', checkAuthentication, checkAdmin, isabelControl.addRewardForm);
 app.post('/rewards/add', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.addReward);
 app.get('/rewards/edit/:id', checkAuthentication, checkAdmin, isabelControl.editRewardForm);
-app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.editRewardForm);
+app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.updateReward);
 
 // User reward routes (user only)
 app.get('/user/rewards', checkAuthentication, checkUser, isabelControl.userRewards);
@@ -143,7 +145,7 @@ app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getU
 app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard)
 
 // Niki's feedback routes
-app.post('/submit-feedback', nikiController.submitFeedback);
+app.post('/user/submit-feedback', checkAuthentication, checkUser, nikiController.submitFeedback);
 app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
 
 // Niki's chat routes

@@ -65,7 +65,7 @@
 
     .timeslot-group {
       background: rgba(255,255,255,0.8);
-      padding: 15px;
+      padding: 15px 40px 15px 15px; /* give space on the right for button */
       border-radius: 10px;
       margin-bottom: 15px;
       border: 1px solid #ccc;
@@ -74,17 +74,26 @@
 
     .remove-timeslot {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #E91E63;
-      color: white;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      background-color: #dc3545;
+      color: #fff;
       border: none;
       border-radius: 50%;
-      width: 25px;
-      height: 25px;
-      font-size: 1rem;
-      line-height: 25px;
+      font-size: 14px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
+      padding: 0;
+      transition: background-color 0.2s ease;
+    }
+
+    .remove-timeslot:hover {
+      background-color: #b02a37;
     }
 
     #add-timeslot-btn {
@@ -104,7 +113,7 @@
       margin-top: 30px;
     }
 
-    .register button {
+    .register button:not(.remove-timeslot) {
       width: 300px;
       height: 50px;
       border: none;
@@ -153,11 +162,6 @@
 <div class="content-container" id="content">
   <div class="register">
     <h1>Add New Program</h1>
-    
-    <!-- Debug toggle button -->
-    <button type="button" onclick="toggleDebugMode()" style="font-size: 12px; padding: 5px 10px; margin-bottom: 20px;">
-      Toggle Debug Mode
-    </button>
     
     <form action="/programs/add" method="POST" id="programForm">
       

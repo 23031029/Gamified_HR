@@ -26,6 +26,7 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            max-width: 280px; /* Constrain overall reader width */
         }
         #result {
             padding: 15px;
@@ -294,10 +295,10 @@
             console.debug('QR scan attempt failed:', error);
         }
 
-        // Initialize QR scanner
+        // Initialize QR scanner with smaller camera box
         const scanner = new Html5QrcodeScanner("reader", {
             fps: 10,
-            qrbox: { width: 220, height: 220 },
+            qrbox: { width: 160, height: 160 }, // Reduced from 220x220 to 160x160
             rememberLastUsedCamera: true,
             showTorchButtonIfSupported: true,
             supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],

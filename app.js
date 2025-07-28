@@ -14,6 +14,11 @@ cron.schedule('0 0 * * *', () => {
   update();
 });
 
+cron.schedule('* * * * *', () => {
+  console.log('Running scheduled status update...');
+  update();
+});
+
 
 // Controllers
 const serjiaControl = require('./controllers/serjiaController');

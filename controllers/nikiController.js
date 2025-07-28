@@ -6,10 +6,11 @@ const update = require('../realtimeUpdates');
 // =========================
 const getUserDashboard = (req, res) => {
   const staffID = req.session.staff?.staffID;
-  if (!staffID) return res.redirect('/login');
-
+  if (!staffID) {
+    return res.redirect('/login'); 
+  }
   const pointsEarned = req.query.pointsEarned || null;
-
+  
   const userInfoQuery = `
     SELECT s.*, d.name AS department_name,
            CONCAT(s.first_name, ' ', s.last_name) AS name
@@ -17,7 +18,8 @@ const getUserDashboard = (req, res) => {
     JOIN Department d ON s.department = d.departmentID 
     WHERE s.staffID = ?
   `;
-
+  
+  // Programs with Status = 'Registered' (excluding today's programs)
   const registeredProgramsQuery = `
     SELECT sp.*, p.Title, pt.name AS Type, t.Date, t.Start_Time, t.Duration, 
            ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time, 
@@ -26,10 +28,12 @@ const getUserDashboard = (req, res) => {
     JOIN Program p ON sp.programID = p.ProgramID
     JOIN Program_type pt ON p.TypeID = pt.typeID
     JOIN Timeslot t ON sp.timeslotID = t.timeslotID
-    WHERE sp.staffID = ? AND sp.Status = 'Registered'
+    WHERE sp.staffID = ? AND sp.Status = 'Registered' AND t.Date != CURDATE()
+    ORDER BY t.Date ASC, t.Start_Time ASC
   `;
-
-  const upcomingProgramsQuery = `
+  
+  // Today's programs (Upcoming, Ongoing, or Registered programs scheduled for today)
+  const todaysProgramsQuery = `
     SELECT sp.*, p.Title, pt.name AS Type, t.Date, t.Start_Time, t.Duration, 
            ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time, 
            p.points_reward, sp.Status
@@ -37,10 +41,21 @@ const getUserDashboard = (req, res) => {
     JOIN Program p ON sp.programID = p.ProgramID
     JOIN Program_type pt ON p.TypeID = pt.typeID
     JOIN Timeslot t ON sp.timeslotID = t.timeslotID
-    WHERE sp.staffID = ? AND sp.Status = "Upcoming"
-    ORDER BY t.Date ASC, t.Start_Time ASC
+    WHERE sp.staffID = ? AND (
+      (sp.Status = "Upcoming" OR sp.Status = "Ongoing") OR 
+      (sp.Status = "Registered" AND t.Date = CURDATE())
+    )
+    ORDER BY 
+      CASE sp.Status 
+        WHEN 'Ongoing' THEN 1
+        WHEN 'Upcoming' THEN 2
+        WHEN 'Registered' THEN 3
+        ELSE 4
+      END,
+      t.Date ASC, 
+      t.Start_Time ASC
   `;
-
+  
   const redeemedRewardsQuery = `
     SELECT r.name, r.description, re.Redeem_Date, r.points 
     FROM Redeem re 
@@ -48,22 +63,20 @@ const getUserDashboard = (req, res) => {
     WHERE re.staffID = ?
     ORDER BY re.Redeem_Date DESC
   `;
-
+  
   const totalSpentQuery = `
     SELECT SUM(r.points) AS total_spent 
     FROM Redeem re 
     JOIN Reward r ON re.RewardID = r.RewardID 
     WHERE re.staffID = ?
   `;
-
+  
   const pointHistoryQuery = `
     SELECT r.name AS source, r.points * -1 AS points, re.Redeem_Date AS date, 'Spent' AS type
     FROM Redeem re
     JOIN Reward r ON re.RewardID = r.RewardID
     WHERE re.staffID = ?
-
     UNION
-
     SELECT p.Title AS source, p.points_reward AS points, t.Date AS date, 'Earned' AS type
     FROM staff_program sp
     JOIN Program p ON sp.programID = p.ProgramID
@@ -75,33 +88,32 @@ const getUserDashboard = (req, res) => {
     SELECT CONCAT('Milestone ', milestone) AS source, bonus_points AS points, awarded_at AS date, 'Bonus' AS type
     FROM Staff_Milestone
     WHERE staffID = ?
-
     ORDER BY date DESC
   `;
-
+  
   db.query(userInfoQuery, [staffID], (err, userResults) => {
     if (err || userResults.length === 0) return res.status(500).send("Error fetching user info");
     const user = userResults[0];
-
-    db.query(upcomingProgramsQuery, [staffID], (err, upcomingResults) => {
-      if (err) return res.status(500).send("Error fetching upcoming programs");
-
-      db.query(registeredProgramsQuery, [staffID], (err, ongoingResults) => {
+    
+    // Query Today's programs first
+    db.query(todaysProgramsQuery, [staffID], (err, todaysResults) => {
+      if (err) return res.status(500).send("Error fetching today's programs");
+      
+      // Query Registered programs (excluding today's)
+      db.query(registeredProgramsQuery, [staffID], (err, registeredResults) => {
         if (err) return res.status(500).send("Error fetching registered programs");
-
+        
         db.query(redeemedRewardsQuery, [staffID], (err, rewardResults) => {
           if (err) return res.status(500).send("Error fetching rewards");
-
+          
           db.query(totalSpentQuery, [staffID], (err, spentResult) => {
             if (err) return res.status(500).send("Error fetching points spent");
-
             db.query(pointHistoryQuery, [staffID, staffID, staffID], (err, pointHistory) => {
               if (err) return res.status(500).send("Error fetching point history");
-
+              
               const spent = Number(spentResult[0]?.total_spent) || 0;
               const balance = Number(user.total_point) || 0;
               const earned = balance + spent;
-
               // Milestone logic
               const milestoneThresholds = [
                 { value: 500, bonus: 10 },
@@ -139,19 +151,21 @@ const getUserDashboard = (req, res) => {
                 });
               });
 
-              function renderDashboard() {
-                res.render('user/dashboard', {
-                  user,
-                  upcomingPrograms: upcomingResults,
-                  ongoingPrograms: ongoingResults,
-                  rewards: rewardResults,
-                  points: { earned, spent, balance },
-                  pointHistory,
-                  currentPath: req.path,
-                  pointsEarned,
-                  currentTime: new Date()
-                });
-              }
+              res.render('user/dashboard', {
+                user,
+                todaysPrograms: todaysResults, // All today's programs (upcoming, ongoing, registered for today)
+                registeredPrograms: registeredResults, // Only registered programs not for today
+                rewards: rewardResults,
+                points: {
+                  earned,
+                  spent,
+                  balance
+                },
+                pointHistory,
+                currentPath: req.path,
+                pointsEarned,
+                currentTime: new Date()
+              });
             });
           });
         });
@@ -159,7 +173,6 @@ const getUserDashboard = (req, res) => {
     });
   });
 };
-
 
 // =========================
 // USER LEADERBOARD

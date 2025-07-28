@@ -6,9 +6,7 @@ const update = require('../realtimeUpdates');
 // =========================
 const getUserDashboard = (req, res) => {
   const staffID = req.session.staff?.staffID;
-  if (!staffID) {
-    return res.redirect('/login'); // or some auth fallback
-  }
+  if (!staffID) return res.redirect('/login');
 
   const pointsEarned = req.query.pointsEarned || null;
 
@@ -72,17 +70,17 @@ const getUserDashboard = (req, res) => {
     JOIN Timeslot t ON sp.timeslotID = t.timeslotID
     WHERE sp.Status = 'Completed' AND sp.staffID = ?
 
+    UNION
+
+    SELECT CONCAT('Milestone ', milestone) AS source, bonus_points AS points, awarded_at AS date, 'Bonus' AS type
+    FROM Staff_Milestone
+    WHERE staffID = ?
+
     ORDER BY date DESC
   `;
 
   db.query(userInfoQuery, [staffID], (err, userResults) => {
-    if (err) {
-      console.error('Error fetching user info:', err);
-      return res.status(500).send("Error fetching user info");
-    }
-    if (userResults.length === 0) {
-      return res.status(404).send("User not found");
-    }
+    if (err || userResults.length === 0) return res.status(500).send("Error fetching user info");
     const user = userResults[0];
 
     db.query(upcomingProgramsQuery, [staffID], (err, upcomingResults) => {
@@ -97,32 +95,69 @@ const getUserDashboard = (req, res) => {
           db.query(totalSpentQuery, [staffID], (err, spentResult) => {
             if (err) return res.status(500).send("Error fetching points spent");
 
-            db.query(pointHistoryQuery, [staffID, staffID], (err, pointHistory) => {
+            db.query(pointHistoryQuery, [staffID, staffID, staffID], (err, pointHistory) => {
               if (err) return res.status(500).send("Error fetching point history");
 
               const spent = Number(spentResult[0]?.total_spent) || 0;
               const balance = Number(user.total_point) || 0;
               const earned = balance + spent;
 
-              res.render('user/dashboard', {
-                user,
-                upcomingPrograms: upcomingResults,
-                ongoingPrograms: ongoingResults,
-                rewards: rewardResults,
-                points: {
-                  earned,
-                  spent,
-                  balance
-                },
-                pointHistory,
-                currentPath: req.path
+              // Milestone logic
+              const milestoneThresholds = [
+                { value: 500, bonus: 10 },
+                { value: 1000, bonus: 20 },
+                { value: 1500, bonus: 30 },
+                { value: 2000, bonus: 40 },
+                { value: 2500, bonus: 50 },
+                { value: 3000, bonus: 60 }
+              ];
+
+              const checkMilestonesQuery = `SELECT milestone FROM Staff_Milestone WHERE staffID = ?`;
+              db.query(checkMilestonesQuery, [staffID], (err, milestoneRows) => {
+                if (err) return res.status(500).send("Error checking milestones");
+
+                const alreadyAwarded = new Set(milestoneRows.map(row => row.milestone));
+                const toAward = milestoneThresholds.filter(m => balance >= m.value && !alreadyAwarded.has(m.value));
+
+                if (toAward.length === 0) return renderDashboard();
+
+                const bonusTotal = toAward.reduce((sum, m) => sum + m.bonus, 0);
+                const values = toAward.map(m => [staffID, m.value, m.bonus]);
+
+                const insertMilestones = `INSERT INTO Staff_Milestone (staffID, milestone, bonus_points) VALUES ?`;
+                const updatePoints = `UPDATE Staff SET total_point = total_point + ? WHERE staffID = ?`;
+
+                db.query(insertMilestones, [values], (err2) => {
+                  if (err2) return res.status(500).send("Error saving milestone bonus");
+
+                  db.query(updatePoints, [bonusTotal, staffID], (err3) => {
+                    if (err3) return res.status(500).send("Error updating bonus points");
+
+                    // ✅ Redirect to show updated points & flash message
+                    return res.redirect(`/user/dashboard?pointsEarned=${bonusTotal}`);
+                  });
+                });
               });
-            }); // ← closed pointHistoryQuery
-          }); // ← closed totalSpentQuery
-        }); // ← closed redeemedRewardsQuery
-      }); // ← closed registeredProgramsQuery
-    }); // ← closed upcomingProgramsQuery
-  }); // ← closed userInfoQuery
+
+              function renderDashboard() {
+                res.render('user/dashboard', {
+                  user,
+                  upcomingPrograms: upcomingResults,
+                  ongoingPrograms: ongoingResults,
+                  rewards: rewardResults,
+                  points: { earned, spent, balance },
+                  pointHistory,
+                  currentPath: req.path,
+                  pointsEarned,
+                  currentTime: new Date()
+                });
+              }
+            });
+          });
+        });
+      });
+    });
+  });
 };
 
 
@@ -316,46 +351,184 @@ exports.viewProgramFeedback = (req, res) => {
 };
 
 exports.submitFeedback = (req, res) => {
+  console.log("=== FEEDBACK SUBMISSION DEBUG ===");
+  console.log("Session:", req.session);
+  console.log("Request body:", req.body);
+  console.log("Content-Type:", req.headers['content-type']);
+  
   const staffID = req.session.staff?.staffID;
-  const { programID, rating, tags, comment, bonusPoints } = req.body;
+  const { programID, rating, tags, comment } = req.body;
 
-  if (!staffID || !programID || !rating) {
-    return res.status(400).json({ success: false, message: "Missing fields" });
+  console.log("Extracted data:", { staffID, programID, rating, tags, comment });
+
+  // Validation checks
+  if (!staffID) {
+    console.log("ERROR: No staffID in session");
+    return res.status(400).json({ success: false, message: "User not authenticated" });
   }
 
-  const insertQuery = `
-    INSERT INTO Program_Feedback (staffID, ProgramID, Rating, Comments, Submitted_Date)
-    VALUES (?, ?, ?, ?, CURDATE())
+  if (!programID) {
+    console.log("ERROR: No programID provided");
+    return res.status(400).json({ success: false, message: "Program ID is required" });
+  }
+
+  if (!rating) {
+    console.log("ERROR: No rating provided");
+    return res.status(400).json({ success: false, message: "Rating is required" });
+  }
+
+  // Convert rating to number if it's a string
+  const numericRating = typeof rating === 'string' ? parseFloat(rating) : rating;
+  
+  if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+    console.log("ERROR: Invalid rating:", numericRating);
+    return res.status(400).json({ success: false, message: "Rating must be between 1 and 5" });
+  }
+
+  // Calculate bonus points server-side
+  let bonusPoints = 5; // Base points for submitting feedback
+  if (tags && Array.isArray(tags) && tags.length > 0) {
+    bonusPoints += 5;
+  } else if (tags && typeof tags === 'string' && tags.trim()) {
+    bonusPoints += 5;
+  }
+  
+  if (comment && comment.trim()) {
+    bonusPoints += 10;
+  }
+
+  console.log("Calculated bonus points:", bonusPoints);
+
+  // Process tags - handle both array and string formats
+  let processedTags = '';
+  if (Array.isArray(tags)) {
+    processedTags = tags.join(',');
+  } else if (typeof tags === 'string') {
+    processedTags = tags;
+  }
+
+  console.log("Processed tags:", processedTags);
+
+  // First, check if user is registered for this program
+  const checkRegistrationQuery = `
+    SELECT sp.*, p.Title 
+    FROM staff_program sp
+    JOIN Program p ON sp.programID = p.ProgramID
+    WHERE sp.staffID = ? AND sp.programID = ? AND sp.Status IN ('Registered', 'Upcoming')
   `;
 
-  db.query(insertQuery, [staffID, programID, rating, comment || ''], (err, result) => {
+  db.query(checkRegistrationQuery, [staffID, programID], (err, registrationResults) => {
     if (err) {
-      console.error("Feedback Insert Error:", err);
-      return res.status(500).json({ success: false });
+      console.error("Registration check error:", err);
+      return res.status(500).json({ success: false, message: "Database error checking registration" });
     }
 
-    const updateStatusQuery = `
-      UPDATE staff_program SET Status = 'Completed', feedbackSubmitted = 1 
-      WHERE staffID = ? AND programID = ?
+    if (registrationResults.length === 0) {
+      console.log("ERROR: User not registered for this program or already completed");
+      return res.status(400).json({ 
+        success: false, 
+        message: "You are not registered for this program or have already completed it" 
+      });
+    }
+
+    console.log("Registration found:", registrationResults[0]);
+
+    // Check if feedback already exists
+    const checkFeedbackQuery = `
+      SELECT * FROM Program_Feedback 
+      WHERE staffID = ? AND ProgramID = ?
     `;
 
-    db.query(updateStatusQuery, [staffID, programID], (err2) => {
-      if (err2) {
-        console.error("Update Status Error:", err2);
-        return res.status(500).json({ success: false });
+    db.query(checkFeedbackQuery, [staffID, programID], (err, existingFeedback) => {
+      if (err) {
+        console.error("Feedback check error:", err);
+        return res.status(500).json({ success: false, message: "Database error checking existing feedback" });
       }
 
-      const updatePointsQuery = `
-        UPDATE Staff SET total_point = total_point + ? WHERE staffID = ?
+      if (existingFeedback.length > 0) {
+        console.log("ERROR: Feedback already exists");
+        return res.status(400).json({ success: false, message: "You have already submitted feedback for this program" });
+      }
+
+      // Insert feedback
+      const insertQuery = `
+        INSERT INTO Program_Feedback (staffID, ProgramID, Rating, Tags, Comments, Submitted_Date)
+        VALUES (?, ?, ?, ?, ?, NOW())
       `;
 
-      db.query(updatePointsQuery, [bonusPoints || 0, staffID], (err3) => {
-        if (err3) {
-          console.error("Update Points Error:", err3);
-          return res.status(500).json({ success: false });
+      const insertParams = [
+        staffID, 
+        programID, 
+        numericRating, 
+        processedTags || '', 
+        comment || ''
+      ];
+
+      console.log("Insert params:", insertParams);
+
+      db.query(insertQuery, insertParams, (err, result) => {
+        if (err) {
+          console.error("Feedback Insert Error:", err);
+          return res.status(500).json({ 
+            success: false, 
+            message: "Failed to save feedback",
+            error: err.message 
+          });
         }
 
-        return res.json({ success: true });
+        console.log("Feedback inserted successfully, ID:", result.insertId);
+
+        // Update program status to completed
+        const updateStatusQuery = `
+          UPDATE staff_program 
+          SET Status = 'Completed', feedbackSubmitted = 1 
+          WHERE staffID = ? AND programID = ?
+        `;
+
+        db.query(updateStatusQuery, [staffID, programID], (err2) => {
+          if (err2) {
+            console.error("Update Status Error:", err2);
+            // Don't return error here, feedback was saved successfully
+          } else {
+            console.log("Program status updated to completed");
+          }
+
+          // Update points - get current program points first
+          const getProgramPointsQuery = `
+            SELECT points_reward FROM Program WHERE ProgramID = ?
+          `;
+
+          db.query(getProgramPointsQuery, [programID], (err3, programResults) => {
+            if (err3) {
+              console.error("Get program points error:", err3);
+            }
+
+            const programPoints = programResults.length > 0 ? programResults[0].points_reward : 0;
+            const totalPoints = programPoints + bonusPoints;
+
+            console.log("Program points:", programPoints, "Bonus points:", bonusPoints, "Total:", totalPoints);
+
+            const updatePointsQuery = `
+              UPDATE Staff SET total_point = total_point + ? WHERE staffID = ?
+            `;
+
+            db.query(updatePointsQuery, [totalPoints, staffID], (err4) => {
+              if (err4) {
+                console.error("Update Points Error:", err4);
+                // Don't return error, feedback was saved successfully
+              } else {
+                console.log("Points updated successfully");
+              }
+
+              console.log("=== FEEDBACK SUBMISSION SUCCESS ===");
+              return res.json({ 
+                success: true, 
+                message: "Feedback submitted successfully!",
+                pointsEarned: totalPoints
+              });
+            });
+          });
+        });
       });
     });
   });

@@ -211,6 +211,42 @@ exports.postEditProgram = (req, res) => {
   });
 };
 
+exports.updateReward = (req, res) => {
+  const RewardID = req.params.id;
+  const { name, description, points, stock } = req.body;
+  let image = req.file ? req.file.filename : null;
+
+  const getImageSQL = 'SELECT image FROM Reward WHERE RewardID = ?';
+
+  db.query(getImageSQL, [RewardID], (err, result) => {
+    if (err || result.length === 0) {
+      req.flash('error', 'Reward not found.');
+      return res.redirect('/admin/rewards');
+    }
+
+    const currentImage = result[0].image;
+    const finalImage = image || currentImage;
+
+    const updateSQL = `
+      UPDATE Reward 
+      SET name = ?, description = ?, points = ?, stock = ?, image = ?
+      WHERE RewardID = ?
+    `;
+
+    db.query(updateSQL, [name, description, points, stock, finalImage, RewardID], (err2) => {
+      if (err2) {
+        console.error('Error updating reward:', err2);
+        req.flash('error', 'Failed to update reward.');
+        return res.redirect('/admin/rewards');
+      }
+
+      req.flash('success', 'Reward updated successfully!');
+      res.redirect('/admin/rewards');
+    });
+  });
+};
+
+
 // View a single reward's detail page
 exports.viewSingleReward = (req, res) => {
     const RewardID = req.params.id;

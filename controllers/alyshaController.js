@@ -1,11 +1,12 @@
 const db = require('../db');
 
+
 // Helper: Get all program types
 function getProgramTypes(cb) {
     db.query('SELECT typeID, name FROM Program_Type', cb);
 }
 
-// Admin - List all programs (with timeslot info)
+// Admin - List all programs (with timeslot info) - FIXED QUERY
 exports.getProgramsAdmin = (req, res) => {
     const status = req.query.status;
     let query = `
@@ -29,7 +30,7 @@ exports.getProgramsAdmin = (req, res) => {
     query += `
         ORDER BY 
           CASE WHEN p.status = 'Active' THEN 0 ELSE 1 END, 
-          p.ProgramID ASC, t.Date ASC
+          p.ProgramID ASC, t.Date ASC, t.Start_Time ASC
     `;
 
     const feedbackStatsQuery = `
@@ -45,10 +46,12 @@ exports.getProgramsAdmin = (req, res) => {
 
     db.query(query, params, (err, programs) => {
         if (err) {
-            console.error(err);
+            console.error('Programs query error:', err);
             req.flash('errorP', 'Error fetching programs');
             return res.redirect('/admin/programs');
         }
+
+        console.log('Raw programs data:', programs); // Debug log
 
         const grouped = {};
         programs.forEach(p => {
@@ -57,7 +60,7 @@ exports.getProgramsAdmin = (req, res) => {
                     ProgramID: p.ProgramID,
                     Title: p.Title,
                     Type: p.Type,
-                    Duration: p.Duration,
+                    Duration: p.Duration, // This should come from timeslot, not program
                     points_reward: p.points_reward,
                     Created_By: p.Created_By,
                     name: p.name,
@@ -66,15 +69,15 @@ exports.getProgramsAdmin = (req, res) => {
                 };
             }
 
-            // Include timeslot information if it exists
-            if (p.Date && p.Start_Time && p.End_Time) {
+            // FIXED: Include timeslot information even if some fields are null
+            if (p.timeslotID) {
                 grouped[p.ProgramID].timeslots.push({
-                    timeslotID: p.timeslotID, // This is crucial for QR code generation
-                    date: new Date(p.Date).toLocaleDateString(),
-                    startTime: p.Start_Time.substring(0, 5),
-                    endTime: p.End_Time.substring(0, 5),
-                    slots: p.Slots_availablility,
-                    // Additional data that might be useful for QR codes
+                    timeslotID: p.timeslotID,
+                    date: p.Date ? new Date(p.Date).toLocaleDateString() : '-',
+                    startTime: p.Start_Time ? p.Start_Time.substring(0, 5) : '-',
+                    endTime: p.End_Time ? p.End_Time.substring(0, 5) : '-',
+                    slots: p.Slots_availablility || '-',
+                    // Additional data
                     fullDate: p.Date,
                     fullStartTime: p.Start_Time,
                     duration: p.Duration
@@ -83,10 +86,11 @@ exports.getProgramsAdmin = (req, res) => {
         });
 
         const groupedPrograms = Object.values(grouped);
+        console.log('Grouped programs:', JSON.stringify(groupedPrograms, null, 2)); // Debug log
 
         db.query(feedbackStatsQuery, (err2, feedbackStats) => {
             if (err2) {
-                console.error(err2);
+                console.error('Feedback stats error:', err2);
                 req.flash('errorP', 'Error fetching feedback data');
                 return res.redirect('/admin/programs');
             }
@@ -101,7 +105,7 @@ exports.getProgramsAdmin = (req, res) => {
                 messageP: successMessage.length > 0 ? successMessage[0] : (errorMessage.length > 0 ? errorMessage[0] : null),
                 messageType: successMessage.length > 0 ? 'success' : (errorMessage.length > 0 ? 'error' : null),
                 currentPath: req.path,
-                status // pass to EJS
+                status
             });
         });
     });
@@ -225,6 +229,10 @@ exports.markAttendance = (req, res) => {
   const staffID = req.session.staff?.staffID; 
   const { timeslotID } = req.query;
 
+  console.log('=== ATTENDANCE DEBUG START ===');
+  console.log('StaffID:', staffID);
+  console.log('TimeslotID:', timeslotID);
+
   if (!staffID) {
     return res.status(401).send("🚫 Unauthorized. Please log in.");
   }
@@ -247,7 +255,8 @@ exports.markAttendance = (req, res) => {
       CONCAT(t.Date, ' ', t.Start_Time) as start_datetime,
       DATE_ADD(CONCAT(t.Date, ' ', t.Start_Time), INTERVAL t.Duration MINUTE) as end_datetime,
       DATE_ADD(CONCAT(t.Date, ' ', t.Start_Time), INTERVAL (t.Duration + 15) MINUTE) as grace_end_datetime,
-      p.points_reward
+      p.points_reward,
+      p.ProgramID
     FROM Timeslot t
     JOIN Program p ON t.ProgramID = p.ProgramID
     LEFT JOIN staff_program sp ON sp.timeslotID = t.timeslotID AND sp.staffID = ?
@@ -261,45 +270,89 @@ exports.markAttendance = (req, res) => {
     }
 
     if (results.length === 0) {
+      console.log('❌ No results found for timeslotID:', timeslotID);
       return res.redirect('/user/scan?error=timeslot_not_found');
     }
 
     const timeslot = results[0];
+    console.log('📊 Database Results:');
+    console.log('  Program Title:', timeslot.program_title);
+    console.log('  Program Status (raw):', JSON.stringify(timeslot.program_status));
+    console.log('  Program ID:', timeslot.ProgramID);
+    console.log('  Registered Staff:', timeslot.registered_staff);
+    console.log('  Current Status:', timeslot.current_status);
+    console.log('  Date:', timeslot.Date);
+    console.log('  Start Time:', timeslot.Start_Time);
+
     const currentTime = new Date();
     const startTime = new Date(timeslot.start_datetime);
     const endTime = new Date(timeslot.end_datetime);
     const graceEndTime = new Date(timeslot.grace_end_datetime);
 
+    console.log('⏰ Time Analysis:');
+    console.log('  Current Time:', currentTime);
+    console.log('  Current Time (ISO):', currentTime.toISOString());
+    console.log('  Program Start:', startTime);
+    console.log('  Program Start (ISO):', startTime.toISOString());
+    console.log('  Raw start_datetime from DB:', timeslot.start_datetime);
+    console.log('  Time difference (minutes):', (startTime.getTime() - currentTime.getTime()) / (1000 * 60));
+
     // Validation 1: Check if staff is registered for this program
     if (!timeslot.registered_staff) {
+      console.log('❌ Staff not registered for this program');
       return res.redirect('/user/scan?error=not_registered');
     }
+    console.log('✅ Staff is registered');
 
     // Validation 2: Check if attendance already marked
     if (timeslot.current_status === 'Completed') {
+      console.log('❌ Attendance already marked');
       return res.redirect('/user/scan?error=already_marked');
     }
+    console.log('✅ Attendance not yet marked');
 
     // Validation 3: Check if program is active
-    if (timeslot.program_status !== 'active') {
+    const possibleActiveValues = ['active', 'Active', 'ACTIVE'];
+    const isActive = possibleActiveValues.includes(timeslot.program_status?.toString().trim());
+    
+    if (!isActive) {
+      console.log('❌ Program is not active. Status:', timeslot.program_status);
       return res.redirect('/user/scan?error=program_inactive');
     }
+    console.log('✅ Program is active');
 
     // Validation 4: Check if it's too early (more than 30 minutes before start)
     const thirtyMinutesBeforeStart = new Date(startTime.getTime() - 30 * 60 * 1000);
     if (currentTime < thirtyMinutesBeforeStart) {
+      console.log('❌ Too early to scan (more than 30 min before start)');
       return res.redirect('/user/scan?error=too_early');
     }
+    console.log('✅ Not too early (within 30 minutes of start)');
 
     // Validation 5: Check if it's too late (more than 15 minutes after end)
     if (currentTime > graceEndTime) {
+      console.log('❌ Too late to scan (more than 15 min after end)');
       return res.redirect('/user/scan?error=too_late');
     }
+    console.log('✅ Not too late (within grace period)');
 
-    // Validation 6: Check if it's before the program has started (but within 30 minutes)
+    // FIXED: Validation 6 - Allow early scanning within the 30-minute window
+    const timeDiffMinutes = (startTime.getTime() - currentTime.getTime()) / (1000 * 60);
+    console.log('🕐 Start Time Check:');
+    console.log('  Time until start (minutes):', timeDiffMinutes);
+    console.log('  Current < Start?', currentTime < startTime);
+    
+    // If program hasn't started yet, but we're within 30 minutes, that's okay
+    // We already checked the 30-minute window above, so if we're here, we're good
     if (currentTime < startTime) {
-      return res.redirect('/user/scan?error=program_not_started');
+      console.log('🟡 Program has not started yet, but within allowed window');
+      console.log('  Minutes until start:', Math.ceil(timeDiffMinutes));
+      console.log('  ✅ Allowing early attendance marking');
+    } else {
+      console.log('✅ Program has already started');
     }
+
+    console.log('🎉 All validations passed! Proceeding with attendance marking...');
 
     // All validations passed - mark attendance
     const updateStatusQuery = `
@@ -314,6 +367,12 @@ exports.markAttendance = (req, res) => {
         return res.redirect('/user/scan?error=database_error');
       }
 
+      if (result.affectedRows === 0) {
+        console.log('⚠️ No rows updated - might already be completed');
+      } else {
+        console.log('✅ Attendance marked successfully');
+      }
+
       // Update staff points
       const addPointsQuery = `
         UPDATE Staff
@@ -326,6 +385,9 @@ exports.markAttendance = (req, res) => {
           console.error('Points update error:', err3);
           return res.redirect('/user/scan?error=points_error');
         }
+
+        console.log('✅ Points updated successfully');
+        console.log('=== ATTENDANCE DEBUG END ===');
 
         // Success - redirect to dashboard with success message
         res.redirect(`/user/dashboard?attendance=success&pointsEarned=${timeslot.points_reward}&program=${encodeURIComponent(timeslot.program_title)}`);
@@ -500,6 +562,9 @@ exports.getAddProgram = (req, res) => {
 
 // Handle POST add program (with timeslot)
 exports.postAddProgram = (req, res) => {
+    console.log('=== ADD PROGRAM DEBUG START ===');
+    console.log('Full request body:', JSON.stringify(req.body, null, 2));
+    
     const {
         title,
         description,
@@ -507,19 +572,40 @@ exports.postAddProgram = (req, res) => {
         other_type,
         points_reward,
         staffID,
-        timeslot_date,
-        timeslot_start,
-        timeslot_slots,
         duration
     } = req.body;
 
+    // Extract timeslot fields with different possible names
+    const timeslot_date = req.body.timeslot_date || req.body['timeslot_date[]'] || [];
+    const timeslot_start = req.body.timeslot_start || req.body['timeslot_start[]'] || [];
+    const timeslot_slots = req.body.timeslot_slots || req.body['timeslot_slots[]'] || [];
+
+    console.log('Extracted basic fields:', {
+        title, description, typeID, other_type, points_reward, staffID, duration
+    });
+    
+    console.log('Extracted timeslot fields:', {
+        timeslot_date, timeslot_start, timeslot_slots
+    });
+
+    // Validation
+    if (!title || !description || !typeID || !points_reward || !duration || !staffID) {
+        console.log('❌ Missing required fields');
+        req.flash('errorP', 'All fields are required');
+        return res.redirect('/programs/add');
+    }
+
     function proceedWithInsert(finalTypeID) {
+        console.log('Proceeding with insert, finalTypeID:', finalTypeID);
+        
         const getLastIdQuery = `SELECT ProgramID FROM Program ORDER BY ProgramID DESC LIMIT 1`;
         db.query(getLastIdQuery, (err, result) => {
             if (err) {
+                console.error('❌ Get last ID error:', err);
                 req.flash('errorP', 'Error processing program');
                 return res.redirect('/admin/programs');
             }
+            
             let nextId = 'P001';
             if (result.length > 0) {
                 const lastId = result[0].ProgramID;
@@ -527,83 +613,209 @@ exports.postAddProgram = (req, res) => {
                 nextId = 'P' + numericPart.toString().padStart(3, '0');
             }
 
+            console.log('✅ Generated Program ID:', nextId);
+
             const insertProgramQuery = `
                 INSERT INTO Program 
-                (ProgramID, Title, Description, typeID, points_reward,Created_By) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (ProgramID, Title, Description, typeID, points_reward, Created_By) 
+                VALUES (?, ?, ?, ?, ?, ?)
             `;
             const programValues = [
                 nextId,
                 title,
                 description,
                 finalTypeID,
-                points_reward,
-                staffID,
+                parseInt(points_reward),
+                staffID
             ];
 
-            db.query(insertProgramQuery, programValues, (insertErr) => {
+            console.log('Program insert query:', insertProgramQuery);
+            console.log('Program insert values:', programValues);
+
+            db.query(insertProgramQuery, programValues, (insertErr, programResult) => {
                 if (insertErr) {
-                    req.flash('errorP', 'Error saving program');
+                    console.error('❌ Insert Program Error:', insertErr);
+                    req.flash('errorP', 'Error saving program: ' + insertErr.message);
                     return res.redirect('/admin/programs');
                 }
 
-                // Normalize timeslot arrays
-                const dates = Array.isArray(timeslot_date) ? timeslot_date : [timeslot_date];
-                const starts = Array.isArray(timeslot_start) ? timeslot_start : [timeslot_start];
-                const slots = Array.isArray(timeslot_slots) ? timeslot_slots : [timeslot_slots];
+                console.log('✅ Program inserted successfully, result:', programResult);
+
+                // Process timeslots
+                console.log('Processing timeslots...');
+                
+                // Normalize timeslot arrays - handle both single values and arrays
+                const dates = Array.isArray(timeslot_date) ? timeslot_date : (timeslot_date ? [timeslot_date] : []);
+                const starts = Array.isArray(timeslot_start) ? timeslot_start : (timeslot_start ? [timeslot_start] : []);
+                const slots = Array.isArray(timeslot_slots) ? timeslot_slots : (timeslot_slots ? [timeslot_slots] : []);
+
+                console.log('Normalized arrays:', {
+                    dates: dates,
+                    starts: starts,
+                    slots: slots,
+                    duration: duration
+                });
+
+                // Validate we have data
+                if (dates.length === 0 || starts.length === 0 || slots.length === 0) {
+                    console.log('⚠️ No timeslot data found, but program was created');
+                    req.flash('successP', 'Program created successfully, but no timeslots were added. Please edit the program to add timeslots.');
+                    return res.redirect('/admin/programs');
+                }
+
+                // Validate array lengths match
+                if (dates.length !== starts.length || starts.length !== slots.length) {
+                    console.log('❌ Timeslot array length mismatch:', {
+                        dates: dates.length,
+                        starts: starts.length,
+                        slots: slots.length
+                    });
+                    req.flash('errorP', 'Timeslot data is inconsistent. Program created but no timeslots added.');
+                    return res.redirect('/admin/programs');
+                }
 
                 let timeslotInserts = [];
                 for (let i = 0; i < dates.length; i++) {
-                    if (dates[i] && starts[i] && slots[i]) {
-                        timeslotInserts.push([
-                            nextId,
-                            dates[i],
-                            starts[i],
-                            duration,
-                            slots[i],
-                        ]);
+                    const date = dates[i];
+                    const start = starts[i];
+                    const slot = slots[i];
+                    
+                    console.log(`Processing timeslot ${i + 1}:`, { date, start, slot, duration });
+                    
+                    // Skip empty entries
+                    if (!date || !start || !slot) {
+                        console.log(`⚠️ Skipping empty timeslot ${i + 1}`);
+                        continue;
                     }
+                    
+                    // Validate data types
+                    const slotNum = parseInt(slot);
+                    const durationNum = parseInt(duration);
+                    
+                    if (isNaN(slotNum) || isNaN(durationNum)) {
+                        console.log(`❌ Invalid numbers in timeslot ${i + 1}:`, { slot, slotNum, duration, durationNum });
+                        continue;
+                    }
+                    
+                    timeslotInserts.push([
+                        nextId,
+                        date,
+                        start,
+                        durationNum,
+                        slotNum
+                    ]);
                 }
 
-                if (timeslotInserts.length > 0) {
+                console.log('Final timeslot inserts prepared:', timeslotInserts);
+
+                if (timeslotInserts.length === 0) {
+                    console.log('⚠️ No valid timeslots to insert');
+                    req.flash('successP', 'Program created successfully, but no valid timeslots were provided.');
+                    return res.redirect('/admin/programs');
+                }
+
+                // Insert timeslots one by one with detailed logging
+                let completed = 0;
+                let hasError = false;
+                
+                timeslotInserts.forEach((timeslot, index) => {
                     const insertTimeslotQuery = `
                         INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility)
-                        VALUES ?
+                        VALUES (?, ?, ?, ?, ?)
                     `;
-                    db.query(insertTimeslotQuery, [timeslotInserts], (tsErr) => {
-                        if (tsErr) {
-                            console.error('Insert Timeslot Error:', tsErr);
-                            req.flash('errorP', 'Program added, but error saving timeslots');
+                    
+                    console.log(`Inserting timeslot ${index + 1}/${timeslotInserts.length}:`);
+                    console.log('Query:', insertTimeslotQuery);
+                    console.log('Values:', timeslot);
+                    
+                    db.query(insertTimeslotQuery, timeslot, (tsErr, tsResult) => {
+                        if (tsErr && !hasError) {
+                            console.error(`❌ Insert Timeslot ${index + 1} Error:`, tsErr);
+                            hasError = true;
+                            req.flash('errorP', `Program added, but error saving timeslot ${index + 1}: ${tsErr.message}`);
                             return res.redirect('/admin/programs');
                         }
-                        req.flash('successP', 'Program and timeslots added successfully!');
-                        res.redirect('/admin/programs');
+                        
+                        if (!hasError) {
+                            console.log(`✅ Timeslot ${index + 1} inserted successfully:`, {
+                                insertId: tsResult?.insertId,
+                                affectedRows: tsResult?.affectedRows
+                            });
+                        }
+                        
+                        completed++;
+                        if (completed === timeslotInserts.length && !hasError) {
+                            console.log('✅ All timeslots inserted successfully!');
+                            req.flash('successP', `Program and ${timeslotInserts.length} timeslot(s) added successfully!`);
+                            res.redirect('/admin/programs');
+                        }
                     });
-                } else {
-                    req.flash('successP', 'Program added successfully!');
-                    res.redirect('/admin/programs');
-                }
+                });
             });
         });
     }
 
+    // Handle type selection
     if (typeID === 'other' && other_type && other_type.trim()) {
-        // Insert new type and use its ID
+        console.log('Creating new program type:', other_type.trim());
         db.query(
             'INSERT INTO Program_Type (name) VALUES (?)',
             [other_type.trim()],
             (err, result) => {
                 if (err) {
-                    console.error('Insert new type error:', err);
+                    console.error('❌ Insert new type error:', err);
                     req.flash('errorP', 'Failed to add new program type.');
                     return res.redirect('/admin/programs');
                 }
+                console.log('✅ New type created with ID:', result.insertId);
                 proceedWithInsert(result.insertId);
             }
         );
     } else {
+        console.log('Using existing type ID:', typeID);
         proceedWithInsert(typeID);
     }
+    
+    console.log('=== ADD PROGRAM DEBUG END ===');
+};
+
+// ALSO ADD THIS HELPER FUNCTION FOR TESTING TIMESLOT INSERTION DIRECTLY
+exports.testTimeslotInsert = (req, res) => {
+    // Test function to manually insert a timeslot
+    const testData = [
+        'P001', // ProgramID - make sure this exists in your Program table
+        '2025-08-01', // Date
+        '10:00:00', // Start_Time
+        60, // Duration
+        10 // Slots_availablility
+    ];
+    
+    const insertQuery = `
+        INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility)
+        VALUES (?, ?, ?, ?, ?)
+    `;
+    
+    console.log('Testing timeslot insert with data:', testData);
+    
+    db.query(insertQuery, testData, (err, result) => {
+        if (err) {
+            console.error('Test insert error:', err);
+            return res.json({
+                success: false,
+                error: err.message,
+                errno: err.errno,
+                code: err.code
+            });
+        }
+        
+        console.log('Test insert successful:', result);
+        res.json({
+            success: true,
+            result: result,
+            insertId: result.insertId,
+            affectedRows: result.affectedRows
+        });
+    });
 };
 
 
@@ -644,12 +856,13 @@ exports.postEditProgram = (req, res) => {
     const programId = req.params.id;
     let { title, typeID, description, points_reward, duration, other_type } = req.body;
 
+    console.log('Edit program received data:', req.body); // Debug log
+
     if (!title || !typeID || !description || !points_reward || !duration) {
         req.flash('errorP', 'All fields are required');
         return res.redirect(`/programs/edit/${programId}`);
     }
 
-    // If user selected "Other", insert new type and get its ID
     function proceedWithUpdate(finalTypeID) {
         const updateProgramQuery = `
             UPDATE Program 
@@ -670,7 +883,7 @@ exports.postEditProgram = (req, res) => {
                 return res.redirect(`/programs/edit/${programId}`);
             }
 
-            // Extract timeslot fields 
+            // Extract and process timeslot fields
             const {
                 'timeslotID[]': timeslotID = [],
                 'timeslot_date[]': timeslot_date = [],
@@ -678,7 +891,11 @@ exports.postEditProgram = (req, res) => {
                 'timeslot_slots[]': timeslot_slots = []
             } = req.body;
 
-            // Normalize fields as arrays
+            console.log('Timeslot fields extracted:', {
+                timeslotID, timeslot_date, timeslot_start, timeslot_slots
+            }); // Debug log
+
+            // Normalize as arrays
             const tsIDs = Array.isArray(timeslotID) ? timeslotID : [timeslotID];
             const tsDates = Array.isArray(timeslot_date) ? timeslot_date : [timeslot_date];
             const tsStarts = Array.isArray(timeslot_start) ? timeslot_start : [timeslot_start];
@@ -693,8 +910,10 @@ exports.postEditProgram = (req, res) => {
                     const date = tsDates[i];
                     const dur = parseInt(duration);
 
-                    if (tsIDs[i]) {
+                    if (tsIDs[i] && tsIDs[i] !== '') {
                         // Update existing timeslot
+                        console.log(`Updating timeslot ID ${tsIDs[i]} with:`, { date, start, dur, slots }); // Debug log
+                        
                         promises.push(new Promise((resolve, reject) => {
                             db.query(
                                 `UPDATE Timeslot 
@@ -706,6 +925,7 @@ exports.postEditProgram = (req, res) => {
                                         console.error('Timeslot update error:', err);
                                         reject(err);
                                     } else {
+                                        console.log(`Timeslot ${tsIDs[i]} updated, affected rows:`, result.affectedRows);
                                         resolve();
                                     }
                                 }
@@ -713,6 +933,8 @@ exports.postEditProgram = (req, res) => {
                         }));
                     } else {
                         // Insert new timeslot
+                        console.log(`Inserting new timeslot:`, { programId, date, start, dur, slots }); // Debug log
+                        
                         promises.push(new Promise((resolve, reject) => {
                             db.query(
                                 `INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility) 
@@ -723,6 +945,7 @@ exports.postEditProgram = (req, res) => {
                                         console.error('Timeslot insert error:', err);
                                         reject(err);
                                     } else {
+                                        console.log(`New timeslot inserted with ID:`, result.insertId);
                                         resolve();
                                     }
                                 }
@@ -740,7 +963,7 @@ exports.postEditProgram = (req, res) => {
                     })
                     .catch((error) => {
                         console.error('Timeslot operation failed:', error);
-                        req.flash('errorP', 'Program updated, but failed to update/add some timeslots.');
+                        req.flash('errorP', 'Program updated, but failed to update/add some timeslots: ' + error.message);
                         res.redirect(`/programs/edit/${programId}`);
                     });
             } else {
@@ -751,7 +974,6 @@ exports.postEditProgram = (req, res) => {
     }
 
     if (typeID === 'other' && other_type && other_type.trim()) {
-        // Insert new type and use its ID
         db.query(
             'INSERT INTO Program_Type (name) VALUES (?)',
             [other_type.trim()],
@@ -768,7 +990,6 @@ exports.postEditProgram = (req, res) => {
         proceedWithUpdate(typeID);
     }
 };
-
 
 exports.joinProgram = (req, res) => {
   const { programID, timeslotID } = req.body;
@@ -832,8 +1053,6 @@ exports.joinProgram = (req, res) => {
           return res.redirect('/user/programs');
         }
       }
-
-      // ✅ New status logic based on whether the program is today
       const isToday =
         slotStart.getFullYear() === now.getFullYear() &&
         slotStart.getMonth() === now.getMonth() &&
@@ -904,5 +1123,35 @@ exports.cancelProgram = (req, res) => {
     db.query(cancelSQL, [participantID], (err, result) => {
         if (err) throw err;
         res.redirect('/user/dashboard');
+    });
+};
+
+exports.debugPrograms = (req, res) => {
+    const queries = [
+        'SELECT COUNT(*) as program_count FROM Program',
+        'SELECT COUNT(*) as timeslot_count FROM Timeslot', 
+        'SELECT p.ProgramID, p.Title, COUNT(t.timeslotID) as timeslot_count FROM Program p LEFT JOIN Timeslot t ON p.ProgramID = t.ProgramID GROUP BY p.ProgramID',
+        'SELECT * FROM Timeslot ORDER BY ProgramID, Date, Start_Time'
+    ];
+
+    let results = {};
+    let completed = 0;
+
+    queries.forEach((query, index) => {
+        db.query(query, (err, result) => {
+            if (err) {
+                results[`query_${index}`] = { error: err.message };
+            } else {
+                results[`query_${index}`] = result;
+            }
+            completed++;
+            
+            if (completed === queries.length) {
+                res.json({
+                    message: 'Debug information',
+                    results: results
+                });
+            }
+        });
     });
 };

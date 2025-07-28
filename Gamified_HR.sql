@@ -167,7 +167,6 @@ CREATE TABLE staff_program (
     timeslotID INT NOT NULL,
     `Status` CHAR(30) NOT NULL,
     feedbackSubmitted BOOLEAN DEFAULT 0,
-    feedbackSubmitted BOOLEAN DEFAULT 0,
     FOREIGN KEY (staffID) REFERENCES Staff(staffID),
     FOREIGN KEY (programID) REFERENCES Program(ProgramID),
     FOREIGN KEY (timeslotID) REFERENCES Timeslot(timeslotID)
@@ -204,6 +203,7 @@ CREATE TABLE Program_Feedback (
     staffID VARCHAR(10) NOT NULL,
     ProgramID VARCHAR(10) NOT NULL,
     Rating FLOAT(5,1) NOT NULL,
+    Tags TEXT, 
     Comments TEXT NOT NULL,
     Submitted_Date DATE NOT NULL,
     FOREIGN KEY (staffID) REFERENCES Staff(staffID),
@@ -243,5 +243,15 @@ CREATE TABLE Program_Invite (
   FOREIGN KEY (InviteeID) REFERENCES Staff(staffID),
   FOREIGN KEY (ProgramID) REFERENCES Program(ProgramID)
 );
+
+CREATE TABLE IF NOT EXISTS Staff_Milestone (
+  staffID VARCHAR(10),
+  milestone INT,
+  bonus_points INT,
+  awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (staffID, milestone)
+);
+
+
 
 

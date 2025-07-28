@@ -1,7 +1,8 @@
 const db = require('../db');
 const updateProgramStatus = require('../realtimeUpdates');
 const QRCode = require('qrcode');
-
+const { Parser } = require('json2csv');
+const ExcelJS = require('exceljs');
 
 exports.getSignIn= (req, res)=>{
     res.render('user/index', {
@@ -683,3 +684,89 @@ exports.editParticulars = (req, res) => {
     });
 };
 
+exports.exportDashboard = (req, res) => {
+  const query = `
+    SELECT 
+      staffID, first_name, last_name, email, gender, role, department, date_join, status, total_point
+    FROM 
+      staff
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Export error:", err);
+      return res.status(500).send("Failed to fetch staff data");
+    }
+
+    try {
+      const parser = new Parser();
+      const csv = parser.parse(results);
+
+      res.header('Content-Type', 'text/csv');
+      res.attachment('staff_dashboard.csv');
+      return res.send(csv);
+    } catch (e) {
+      console.error("CSV parse error:", e);
+      return res.status(500).send("CSV generation failed");
+    }
+  });
+};
+
+exports.exportDashboardExcel = async (req, res) => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+
+    // Helper to safely parse query data
+    const safeParse = (param) => {
+      try {
+        return JSON.parse(param || '[]');
+      } catch (e) {
+        return [];
+      }
+    };
+
+    // Sheet 1: Summary
+    const summarySheet = workbook.addWorksheet('Summary');
+    summarySheet.addRow(['Metric', 'Value']);
+    summarySheet.addRow(['Total Employees', req.query.staffCount || '0']);
+    summarySheet.addRow(['Total Rewards', req.query.rewardCount || '0']);
+    summarySheet.addRow(['Total Active Programs', req.query.programCount || '0']);
+
+    // Sheet 2: Popular Programs
+    const programSheet = workbook.addWorksheet('Popular Programs');
+    programSheet.addRow(['Program', 'Average Rating']);
+    safeParse(req.query.programs).forEach(row => {
+      programSheet.addRow([row.label, row.value]);
+    });
+
+    // Sheet 3: Redeemed Rewards
+    const rewardSheet = workbook.addWorksheet('Redeemed Rewards');
+    rewardSheet.addRow(['Reward', 'Redeemed Count']);
+    safeParse(req.query.rewards).forEach(row => {
+      rewardSheet.addRow([row.label, row.value]);
+    });
+
+    // Sheet 4: Active Departments
+    const deptSheet = workbook.addWorksheet('Active Departments');
+    deptSheet.addRow(['Department', 'Participations']);
+    safeParse(req.query.departments).forEach(row => {
+      deptSheet.addRow([row.label, row.value]);
+    });
+
+    // Sheet 5: Monthly Trends
+    const trendSheet = workbook.addWorksheet('Monthly Trends');
+    trendSheet.addRow(['Month', 'Participants']);
+    safeParse(req.query.trends).forEach(row => {
+      trendSheet.addRow([row.label, row.value]);
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=dashboard_export.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Excel export failed:', err);
+    res.status(500).send('Failed to export dashboard.');
+  }
+};

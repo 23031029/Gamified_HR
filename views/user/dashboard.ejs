@@ -248,7 +248,17 @@
     .glow-animate {
       animation: glow-shine 3s ease-in-out;
     }
-    
+
+    .milestone-labels span {
+      text-align: center;
+      min-width: 40px;
+      line-height: 1.2;
+    }
+    .milestone-labels span small {
+      color: #888;
+      font-size: 11px;
+    }
+   
   </style>
 </head>
 <body>
@@ -318,12 +328,9 @@
         </div>
         <div class="milestone-labels">
           <span>0</span>
-          <span>500</span>
-          <span>1000</span>
-          <span>1500</span>
-          <span>2000</span>
-          <span>2500</span>
-          <span>3000</span>
+          <% milestones.forEach(m => { %>
+            <span><%= m.value %><br/><small>(+<%= m.bonus %>)</small></span>
+          <% }); %>
         </div>
         <p style="text-align:center; margin-top: 10px;">
           Progress: <%= currentPoints %> / 3000 pts (<%= progressPercentage %>%)

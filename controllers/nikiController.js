@@ -115,14 +115,16 @@ const getUserDashboard = (req, res) => {
                   balance
                 },
                 pointHistory,
-                currentPath: req.path
+                currentPath: req.path,
+                pointsEarned,
+                currentTime: new Date()
               });
-            }); // ← closed pointHistoryQuery
-          }); // ← closed totalSpentQuery
-        }); // ← closed redeemedRewardsQuery
-      }); // ← closed registeredProgramsQuery
-    }); // ← closed upcomingProgramsQuery
-  }); // ← closed userInfoQuery
+            }); 
+          }); 
+        });
+      });
+    }); 
+  }); 
 };
 
 

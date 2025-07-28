@@ -163,6 +163,7 @@ app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.po
 app.post('/user/programs',checkAuthentication, alyshaControl.joinProgram);
 app.post('/programs/toggle/:id', alyshaControl.toggleProgramStatus);
 app.post('/cancel/:participantID', checkAuthentication, alyshaControl.cancelProgram);
+app.get('/test/timeslot', checkAuthentication, checkAdmin, alyshaControl.testTimeslotInsert);
 
 // Start server
 const PORT = process.env.PORT || 3000;

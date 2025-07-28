@@ -133,6 +133,17 @@
     .back-button:hover {
       text-decoration: underline;
     }
+
+    .debug-info {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 10px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 12px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -142,7 +153,13 @@
 <div class="content-container" id="content">
   <div class="register">
     <h1>Add New Program</h1>
-    <form action="/programs/add" method="POST" enctype="multipart/form-data" id="programForm">
+    
+    <!-- Debug toggle button -->
+    <button type="button" onclick="toggleDebugMode()" style="font-size: 12px; padding: 5px 10px; margin-bottom: 20px;">
+      Toggle Debug Mode
+    </button>
+    
+    <form action="/programs/add" method="POST" id="programForm">
       
       <div class="form-group">
         <label for="programID">Program ID</label>
@@ -177,6 +194,7 @@
           style="display:none; margin-top:10px;"
         />
       </div>
+      
       <div class="form-group">
         <label for="points_reward">Points Reward</label>
         <input type="number" class="form-control" id="points_reward" name="points_reward" required min="1" />
@@ -184,7 +202,7 @@
 
       <div class="form-group">
         <label for="duration">Duration (mins) — applies to all timeslots</label>
-        <input type="number" class="form-control" id="duration" name="duration" required min="1" value="1" />
+        <input type="number" class="form-control" id="duration" name="duration" required min="1" value="60" />
       </div>
 
       <label><b>Timeslots</b></label>
@@ -192,15 +210,15 @@
         <div class="timeslot-group">
           <div class="form-group">
             <label>Date</label>
-            <input type="date" class="form-control" name="timeslot_date[]" required />
+            <input type="date" class="form-control timeslot-date" name="timeslot_date[]" required />
           </div>
           <div class="form-group">
             <label>Start Time</label>
-            <input type="time" class="form-control" name="timeslot_start[]" required />
+            <input type="time" class="form-control timeslot-start" name="timeslot_start[]" required />
           </div>
           <div class="form-group">
             <label>Available Slots</label>
-            <input type="number" class="form-control" name="timeslot_slots[]" min="1" required />
+            <input type="number" class="form-control timeslot-slots" name="timeslot_slots[]" min="1" required />
           </div>
           <button type="button" class="remove-timeslot" onclick="removeTimeslot(this)" style="display:none;">×</button>
         </div>
@@ -209,6 +227,12 @@
       <button type="button" id="add-timeslot-btn">+ Add Timeslot</button>
 
       <input type="hidden" name="staffID" value="<%= staff.staffID %>">
+
+      <!-- Debug information display -->
+      <div id="debug-info" class="debug-info">
+        <strong>Form Data Preview:</strong>
+        <div id="debug-content"></div>
+      </div>
 
       <div class="button-container">
         <button type="submit">Create Program</button>
@@ -220,37 +244,146 @@
 </div>
 
 <script>
+  let debugMode = false;
+  
+  function toggleDebugMode() {
+    debugMode = !debugMode;
+    const debugInfo = document.getElementById('debug-info');
+    debugInfo.style.display = debugMode ? 'block' : 'none';
+    
+    if (debugMode) {
+      updateDebugInfo();
+      // Auto-update debug info when form changes
+      document.getElementById('programForm').addEventListener('input', updateDebugInfo);
+      document.getElementById('programForm').addEventListener('change', updateDebugInfo);
+    }
+  }
+  
+  function updateDebugInfo() {
+    if (!debugMode) return;
+    
+    const formData = new FormData(document.getElementById('programForm'));
+    const debugContent = document.getElementById('debug-content');
+    
+    let debugHtml = '<pre>';
+    
+    // Show all form data
+    for (let [key, value] of formData.entries()) {
+      debugHtml += `${key}: ${value}\n`;
+    }
+    
+    // Show array data specifically
+    debugHtml += '\n--- TIMESLOT ARRAYS ---\n';
+    const dates = document.querySelectorAll('.timeslot-date');
+    const starts = document.querySelectorAll('.timeslot-start');
+    const slots = document.querySelectorAll('.timeslot-slots');
+    
+    debugHtml += `timeslot_date[]: [${Array.from(dates).map(d => d.value).join(', ')}]\n`;
+    debugHtml += `timeslot_start[]: [${Array.from(starts).map(s => s.value).join(', ')}]\n`;
+    debugHtml += `timeslot_slots[]: [${Array.from(slots).map(s => s.value).join(', ')}]\n`;
+    
+    debugHtml += `\nTimeslot count: ${dates.length}\n`;
+    
+    debugHtml += '</pre>';
+    debugContent.innerHTML = debugHtml;
+  }
+
   const addBtn = document.getElementById('add-timeslot-btn');
   const timeslotSection = document.getElementById('timeslots-section');
 
   addBtn.addEventListener('click', () => {
     const first = timeslotSection.querySelector('.timeslot-group');
     const clone = first.cloneNode(true);
-    clone.querySelectorAll('input').forEach(input => input.value = '');
+    
+    // Clear values in cloned inputs
+    clone.querySelectorAll('input').forEach(input => {
+      input.value = '';
+    });
+    
+    // Show remove button for new timeslots
     clone.querySelector('.remove-timeslot').style.display = 'inline-block';
+    
     timeslotSection.appendChild(clone);
+    
+    // Update debug info if in debug mode
+    if (debugMode) {
+      setTimeout(updateDebugInfo, 100);
+    }
   });
 
   function removeTimeslot(btn) {
     btn.closest('.timeslot-group').remove();
+    
+    // Update debug info if in debug mode
+    if (debugMode) {
+      setTimeout(updateDebugInfo, 100);
+    }
   }
 
+  // Enhanced form validation
   document.getElementById('programForm').addEventListener('submit', (e) => {
+    console.log('Form submission started');
+    
     const now = new Date();
+    const formData = new FormData(e.target);
+    
+    // Log all form data for debugging
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`);
+    }
+    
+    // Validate timeslots
+    const dates = document.querySelectorAll('.timeslot-date');
+    const starts = document.querySelectorAll('.timeslot-start');
+    const slots = document.querySelectorAll('.timeslot-slots');
+    
+    console.log('Timeslot validation:', {
+      dateCount: dates.length,
+      startCount: starts.length,
+      slotCount: slots.length
+    });
+    
+    // Check if we have at least one timeslot
+    if (dates.length === 0) {
+      e.preventDefault();
+      alert('Please add at least one timeslot.');
+      return false;
+    }
+    
+    // Validate each timeslot
+    for (let i = 0; i < dates.length; i++) {
+      const dateInput = dates[i];
+      const timeInput = starts[i];
+      const slotInput = slots[i];
+      
+      if (!dateInput || !timeInput || !slotInput) {
+        console.error(`Missing timeslot input at index ${i}`);
+        continue;
+      }
 
-    const slots = document.querySelectorAll('.timeslot-group');
-    for (const group of slots) {
-      const dateInput = group.querySelector('input[name="timeslot_date[]"]');
-      const timeInput = group.querySelector('input[name="timeslot_start[]"]');
-      if (!dateInput || !timeInput) continue;
+      if (!dateInput.value || !timeInput.value || !slotInput.value) {
+        e.preventDefault();
+        alert(`Please fill in all fields for timeslot ${i + 1}.`);
+        return false;
+      }
 
       const slotDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
       if (slotDateTime <= now) {
         e.preventDefault();
-        alert('All timeslots must be in the future.');
+        alert(`Timeslot ${i + 1} must be in the future.`);
+        return false;
+      }
+      
+      const slotCount = parseInt(slotInput.value);
+      if (isNaN(slotCount) || slotCount < 1) {
+        e.preventDefault();
+        alert(`Timeslot ${i + 1} must have at least 1 available slot.`);
         return false;
       }
     }
+    
+    console.log('✅ Form validation passed');
   });
 
   function toggleOtherType(select) {
@@ -262,6 +395,10 @@
       otherInput.style.display = 'none';
       otherInput.required = false;
       otherInput.value = '';
+    }
+    
+    if (debugMode) {
+      setTimeout(updateDebugInfo, 100);
     }
   }
 </script>

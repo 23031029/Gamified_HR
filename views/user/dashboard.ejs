@@ -39,9 +39,14 @@
       gap: 20px;
     }
     .upcoming-green {
-      background: #c8d83da3 !important; 
+      background: #4f96f3b5!important; 
       color: #222;
       border: 1px solid #b8d42f;
+    }
+    .ongoing-orange {
+      background: #0068efb5!important; 
+      color: #222;
+      border: 1px solid #ff9800;
     }
     .points-box {
       flex: 1;
@@ -129,7 +134,7 @@
       margin: 0 0 5px;
     }
     .list-item small {
-      color: #666;
+      color: #3f3f3f;
     }
     @keyframes growBar {
       to {
@@ -248,6 +253,16 @@
     .glow-animate {
       animation: glow-shine 3s ease-in-out;
     }
+
+    .milestone-labels span {
+      text-align: center;
+      min-width: 40px;
+      line-height: 1.2;
+    }
+    .milestone-labels span small {
+      color: #888;
+      font-size: 11px;
+    }
     
   </style>
 </head>
@@ -318,12 +333,9 @@
         </div>
         <div class="milestone-labels">
           <span>0</span>
-          <span>500</span>
-          <span>1000</span>
-          <span>1500</span>
-          <span>2000</span>
-          <span>2500</span>
-          <span>3000</span>
+          <% milestones.forEach(m => { %>
+            <span><%= m.value %><br/><small>(+<%= m.bonus %>)</small></span>
+          <% }); %>
         </div>
         <p style="text-align:center; margin-top: 10px;">
           Progress: <%= currentPoints %> / 3000 pts (<%= progressPercentage %>%)
@@ -358,13 +370,13 @@
       <div class="section-header">Your Programs</div>
       <div style="display: flex; gap: 30px; flex-wrap: wrap;">
         <div style="flex:1; min-width: 250px;">
-          <h3>Today's Program</h3>
-          <div class="upcoming-programs">
-            <% if (upcomingPrograms.length) { %>
+          <h3>Today's Programs</h3>
+          <div class="todays-programs">
+            <% if (todaysPrograms && todaysPrograms.length) { %>
               <%
                 const now = new Date(currentTime); // Use the current time passed from the server
               %>
-              <% upcomingPrograms.forEach(program => { %>
+              <% todaysPrograms.forEach(program => { %>
                 <%
                   // Construct the program's scheduled start and end times
                   const programStartDate = new Date(program.Date);
@@ -387,12 +399,18 @@
 
                   // Show button if conditions met
                   const showScanButton = isWithinScanWindow && canScan;
+                  
+                  // Use different styling for different program statuses
+                  let cardClass = 'list-item upcoming-green'; // Default for upcoming/registered
+                  if (program.Status === 'Ongoing') {
+                    cardClass = 'list-item ongoing-orange';
+                  }
                 %>
-                <div class="list-item upcoming-green">
+                <div class="<%= cardClass %>">
                   <h4><%= program.Title %></h4>
                   <small>
                     <%= program.Type %> | 
-                    <span style="color: red; font-weight: bolder;">
+                    <span style="color: rgba(196, 36, 36, 0.605); font-weight: bolder;">
                       <%= program.Date ? (program.Date.toLocaleDateString ? program.Date.toLocaleDateString() : program.Date) : '' %>
                       &nbsp;
                       <%= program.Start_Time ? program.Start_Time.substring(0,5) : '' %>
@@ -408,16 +426,16 @@
                 </div>
               <% }); %>
             <% } else { %>
-              <div class="list-item">No upcoming program.</div>
+              <div class="list-item">No programs scheduled for today.</div>
             <% } %>
           </div>
         </div>
 
         <div style="flex:1; min-width: 250px;">
-          <h3>Registered</h3>
-          <div class="ongoing-programs">
-            <% if (ongoingPrograms.length) { %>
-              <% ongoingPrograms.forEach(program => { %>
+          <h3>Registered Programs</h3>
+          <div class="registered-programs">
+            <% if (registeredPrograms && registeredPrograms.length) { %>
+              <% registeredPrograms.forEach(program => { %>
                 <div class="list-item">
                   <h4><%= program.Title %></h4>
                   <small>

@@ -73,28 +73,11 @@
         display: flex;
         flex-direction: column;
         box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden; /* Prevent sidebar itself from scrolling */
       }
 
       .sidebar.collapsed {
         transform: translateX(-280px);
-      }
-
-      .sidebar-header {
-        padding: 30px 20px 20px;
-        text-align: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .sidebar-header h2 {
-        color: #565F63;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0;
-      }
-
-      .nav-menu {
-        flex: 1;
-        padding: 20px 0;
       }
 
       .sidebar-header {
@@ -104,6 +87,7 @@
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
         position: relative;
         overflow: hidden;
+        flex-shrink: 0; /* Prevent header from shrinking */
       }
 
       .sidebar-header::before {
@@ -188,6 +172,35 @@
         font-size: 0.8rem;
       }
 
+      /* Scrollable navigation menu */
+      .nav-menu {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px 0;
+        /* Custom scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(86, 95, 99, 0.3) transparent;
+      }
+
+      /* Webkit scrollbar styling */
+      .nav-menu::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .nav-menu::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .nav-menu::-webkit-scrollbar-thumb {
+        background: rgba(86, 95, 99, 0.3);
+        border-radius: 3px;
+      }
+
+      .nav-menu::-webkit-scrollbar-thumb:hover {
+        background: rgba(86, 95, 99, 0.5);
+      }
+
       .nav-menu ul {
         list-style: none;
         padding: 0;
@@ -255,9 +268,12 @@
         box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
       }
 
+      /* Logout section - fixed at bottom */
       .logout-section {
         padding: 20px;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
+        flex-shrink: 0; /* Prevent logout section from shrinking */
+        background: inherit; /* Maintain gradient background */
       }
 
       .logout-link {
@@ -422,72 +438,82 @@
     </a>
 
     <div class="nav-menu">
-      <ul>
-        <% if (staff.role == "admin") { %>
-          <li class="nav-item">
-            <a href="/admin/dashboard" class="nav-link<%= currentPath === '/admin/dashboard' ? ' active' : '' %>">
-              <i class="fas fa-chart-line""></i>
-              Admin Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/rewards" class="nav-link<%= currentPath === '/admin/rewards' ? ' active' : '' %>">
-              <i class="fas fa-gift"></i>
-              Admin Rewards
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/leaderboard" class="nav-link<%= currentPath === '/admin/leaderboard' ? ' active' : '' %>">
-              <i class="fas fa-trophy"></i>
-              Admin Leaderboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/admin/programs" class="nav-link<%= currentPath === '/admin/programs' ? ' active' : '' %>">
-              <i class="fas fa-calendar-alt"></i>
-              Admin Program
-            </a>
-          </li>
-        <% } else { %>
-          <li class="nav-item">
-            <a href="/user/dashboard" class="nav-link<%= currentPath === '/user/dashboard' ? ' active' : '' %>">
-              <i class="fas fa-tachometer-alt"></i>
-              Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/user/scan" class="nav-link scan-attendance<%= currentPath === '/user/scan' ? ' active' : '' %>">
-              <i class="fas fa-qrcode"></i>
-              Scan Attendance
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/user/rewards" class="nav-link<%= currentPath === '/user/rewards' ? ' active' : '' %>">
-              <i class="fas fa-gift"></i>
-              Rewards
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/user/leaderboard" class="nav-link<%= currentPath === '/user/leaderboard' ? ' active' : '' %>">
-              <i class="fas fa-trophy"></i>
-              Leaderboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/user/programs" class="nav-link<%= currentPath === '/user/programs' ? ' active' : '' %>">
-              <i class="fas fa-calendar-alt"></i>
-              Program
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/user/invites" class="nav-link<%= currentPath === '/user/invites' ? ' active' : '' %>">
-              <i class="fas fa-envelope-open-text"></i>
-              Invites
-            </a>
-          </li>
-        <% } %>
-      </ul>
-    </div>
+  <ul>
+    <% if (staff.role === "admin") { %>
+      <li class="nav-item">
+        <span style="padding: 0 20px; color: #2c3e50; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Admin Panel</span>
+      </li>
+      <li class="nav-item">
+        <a href="/admin/dashboard" class="nav-link<%= currentPath === '/admin/dashboard' ? ' active' : '' %>">
+          <i class="fas fa-chart-line"></i>
+          Admin Dashboard
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/admin/rewards" class="nav-link<%= currentPath === '/admin/rewards' ? ' active' : '' %>">
+          <i class="fas fa-gift"></i>
+          Admin Rewards
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/admin/leaderboard" class="nav-link<%= currentPath === '/admin/leaderboard' ? ' active' : '' %>">
+          <i class="fas fa-trophy"></i>
+          Admin Leaderboard
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/admin/programs" class="nav-link<%= currentPath === '/admin/programs' ? ' active' : '' %>">
+          <i class="fas fa-calendar-alt"></i>
+          Admin Program
+        </a>
+      </li>
+
+      <li class="nav-item" style="margin-top: 25px;">
+        <span style="padding: 0 20px; color: #2c3e50; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">User Panel</span>
+      </li>
+    <% } %>
+
+    <% if (staff.role === "user" || staff.role === "admin") { %>
+            <li class="nav-item">
+        <a href="/user/scan" class="nav-link scan-attendance<%= currentPath === '/user/scan' ? ' active' : '' %>">
+          <i class="fas fa-qrcode"></i>
+          Scan Attendance
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/user/dashboard" class="nav-link<%= currentPath === '/user/dashboard' ? ' active' : '' %>">
+          <i class="fas fa-tachometer-alt"></i>
+          Dashboard
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/user/rewards" class="nav-link<%= currentPath === '/user/rewards' ? ' active' : '' %>">
+          <i class="fas fa-gift"></i>
+          Rewards
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/user/leaderboard" class="nav-link<%= currentPath === '/user/leaderboard' ? ' active' : '' %>">
+          <i class="fas fa-trophy"></i>
+          Leaderboard
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/user/programs" class="nav-link<%= currentPath === '/user/programs' ? ' active' : '' %>">
+          <i class="fas fa-calendar-alt"></i>
+          Program
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/user/invites" class="nav-link<%= currentPath === '/user/invites' ? ' active' : '' %>">
+          <i class="fas fa-envelope-open-text"></i>
+          Invites
+        </a>
+      </li>
+    <% } %>
+  </ul>
+</div>
+
 
     <div class="logout-section">
       <a href="/logout" class="logout-link">
@@ -523,8 +549,6 @@
 
     <!-- Mobile Overlay -->
     <div class="overlay" id="overlay"></div>
-
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       // Initialize navigation functionality

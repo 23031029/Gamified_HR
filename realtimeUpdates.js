@@ -1,6 +1,6 @@
 const db = require('./db');
 
-const updateProgramStatus = () => {
+const update = () => {
   const resetStatus = `
     UPDATE staff_program sp
     JOIN Timeslot t ON sp.timeslotID = t.timeslotID
@@ -23,6 +23,30 @@ const updateProgramStatus = () => {
       AND CONCAT(t.Date, ' ', t.Start_Time) > NOW()
       AND sp.Status = 'Registered'
   `;
+
+  const setOngoing = `
+    UPDATE staff_program sp
+    JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+    SET sp.Status = 'Ongoing'
+    WHERE NOW() BETWEEN CONCAT(t.Date, ' ', t.Start_Time)
+                    AND ADDTIME(
+                      ADDTIME(CONCAT(t.Date, ' ', t.Start_Time), SEC_TO_TIME(t.Duration * 60)),
+                      '00:15:00'
+                    )
+      AND sp.Status != 'Completed'
+  `;
+
+  const setCancelled = `
+    UPDATE staff_program sp
+    JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+    SET sp.Status = 'Cancelled'
+    WHERE NOW() > ADDTIME(
+                    ADDTIME(CONCAT(t.Date, ' ', t.Start_Time), SEC_TO_TIME(t.Duration * 60)),
+                    '00:15:00'
+                 )
+      AND sp.Status NOT IN ('Completed', 'Cancelled')
+  `;
+
   const autoDeactivate = `
     UPDATE Program p
     SET p.status = 'Inactive'
@@ -46,15 +70,28 @@ const updateProgramStatus = () => {
         return;
       }
 
-        db.query(autoDeactivate, (err3) => {
-          if (err3) {
-            console.error('[Auto Deactivate Error]', err3);
+      db.query(setOngoing, (err3) => {
+        if (err3) {
+          console.error('[Set Ongoing Error]', err3);
+          return;
+        }
+
+        db.query(setCancelled, (err4) => {
+          if (err4) {
+            console.error('[Set Cancelled Error]', err4);
             return;
           }
 
+          db.query(autoDeactivate, (err5) => {
+            if (err5) {
+              console.error('[Auto Deactivate Error]', err5);
+              return;
+            }
+          });
         });
       });
     });
+  });
 };
 
-module.exports = updateProgramStatus;
+module.exports = update;

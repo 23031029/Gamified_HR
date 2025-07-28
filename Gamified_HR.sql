@@ -253,5 +253,10 @@ CREATE TABLE IF NOT EXISTS Staff_Milestone (
 );
 
 
-
-
+CREATE TABLE IF NOT EXISTS Staff_Milestone (
+  staffID VARCHAR(10),
+  milestone INT,
+  bonus_points INT,
+  awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (staffID, milestone)
+);

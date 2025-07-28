@@ -1,9 +1,9 @@
 const db = require('../db');
 const updateProgramStatus = require('../realtimeUpdates');
-const QRCode = require('qrcode');
 const { Parser } = require('json2csv');
 const ExcelJS = require('exceljs');
 
+//Getting Sign In Page
 exports.getSignIn= (req, res)=>{
     res.render('user/index', {
         message: req.flash('successLogin'),
@@ -12,6 +12,7 @@ exports.getSignIn= (req, res)=>{
     });
 };
 
+//Getting Register Page
 exports.getRegister = (req, res) => {
   const getDepartments = `SELECT * FROM department`;
   const getLastID = `SELECT staffID FROM staff ORDER BY staffID DESC LIMIT 1`;
@@ -43,12 +44,13 @@ exports.getRegister = (req, res) => {
         regData,
         regErrors,
         currentPath: req.path,
-        nextStaffID // pass to view
+        nextStaffID 
       });
     });
   });
 };
 
+//Post Login
 exports.login = async (req, res) => {
   const { staffID, password } = req.body;
 
@@ -98,7 +100,7 @@ exports.login = async (req, res) => {
 };
 
 
-
+//Post Register
 exports.register = (req, res) => {
     const { first, last, email, password, role, department, address, phone, dob, gender } = req.body;
     let profile = 'default.jpg';
@@ -139,7 +141,6 @@ exports.register = (req, res) => {
                 return res.redirect('/admin/register');
             }
 
-            // Updated insert statement to match new database schema
             const insertSql = `INSERT INTO staff 
                 (staffID, first_name, last_name, email, password, role, department, home_address, phone_number, dob, date_join, status, total_point, profile_image, gender) 
                 VALUES (?, ?, ?, ?, SHA1(?), ?, ?, ?, ?, ?, CURDATE(), 'Active', 0, ?, ?)`;
@@ -348,6 +349,7 @@ exports.getAdmin = (req, res) => {
 };
 
 
+//Update staff status Active or Incactive
 exports.updateStatus = (req, res) => {
     const { staffID } = req.params;
     const { status } = req.body;
@@ -367,6 +369,7 @@ exports.updateStatus = (req, res) => {
     });
 };
 
+//Get Personal Profile Details
 exports.getEditDetail = (req, res) => {
     const staffID = req.session.staff?.staffID;
 
@@ -474,6 +477,7 @@ exports.getEditDetail = (req, res) => {
 };
 
 
+//Get Chnage Password Page
 exports.getChangePassword = (req, res) => {
     res.render('user/changePassword', {
         error: req.flash('errorChange'),
@@ -526,46 +530,48 @@ exports.postChangePassword = (req, res) => {
     });
 };
 
-exports.editStaff = (req, res) => {
-    const staffID = req.params.staffID;
-    const {
-        first_name,
-        last_name,
-        role,
-        department_name,
-        old_profile_image
-    } = req.body;
+//Update one staff details
+// exports.editStaff = (req, res) => {
+//     const staffID = req.params.staffID;
+//     const {
+//         first_name,
+//         last_name,
+//         role,
+//         department_name,
+//         old_profile_image
+//     } = req.body;
 
-    const getDeptID = `SELECT departmentID FROM department WHERE name = ?`;
+//     const getDeptID = `SELECT departmentID FROM department WHERE name = ?`;
 
-    let profile_image = old_profile_image;
-    if (req.file && req.file.filename) {
-        profile_image = req.file.filename;
-    }
+//     let profile_image = old_profile_image;
+//     if (req.file && req.file.filename) {
+//         profile_image = req.file.filename;
+//     }
     
-    db.query(getDeptID, [department_name], (err, deptResult) => {
-        if (err || deptResult.length === 0) {
-            req.flash('errorStaff', 'Invalid department');
-            return res.redirect('/admin/dashboard');
-        }
-        const departmentID = deptResult[0].departmentID;
+//     db.query(getDeptID, [department_name], (err, deptResult) => {
+//         if (err || deptResult.length === 0) {
+//             req.flash('errorStaff', 'Invalid department');
+//             return res.redirect('/admin/dashboard');
+//         }
+//         const departmentID = deptResult[0].departmentID;
 
-        const updateSql = `
-            UPDATE staff
-            SET first_name = ?, last_name = ?, role = ?, department = ?, profile_image = ?
-            WHERE staffID = ?
-        `;
-        db.query(updateSql, [first_name, last_name, role, departmentID, profile_image, staffID], (err2) => {
-            if (err2) {
-                req.flash('errorStaff', 'Failed to update staff details');
-            } else {
-                req.flash('successStaff', 'Staff details updated successfully');
-            }
-            res.redirect('/admin/dashboard');
-        });
-    });
-};
+//         const updateSql = `
+//             UPDATE staff
+//             SET first_name = ?, last_name = ?, role = ?, department = ?, profile_image = ?
+//             WHERE staffID = ?
+//         `;
+//         db.query(updateSql, [first_name, last_name, role, departmentID, profile_image, staffID], (err2) => {
+//             if (err2) {
+//                 req.flash('errorStaff', 'Failed to update staff details');
+//             } else {
+//                 req.flash('successStaff', 'Staff details updated successfully');
+//             }
+//             res.redirect('/admin/dashboard');
+//         });
+//     });
+// };
 
+//Get 1 staff details to edit
 exports.getEditStaff = (req, res) => {
     const staffID = req.params.staffID;
 
@@ -599,7 +605,7 @@ exports.getEditStaff = (req, res) => {
     });
 };
 
-// POST: Update staff details (name, role, department, profile image, add new department if needed)
+// POST: Update staff details
 exports.postEditStaff = (req, res) => {
     const staffID = req.params.staffID;
     const {
@@ -611,10 +617,7 @@ exports.postEditStaff = (req, res) => {
         old_profile_image
     } = req.body;
 
-    // Profile image fallback
     const profile_image = req.file?.filename || old_profile_image;
-
-    // If "other" department is selected
     if (department === 'other' && other_department?.trim()) {
         const getLastDeptID = `SELECT departmentID FROM department ORDER BY departmentID DESC LIMIT 1`;
         db.query(getLastDeptID, (err, deptResults) => {
@@ -642,7 +645,6 @@ exports.postEditStaff = (req, res) => {
         updateStaff(department);
     }
 
-    // Update staff helper function
     function updateStaff(departmentID) {
         const updateSql = `
             UPDATE staff
@@ -662,6 +664,7 @@ exports.postEditStaff = (req, res) => {
 };
 
 
+//Edit Personal details
 exports.editParticulars = (req, res) => {
     const staffID = req.session.staff?.staffID;
     const { field, value } = req.body;
@@ -684,6 +687,7 @@ exports.editParticulars = (req, res) => {
     });
 };
 
+//Export dashboard details
 exports.exportDashboard = (req, res) => {
   const query = `
     SELECT 
@@ -770,3 +774,386 @@ exports.exportDashboardExcel = async (req, res) => {
     res.status(500).send('Failed to export dashboard.');
   }
 };
+
+
+const getUserDashboard = (req, res) => {
+  const staffID = req.session.staff?.staffID;
+  if (!staffID) {
+    return res.redirect('/login'); 
+  }
+  const pointsEarned = req.query.pointsEarned || null;
+  
+  const userInfoQuery = `
+    SELECT s.*, d.name AS department_name,
+           CONCAT(s.first_name, ' ', s.last_name) AS name
+    FROM Staff s 
+    JOIN Department d ON s.department = d.departmentID 
+    WHERE s.staffID = ?
+  `;
+  const registeredProgramsQuery = `
+    SELECT sp.*, p.Title, pt.name AS Type, t.Date, t.Start_Time, t.Duration, 
+           ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time, 
+           p.points_reward, sp.Status
+    FROM staff_program sp
+    JOIN Program p ON sp.programID = p.ProgramID
+    JOIN Program_type pt ON p.TypeID = pt.typeID
+    JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+    WHERE sp.staffID = ? AND sp.Status = 'Registered' AND t.Date != CURDATE()
+    ORDER BY t.Date ASC, t.Start_Time ASC
+  `;
+  const todaysProgramsQuery = `
+    SELECT sp.*, p.Title, pt.name AS Type, t.Date, t.Start_Time, t.Duration, 
+           ADDTIME(t.Start_Time, SEC_TO_TIME(t.Duration * 60)) AS End_Time, 
+           p.points_reward, sp.Status
+    FROM staff_program sp
+    JOIN Program p ON sp.programID = p.ProgramID
+    JOIN Program_type pt ON p.TypeID = pt.typeID
+    JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+    WHERE sp.staffID = ? AND (
+      (sp.Status = "Upcoming" OR sp.Status = "Ongoing") OR 
+      (sp.Status = "Registered" AND t.Date = CURDATE())
+    )
+    ORDER BY 
+      CASE sp.Status 
+        WHEN 'Ongoing' THEN 1
+        WHEN 'Upcoming' THEN 2
+        WHEN 'Registered' THEN 3
+        ELSE 4
+      END,
+      t.Date ASC, 
+      t.Start_Time ASC
+  `;
+  
+  const redeemedRewardsQuery = `
+    SELECT r.name, r.description, re.Redeem_Date, r.points 
+    FROM Redeem re 
+    JOIN Reward r ON re.RewardID = r.RewardID 
+    WHERE re.staffID = ?
+    ORDER BY re.Redeem_Date DESC
+  `;
+  
+  const totalSpentQuery = `
+    SELECT SUM(r.points) AS total_spent 
+    FROM Redeem re 
+    JOIN Reward r ON re.RewardID = r.RewardID 
+    WHERE re.staffID = ?
+  `;
+  
+  const pointHistoryQuery = `
+    SELECT r.name AS source, r.points * -1 AS points, re.Redeem_Date AS date, 'Spent' AS type
+    FROM Redeem re
+    JOIN Reward r ON re.RewardID = r.RewardID
+    WHERE re.staffID = ?
+    
+    UNION ALL
+    
+    SELECT p.Title AS source, p.points_reward AS points, t.Date AS date, 'Earned' AS type
+    FROM staff_program sp
+    JOIN Program p ON sp.programID = p.ProgramID
+    JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+    WHERE sp.Status = 'Completed' AND sp.staffID = ?
+
+    UNION ALL
+
+    SELECT CONCAT('Milestone ', milestone) AS source, bonus_points AS points, 
+           DATE(awarded_at) AS date, 'Bonus' AS type
+    FROM Staff_Milestone
+    WHERE staffID = ?
+    
+    ORDER BY date DESC, type ASC
+  `;
+  const ensureMilestoneTable = (callback) => {
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS Staff_Milestone (
+        staffID VARCHAR(10),
+        milestone INT,
+        bonus_points INT,
+        awarded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (staffID, milestone),
+        FOREIGN KEY (staffID) REFERENCES Staff(staffID)
+      )
+    `;
+    
+    db.query(createTableQuery, (err) => {
+      if (err) {
+        console.error('Error creating Staff_Milestone table:', err);
+        return callback(err);
+      }
+      console.log('Staff_Milestone table ensured');
+      callback(null);
+    });
+  };
+
+  function renderDashboard() {
+    db.query(userInfoQuery, [staffID], (err, userResults) => {
+      if (err || userResults.length === 0) {
+        console.error('User info query error:', err);
+        return res.status(500).send("Error fetching user info");
+      }
+      const user = userResults[0];
+    
+      db.query(todaysProgramsQuery, [staffID], (err, todaysResults) => {
+        if (err) {
+          console.error('Today\'s programs query error:', err);
+          return res.status(500).send("Error fetching today's programs");
+        }
+        db.query(registeredProgramsQuery, [staffID], (err, registeredResults) => {
+          if (err) {
+            console.error('Registered programs query error:', err);
+            return res.status(500).send("Error fetching registered programs");
+          }
+          
+          db.query(redeemedRewardsQuery, [staffID], (err, rewardResults) => {
+            if (err) {
+              console.error('Rewards query error:', err);
+              return res.status(500).send("Error fetching rewards");
+            }
+            
+            db.query(totalSpentQuery, [staffID], (err, spentResult) => {
+              if (err) {
+                console.error('Total spent query error:', err);
+                return res.status(500).send("Error fetching points spent");
+              }
+              db.query(pointHistoryQuery, [staffID, staffID, staffID], (err, pointHistory) => {
+                if (err) {
+                  console.error('Point history query error:', err);
+                  console.error('Query:', pointHistoryQuery);
+                  console.error('Parameters:', [staffID, staffID, staffID]);
+                  pointHistory = [];
+                }
+                
+                const spent = Number(spentResult[0]?.total_spent) || 0;
+                const balance = Number(user.total_point) || 0;
+                const earned = balance + spent;
+                
+                res.render('user/dashboard', {
+                  user,
+                  todaysPrograms: todaysResults,
+                  registeredPrograms: registeredResults,
+                  rewards: rewardResults,
+                  points: {
+                    earned,
+                    spent,
+                    balance
+                  },
+                  pointHistory,
+                  currentPath: req.path,
+                  pointsEarned,
+                  currentTime: new Date()
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  }
+  ensureMilestoneTable((err) => {
+    if (err) {
+      console.error('Failed to ensure milestone table:', err);
+      return renderDashboard();
+    }
+    
+    db.query(userInfoQuery, [staffID], (err, userResults) => {
+      if (err || userResults.length === 0) {
+        console.error('Initial user info query error:', err);
+        return res.status(500).send("Error fetching user info");
+      }
+      const user = userResults[0];
+      const balance = Number(user.total_point) || 0;
+      
+      const milestoneThresholds = [
+        { value: 500, bonus: 10 },
+        { value: 1000, bonus: 20 },
+        { value: 1500, bonus: 30 },
+        { value: 2000, bonus: 40 },
+        { value: 2500, bonus: 50 },
+        { value: 3000, bonus: 60 }
+      ];
+      const checkMilestonesQuery = `SELECT milestone FROM Staff_Milestone WHERE staffID = ?`;
+      db.query(checkMilestonesQuery, [staffID], (err, milestoneRows) => {
+        if (err) {
+          console.error('Milestone check query error:', err);
+          console.error('Error details:', {
+            code: err.code,
+            sqlMessage: err.sqlMessage,
+            sql: err.sql
+          });
+          db.query('SHOW TABLES LIKE "Staff_Milestone"', (showErr, showResults) => {
+            if (showErr) {
+              console.error('Error checking if table exists:', showErr);
+            } else if (showResults.length === 0) {
+              console.error('Staff_Milestone table does not exist');
+            } else {
+              console.log('Staff_Milestone table exists');
+              db.query('DESCRIBE Staff_Milestone', (descErr, descResults) => {
+                if (descErr) {
+                  console.error('Error describing table:', descErr);
+                } else {
+                  console.log('Table structure:', descResults);
+                }
+              });
+            }
+          });
+          return renderDashboard();
+        }
+
+        const alreadyAwarded = new Set(milestoneRows.map(row => row.milestone));
+        const toAward = milestoneThresholds.filter(m => balance >= m.value && !alreadyAwarded.has(m.value));
+
+        if (toAward.length === 0) return renderDashboard();
+
+        const bonusTotal = toAward.reduce((sum, m) => sum + m.bonus, 0);
+        const values = toAward.map(m => [staffID, m.value, m.bonus]);
+
+        const insertMilestones = `INSERT INTO Staff_Milestone (staffID, milestone, bonus_points) VALUES ?`;
+        const updatePoints = `UPDATE Staff SET total_point = total_point + ? WHERE staffID = ?`;
+
+        db.query(insertMilestones, [values], (err2) => {
+          if (err2) {
+            console.error('Insert milestones error:', err2);
+            console.error('Values being inserted:', values);
+            return res.status(500).send("Error saving milestone bonus");
+          }
+
+          db.query(updatePoints, [bonusTotal, staffID], (err3) => {
+            if (err3) {
+              console.error('Update points error:', err3);
+              return res.status(500).send("Error updating bonus points");
+            }
+            return res.redirect(`/user/dashboard?pointsEarned=${bonusTotal}`);
+          });
+        });
+      });
+    });
+  });
+};
+
+// USER LEADERBOARD
+exports.getUserLeaderboard = (req, res) => {
+  const staffID = req.session.staff.staffID;
+  const filter = req.query.filter || 'all';
+
+  let query = `
+    SELECT staffID, CONCAT(first_name, ' ', last_name) AS name, profile_image, department.name AS department_name, total_point
+    FROM staff
+    JOIN department ON staff.department = department.departmentID
+  `;
+  const params = [];
+
+  if (filter === 'department') {
+    query += ' WHERE department.departmentID = (SELECT department FROM staff WHERE staffID = ?)';
+    params.push(staffID);
+  }
+
+  query += ' ORDER BY total_point DESC';
+
+  db.query(query, params, (err, leaderboard) => {
+    if (err) return res.status(500).send('Error loading leaderboard');
+    const historyQuery = `
+      SELECT r.name AS source, r.points * -1 AS points, re.Redeem_Date AS date, 'Redeem' AS type
+      FROM Redeem re
+      JOIN Reward r ON re.RewardID = r.RewardID
+      WHERE re.staffID = ?
+      
+      UNION
+
+      SELECT p.Title AS source, p.points_reward AS points, t.Date AS date, 'Program' AS type
+      FROM staff_program sp
+      JOIN Program p ON sp.programID = p.ProgramID
+      JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+      WHERE sp.Status = 'Completed' AND sp.staffID = ?
+
+      ORDER BY date DESC
+    `;
+
+    db.query(historyQuery, [staffID, staffID], (err2, history) => {
+      if (err2) return res.status(500).send('Error loading point history');
+      leaderboard.forEach(user => {
+        if (user.staffID === staffID) {
+          user.history = history;
+        }
+      });
+
+      res.render('user/leaderboard', {
+        leaderboard,
+        staffID,
+        filter,
+        currentPath: req.path
+      });
+    });
+  });
+};
+exports.getAdminLeaderboard = (req, res) => {
+  const staffID = req.session.staff.staffID;
+  const filter = req.query.filter || 'all';
+
+  let leaderboardQuery = `
+    SELECT staffID, CONCAT(first_name, ' ', last_name) AS name, profile_image, department.name AS department_name, total_point
+    FROM staff
+    JOIN department ON staff.department = department.departmentID
+  `;
+  const params = [];
+
+  if (filter === 'department') {
+    leaderboardQuery += ' WHERE department.departmentID = (SELECT department FROM staff WHERE staffID = ?)';
+    params.push(staffID);
+  }
+
+  leaderboardQuery += ' ORDER BY total_point DESC';
+
+  db.query(leaderboardQuery, params, async (err, leaderboard) => {
+    if (err) return res.status(500).send('Error loading leaderboard');
+
+    const getPointHistory = (staffID) => {
+      return new Promise((resolve, reject) => {
+        const sql = `
+          SELECT 
+            sp.staffID,
+            t.Date AS date,
+            p.Title AS source,
+            p.points_reward AS points,
+            'Program' AS type
+          FROM staff_program sp
+          JOIN Timeslot t ON sp.timeslotID = t.timeslotID
+          JOIN Program p ON sp.programID = p.ProgramID
+          WHERE sp.staffID = ? AND sp.Status = 'Completed'
+
+          UNION
+
+          SELECT 
+            r.staffID,
+            re.Redeem_Date AS date,
+            rw.name AS source,
+            -rw.points AS points,
+            'Redeem' AS type
+          FROM Redeem re
+          JOIN Reward rw ON re.RewardID = rw.RewardID
+          JOIN Staff r ON re.staffID = r.staffID
+          WHERE re.staffID = ?
+          
+          ORDER BY date DESC
+        `;
+        db.query(sql, [staffID, staffID], (err2, result) => {
+          if (err2) return reject(err2);
+          resolve(result);
+        });
+      });
+    };
+    const leaderboardWithHistory = await Promise.all(
+      leaderboard.map(async (user) => {
+        const history = await getPointHistory(user.staffID);
+        return { ...user, history };
+      })
+    );
+
+    res.render('admin/leaderboard', {
+      leaderboard: leaderboardWithHistory,
+      staffID,
+      filter,
+      currentPath: req.path
+    });
+  });
+};
+
+exports.getUserDashboard = getUserDashboard;

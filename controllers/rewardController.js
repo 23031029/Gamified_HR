@@ -355,8 +355,7 @@ exports.claimReward = (req, res) => {
         });
     });
 };
- 
-// View user's redeemed rewards history
+
 exports.redeemHistory = (req, res) => {
     const staffID = req.session.staff?.staffID;
     if (!staffID) {

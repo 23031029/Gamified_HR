@@ -1,7 +1,4 @@
 const db = require('../db');
-
-
-// Helper: Get all program types
 function getProgramTypes(cb) {
     db.query('SELECT typeID, name FROM Program_Type', cb);
 }
@@ -779,46 +776,6 @@ exports.postAddProgram = (req, res) => {
     console.log('=== ADD PROGRAM DEBUG END ===');
 };
 
-// ALSO ADD THIS HELPER FUNCTION FOR TESTING TIMESLOT INSERTION DIRECTLY
-exports.testTimeslotInsert = (req, res) => {
-    // Test function to manually insert a timeslot
-    const testData = [
-        'P001', // ProgramID - make sure this exists in your Program table
-        '2025-08-01', // Date
-        '10:00:00', // Start_Time
-        60, // Duration
-        10 // Slots_availablility
-    ];
-    
-    const insertQuery = `
-        INSERT INTO Timeslot (ProgramID, Date, Start_Time, Duration, Slots_availablility)
-        VALUES (?, ?, ?, ?, ?)
-    `;
-    
-    console.log('Testing timeslot insert with data:', testData);
-    
-    db.query(insertQuery, testData, (err, result) => {
-        if (err) {
-            console.error('Test insert error:', err);
-            return res.json({
-                success: false,
-                error: err.message,
-                errno: err.errno,
-                code: err.code
-            });
-        }
-        
-        console.log('Test insert successful:', result);
-        res.json({
-            success: true,
-            result: result,
-            insertId: result.insertId,
-            affectedRows: result.affectedRows
-        });
-    });
-};
-
-
 // Render edit form (with timeslot)
 exports.getEditProgram = (req, res) => {
     const programID = req.params.id;
@@ -1093,7 +1050,15 @@ exports.joinProgram = (req, res) => {
   });
 };
 
-
+exports.cancelProgram = (req, res) => {
+    const participantID = req.params.participantID;
+    const cancelSQL = `UPDATE staff_program SET Status = 'Cancelled' WHERE participantID = ?`;
+    
+    db.query(cancelSQL, [participantID], (err, result) => {
+        if (err) throw err;
+        res.redirect('/user/dashboard');
+    });
+};
 
 exports.toggleProgramStatus = (req, res) => {
     const programID = req.params.id;
@@ -1114,44 +1079,4 @@ exports.toggleProgramStatus = (req, res) => {
         req.flash('errorP', 'Invalid action.');
         res.redirect('/admin/programs');
     }
-};
-
-exports.cancelProgram = (req, res) => {
-    const participantID = req.params.participantID;
-    const cancelSQL = `UPDATE staff_program SET Status = 'Cancelled' WHERE participantID = ?`;
-    
-    db.query(cancelSQL, [participantID], (err, result) => {
-        if (err) throw err;
-        res.redirect('/user/dashboard');
-    });
-};
-
-exports.debugPrograms = (req, res) => {
-    const queries = [
-        'SELECT COUNT(*) as program_count FROM Program',
-        'SELECT COUNT(*) as timeslot_count FROM Timeslot', 
-        'SELECT p.ProgramID, p.Title, COUNT(t.timeslotID) as timeslot_count FROM Program p LEFT JOIN Timeslot t ON p.ProgramID = t.ProgramID GROUP BY p.ProgramID',
-        'SELECT * FROM Timeslot ORDER BY ProgramID, Date, Start_Time'
-    ];
-
-    let results = {};
-    let completed = 0;
-
-    queries.forEach((query, index) => {
-        db.query(query, (err, result) => {
-            if (err) {
-                results[`query_${index}`] = { error: err.message };
-            } else {
-                results[`query_${index}`] = result;
-            }
-            completed++;
-            
-            if (completed === queries.length) {
-                res.json({
-                    message: 'Debug information',
-                    results: results
-                });
-            }
-        });
-    });
 };

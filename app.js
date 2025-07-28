@@ -21,10 +21,11 @@ cron.schedule('* * * * *', () => {
 
 
 // Controllers
-const serjiaControl = require('./controllers/serjiaController');
-const isabelControl = require('./controllers/isabelController');
-const nikiController= require('./controllers/nikiController');
-const alyshaControl= require('./controllers/alyshaController')
+const general= require('./controllers/generalController');
+const feedback= require('./controllers/feedbackController')
+const reward = require('./controllers/rewardController');
+const chatInvite= require('./controllers/chat&inviteController');
+const program= require('./controllers/programController');
 
 // Middleware
 const { checkAuthentication, checkAdmin, checkUser } = require('./middleware/auth');
@@ -105,72 +106,62 @@ app.use((req, res, next) => {
 app.use(flash()); // Use flash middleware after session middleware
 
 //Ser Jia
-app.get('/', serjiaControl.getSignIn);
-app.post('/sign-in', validateLogin, serjiaControl.login);
-app.get('/admin/register', checkAuthentication, checkAdmin, serjiaControl.getRegister);
-app.post('/register', checkAuthentication, checkAdmin, upload.single('profile'), validateReg, serjiaControl.register);
-app.get('/admin/dashboard', checkAuthentication, checkAdmin, serjiaControl.getAdmin);
-app.get('/logout', checkAuthentication, serjiaControl.logout);
-app.post('/status/:staffID', checkAuthentication, checkAdmin, serjiaControl.updateStatus);
-app.get('/user/profile', checkAuthentication, serjiaControl.getEditDetail);
-app.get('/user/change-password', checkAuthentication, serjiaControl.getChangePassword);
-app.post('/user/change-password', checkAuthentication, validatePasswordChange, serjiaControl.postChangePassword);
-app.post('/user/edit-particulars', serjiaControl.editParticulars)
-app.get('/editStaff/:staffID', checkAuthentication, checkAdmin, serjiaControl.getEditStaff);
-app.post('/editStaff/:staffID', checkAuthentication, checkAdmin, upload.single('profile'), serjiaControl.postEditStaff);
-app.get('/qr/:timeslotID', alyshaControl.generateQRCode);
-app.get('/user/scan', alyshaControl.getScanQR);
-app.get('/user/attend', alyshaControl.markAttendance);
-app.get('/admin/export-dashboard', checkAuthentication, checkAdmin, serjiaControl.exportDashboard);
-app.get('/admin/export-dashboard-excel', checkAuthentication, checkAdmin, serjiaControl.exportDashboardExcel);
+app.get('/', general.getSignIn);
+app.post('/sign-in', validateLogin, general.login);
+app.get('/admin/register', checkAuthentication, checkAdmin, general.getRegister);
+app.post('/register', checkAuthentication, checkAdmin, upload.single('profile'), validateReg, general.register);
+app.get('/admin/dashboard', checkAuthentication, checkAdmin, general.getAdmin);
+app.get('/logout', checkAuthentication, general.logout);
+app.post('/status/:staffID', checkAuthentication, checkAdmin, general.updateStatus);
+app.get('/user/profile', checkAuthentication, general.getEditDetail);
+app.get('/user/change-password', checkAuthentication, general.getChangePassword);
+app.post('/user/change-password', checkAuthentication, validatePasswordChange, general.postChangePassword);
+app.post('/user/edit-particulars', general.editParticulars)
+app.get('/editStaff/:staffID', checkAuthentication, checkAdmin, general.getEditStaff);
+app.post('/editStaff/:staffID', checkAuthentication, checkAdmin, upload.single('profile'), general.postEditStaff);
+app.get('/qr/:timeslotID', program.generateQRCode);
+app.get('/user/scan', program.getScanQR);
+app.get('/user/attend', program.markAttendance);
 
-// Isabel's reward routes (admin only)
-app.get('/admin/rewards', checkAuthentication, checkAdmin, isabelControl.viewRewards);
-app.get('/admin/rewards/read/:id', checkAuthentication, checkAdmin, isabelControl.readReward);
-app.get('/admin/rewards/add', checkAuthentication, checkAdmin, isabelControl.addRewardForm);
-app.post('/rewards/add', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.addReward);
-app.get('/rewards/edit/:id', checkAuthentication, checkAdmin, isabelControl.editRewardForm);
-app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), isabelControl.updateReward);
 
-// User reward routes (user only)
-app.get('/user/rewards', checkAuthentication, checkUser, isabelControl.userRewards);
-app.get('/rewards/read/:id', checkAuthentication, checkUser, isabelControl.readReward);
-app.get('/reward/:id', checkAuthentication, checkUser, isabelControl.viewSingleReward);
-app.post('/claimReward/:id', checkAuthentication, checkUser, isabelControl.claimReward);
-app.get('/user/redeemHist', checkAuthentication, checkUser, isabelControl.redeemHistory);
+// Isabel
+app.get('/admin/rewards', checkAuthentication, checkAdmin, reward.viewRewards);
+app.get('/admin/rewards/read/:id', checkAuthentication, checkAdmin, reward.readReward);
+app.get('/admin/rewards/add', checkAuthentication, checkAdmin, reward.addRewardForm);
+app.post('/rewards/add', checkAuthentication, checkAdmin, upload.single('image'), reward.addReward);
+app.get('/rewards/edit/:id', checkAuthentication, checkAdmin, reward.editRewardForm);
+app.post('/rewards/edit/:id', checkAuthentication, checkAdmin, upload.single('image'), reward.updateReward);
+app.get('/user/rewards', checkAuthentication, checkUser, reward.userRewards);
+app.get('/rewards/read/:id', checkAuthentication, checkUser, reward.readReward);
+app.get('/reward/:id', checkAuthentication, checkUser, reward.viewSingleReward);
+app.post('/claimReward/:id', checkAuthentication, checkUser, reward.claimReward);
+app.get('/user/redeemHist', checkAuthentication, checkUser, reward.redeemHistory);
 
-// Niki's user and admin leaderboard routes
-app.get('/user/dashboard', checkAuthentication, checkUser, nikiController.getUserDashboard);
-app.get('/user/leaderboard', checkAuthentication, checkUser, nikiController.getUserLeaderboard);
-app.get('/admin/leaderboard', checkAuthentication, checkAdmin, nikiController.getAdminLeaderboard)
-
-// Niki's feedback routes
-app.post('/user/submit-feedback', checkAuthentication, checkUser, nikiController.submitFeedback);
-app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, nikiController.viewProgramFeedback);
-
-// Niki's chat routes
-app.get('/chat', checkAuthentication, nikiController.getChatPage);
-app.get('/chat/:to', checkAuthentication, nikiController.getMessages);
-app.post('/chat/send', checkAuthentication, nikiController.sendMessage);
-app.get('/chat/unread-counts', checkAuthentication, nikiController.getUnreadCounts);
-
-// Niki's invite routes
-app.post('/invite', checkAuthentication, nikiController.sendProgramInvite);
-app.get('/user/invites', checkAuthentication, checkUser, nikiController.viewInvites);
+// Niki's
+app.get('/user/dashboard', checkAuthentication, checkUser, general.getUserDashboard);
+app.get('/user/leaderboard', checkAuthentication, checkUser, general.getUserLeaderboard);
+app.get('/admin/leaderboard', checkAuthentication, checkAdmin, general.getAdminLeaderboard)
+app.post('/user/submit-feedback', checkAuthentication, checkUser, feedback.submitFeedback);
+app.get('/admin/program/:programID/feedback', checkAuthentication, checkAdmin, feedback.viewProgramFeedback);
+app.get('/admin/export-dashboard', checkAuthentication, checkAdmin, general.exportDashboard);
+app.get('/admin/export-dashboard-excel', checkAuthentication, checkAdmin, general.exportDashboardExcel);
+app.get('/chat', checkAuthentication, chatInvite.getChatPage);
+app.get('/chat/:to', checkAuthentication, chatInvite.getMessages);
+app.post('/chat/send', checkAuthentication, chatInvite.sendMessage);
+app.get('/chat/unread-counts', checkAuthentication, chatInvite.getUnreadCounts);
+app.post('/invite', checkAuthentication, chatInvite.sendProgramInvite);
+app.get('/user/invites', checkAuthentication, checkUser, chatInvite.viewInvites);
 
 // Alysha's program routes
-app.get('/admin/programs', checkAuthentication, checkAdmin, alyshaControl.getProgramsAdmin);
-app.get('/user/programs', checkAuthentication, checkUser, alyshaControl.getProgramsUser);
-
-app.get('/programs/add', checkAuthentication, checkAdmin, alyshaControl.getAddProgram);
-app.post('/programs/add', checkAuthentication, checkAdmin, alyshaControl.postAddProgram);
-
-app.get('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.getEditProgram);
-app.post('/programs/edit/:id', checkAuthentication, checkAdmin, alyshaControl.postEditProgram);
-app.post('/user/programs',checkAuthentication, alyshaControl.joinProgram);
-app.post('/programs/toggle/:id', alyshaControl.toggleProgramStatus);
-app.post('/cancel/:participantID', checkAuthentication, alyshaControl.cancelProgram);
-app.get('/test/timeslot', checkAuthentication, checkAdmin, alyshaControl.testTimeslotInsert);
+app.get('/admin/programs', checkAuthentication, checkAdmin, program.getProgramsAdmin);
+app.get('/user/programs', checkAuthentication, checkUser, program.getProgramsUser);
+app.get('/programs/add', checkAuthentication, checkAdmin, program.getAddProgram);
+app.post('/programs/add', checkAuthentication, checkAdmin, program.postAddProgram);
+app.get('/programs/edit/:id', checkAuthentication, checkAdmin, program.getEditProgram);
+app.post('/programs/edit/:id', checkAuthentication, checkAdmin, program.postEditProgram);
+app.post('/user/programs',checkAuthentication, program.joinProgram);
+app.post('/cancel/:participantID', checkAuthentication, program.cancelProgram);
+app.post('/programs/toggle/:id', program.toggleProgramStatus);
 
 // Start server
 const PORT = process.env.PORT || 3000;

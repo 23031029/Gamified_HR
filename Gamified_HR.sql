@@ -167,7 +167,6 @@ CREATE TABLE staff_program (
     timeslotID INT NOT NULL,
     `Status` CHAR(30) NOT NULL,
     feedbackSubmitted BOOLEAN DEFAULT 0,
-    feedbackSubmitted BOOLEAN DEFAULT 0,
     FOREIGN KEY (staffID) REFERENCES Staff(staffID),
     FOREIGN KEY (programID) REFERENCES Program(ProgramID),
     FOREIGN KEY (timeslotID) REFERENCES Timeslot(timeslotID)
